@@ -1,0 +1,192 @@
+<?php
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+class TCNexus_REST_API {
+
+	const NAMESPACE_ = 'tcnexus/v1';
+
+	public static function register_routes() {
+		register_rest_route( self::NAMESPACE_, '/courses', array(
+			'methods'             => 'GET',
+			'callback'            => array( __CLASS__, 'get_courses' ),
+			'permission_callback' => '__return_true',
+		) );
+
+		register_rest_route( self::NAMESPACE_, '/courses/(?P<id>\d+)', array(
+			'methods'             => 'GET',
+			'callback'            => array( __CLASS__, 'get_course' ),
+			'permission_callback' => '__return_true',
+		) );
+
+		register_rest_route( self::NAMESPACE_, '/lessons/(?P<id>\d+)', array(
+			'methods'             => 'GET',
+			'callback'            => array( __CLASS__, 'get_lesson' ),
+			'permission_callback' => '__return_true',
+		) );
+
+		register_rest_route( self::NAMESPACE_, '/access/check', array(
+			'methods'             => 'POST',
+			'callback'            => array( __CLASS__, 'check_access' ),
+			'permission_callback' => '__return_true',
+			'args'                => array(
+				'lesson_id' => array( 'required' => true, 'type' => 'integer' ),
+			),
+		) );
+
+		register_rest_route( self::NAMESPACE_, '/register', array(
+			'methods'             => 'POST',
+			'callback'            => array( __CLASS__, 'register_email' ),
+			'permission_callback' => '__return_true',
+			'args'                => array(
+				'email' => array( 'required' => true, 'type' => 'string' ),
+			),
+		) );
+	}
+
+	private static function get_visitor_id( \WP_REST_Request $request ) {
+		return sanitize_text_field( (string) $request->get_header( 'X-Visitor-Id' ) );
+	}
+
+	private static function get_user_id( \WP_REST_Request $request ) {
+		$token = sanitize_text_field( (string) $request->get_header( 'X-Tcnexus-Token' ) );
+		return TCNexus_Membership::get_user_id_from_token( $token );
+	}
+
+	public static function get_courses() {
+		$courses = get_posts( array(
+			'post_type'      => 'tc_course',
+			'posts_per_page' => -1,
+			'orderby'        => 'title',
+			'order'          => 'ASC',
+		) );
+
+		$data = array_map( function ( $course ) {
+			$types = wp_get_post_terms( $course->ID, 'course_type', array( 'fields' => 'names' ) );
+			return array(
+				'id'           => $course->ID,
+				'title'        => $course->post_title,
+				'excerpt'      => get_the_excerpt( $course ),
+				'thumbnail'    => get_the_post_thumbnail_url( $course->ID, 'medium' ),
+				'course_types' => is_wp_error( $types ) ? array() : $types,
+				'lesson_count' => self::count_course_lessons( $course->ID ),
+			);
+		}, $courses );
+
+		return new WP_REST_Response( $data, 200 );
+	}
+
+	public static function get_course( \WP_REST_Request $request ) {
+		$course_id = (int) $request['id'];
+		$course    = get_post( $course_id );
+
+		if ( ! $course || 'tc_course' !== $course->post_type ) {
+			return new WP_Error( 'not_found', 'Course not found', array( 'status' => 404 ) );
+		}
+
+		$lessons = self::get_course_lessons( $course_id );
+
+		return new WP_REST_Response( array(
+			'id'        => $course->ID,
+			'title'     => $course->post_title,
+			'content'   => apply_filters( 'the_content', $course->post_content ),
+			'thumbnail' => get_the_post_thumbnail_url( $course->ID, 'large' ),
+			'lessons'   => $lessons,
+		), 200 );
+	}
+
+	public static function get_lesson( \WP_REST_Request $request ) {
+		$lesson_id = (int) $request['id'];
+		$lesson    = get_post( $lesson_id );
+
+		if ( ! $lesson || 'tc_lesson' !== $lesson->post_type ) {
+			return new WP_Error( 'not_found', 'Episode not found', array( 'status' => 404 ) );
+		}
+
+		return new WP_REST_Response( self::format_lesson( $lesson, false ), 200 );
+	}
+
+	public static function check_access( \WP_REST_Request $request ) {
+		$lesson_id  = (int) $request->get_param( 'lesson_id' );
+		$lesson     = get_post( $lesson_id );
+
+		if ( ! $lesson || 'tc_lesson' !== $lesson->post_type ) {
+			return new WP_Error( 'not_found', 'Episode not found', array( 'status' => 404 ) );
+		}
+
+		$visitor_id = self::get_visitor_id( $request );
+		$user_id    = self::get_user_id( $request );
+
+		$result = TCNexus_Access_Control::evaluate_access( $lesson_id, $visitor_id, $user_id );
+
+		if ( $result['granted'] ) {
+			$result['vimeo_id'] = get_post_meta( $lesson_id, '_tcnexus_vimeo_id', true );
+		}
+
+		return new WP_REST_Response( $result, 200 );
+	}
+
+	public static function register_email( \WP_REST_Request $request ) {
+		$email  = sanitize_email( (string) $request->get_param( 'email' ) );
+		$result = TCNexus_Membership::register_from_email( $email );
+
+		if ( is_wp_error( $result ) ) {
+			return new WP_Error( $result->get_error_code(), $result->get_error_message(), array( 'status' => 409 ) );
+		}
+
+		$visitor_id = self::get_visitor_id( $request );
+		$ip         = TCNexus_Access_Control::get_visitor_ip();
+		TCNexus_Access_Control::attach_anonymous_history_to_user( $visitor_id, $ip, $result['user_id'] );
+
+		return new WP_REST_Response( array(
+			'success' => true,
+			'token'   => $result['token'],
+		), 201 );
+	}
+
+	private static function count_course_lessons( $course_id ) {
+		$query = new WP_Query( array(
+			'post_type'      => 'tc_lesson',
+			'posts_per_page' => -1,
+			'fields'         => 'ids',
+			'meta_key'       => '_tcnexus_course_id',
+			'meta_value'     => $course_id,
+		) );
+		return (int) $query->found_posts;
+	}
+
+	private static function get_course_lessons( $course_id ) {
+		$lessons = get_posts( array(
+			'post_type'      => 'tc_lesson',
+			'posts_per_page' => -1,
+			'meta_key'       => '_tcnexus_course_id',
+			'meta_value'     => $course_id,
+			'orderby'        => 'menu_order',
+			'order'          => 'ASC',
+		) );
+
+		return array_map( function ( $lesson ) {
+			return self::format_lesson( $lesson, true );
+		}, $lessons );
+	}
+
+	private static function format_lesson( $lesson, $minimal ) {
+		$tier = TCNexus_Post_Types::get_lesson_tier( $lesson->ID );
+		$data = array(
+			'id'         => $lesson->ID,
+			'title'      => $lesson->post_title,
+			'order'      => (int) $lesson->menu_order,
+			'tier'       => $tier,
+			'course_id'  => (int) get_post_meta( $lesson->ID, '_tcnexus_course_id', true ),
+			'thumbnail'  => get_the_post_thumbnail_url( $lesson->ID, 'medium' ),
+			'locked'     => 'paid' === $tier,
+		);
+
+		if ( ! $minimal ) {
+			$data['content'] = apply_filters( 'the_content', $lesson->post_content );
+		}
+
+		return $data;
+	}
+}
