@@ -3,29 +3,12 @@ import { Component, ElementRef, Injector, OnDestroy, afterNextRender, effect, in
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { CoursesService } from '../../core/courses.service';
-import { CourseDetail, Lesson } from '../../core/models';
+import { CourseDetail, Lesson, Person } from '../../core/models';
 import { MorphHandoff, MorphRect, TransitionService } from '../../core/transition.service';
 import { VisitorService } from '../../core/visitor.service';
 import { WatchProgressService } from '../../core/watch-progress.service';
 
 type PageStatus = 'loading' | 'error' | 'ready';
-
-interface CourseGuest {
-  name: string;
-  avatarSeed: string;
-}
-
-/**
- * TODO(backend): guests will eventually come from the course record itself,
- * set on the future "create new course" admin page — the WP plugin has no
- * guests field yet, so this is placeholder data. The label logic below
- * (singular "Guest" vs plural "Guests") is real and should keep working
- * once real data replaces this list, whether it holds 1 guest or several.
- */
-const PLACEHOLDER_GUESTS: CourseGuest[] = [
-  { name: 'Priya Anand', avatarSeed: 'priya-anand' },
-  { name: 'Marcus Webb', avatarSeed: 'marcus-webb' }
-];
 
 @Component({
   selector: 'app-course-detail',
@@ -190,12 +173,24 @@ export class CourseDetailPage implements OnDestroy {
     return course.course_types.includes('Platform') ? 'Platform Course' : 'Trading Course';
   }
 
+  /** "Course Image" (Course Builder's Media tab) is the intended hero image; thumbnail (the catalog-card image) and a placeholder are just fallbacks for a course that hasn't set one. */
   protected backdropUrl(): string {
     const course = this.course();
     if (!course) {
       return '';
     }
-    return course.thumbnail ?? `https://picsum.photos/seed/tcnexus-${course.id}/1600/900`;
+    return course.image ?? course.thumbnail ?? `https://picsum.photos/seed/tcnexus-${course.id}/1600/900`;
+  }
+
+  protected openOverview(): void {
+    const link = this.course()?.overview_link;
+    if (link) {
+      window.open(link, '_blank', 'noopener');
+    }
+  }
+
+  protected personPhotoUrl(person: Person): string {
+    return person.photo ?? `https://i.pravatar.cc/80?u=${person.id}`;
   }
 
   /** Locked (paid-tier) rows don't navigate yet — paywall gating is future work. */
@@ -241,13 +236,4 @@ export class CourseDetailPage implements OnDestroy {
     return `${Math.min(index * 40, 600)}ms`;
   }
 
-  protected readonly guests = PLACEHOLDER_GUESTS;
-
-  protected guestsLabel(): string {
-    return this.guests.length === 1 ? 'Guest' : 'Guests';
-  }
-
-  protected guestAvatarUrl(guest: CourseGuest): string {
-    return `https://i.pravatar.cc/80?u=${guest.avatarSeed}`;
-  }
 }

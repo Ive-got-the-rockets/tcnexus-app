@@ -88,14 +88,41 @@ class TCNexus_REST_API {
 		$lessons = self::get_course_lessons( $course_id );
 		$types   = wp_get_post_terms( $course->ID, 'course_type', array( 'fields' => 'names' ) );
 
+		// _tcnexus_image_desktop_id ("Course Image" in Course Builder's Media
+		// tab, the main image for this single page) is a different field from
+		// the post thumbnail ("Course Thumbnail", used for catalog cards) —
+		// this endpoint used to only ever return the latter, so a course
+		// image uploaded there never showed up anywhere on the frontend.
+		$image_id = (int) get_post_meta( $course_id, '_tcnexus_image_desktop_id', true );
+
 		return new WP_REST_Response( array(
-			'id'           => $course->ID,
-			'title'        => $course->post_title,
-			'content'      => apply_filters( 'the_content', $course->post_content ),
-			'thumbnail'    => get_the_post_thumbnail_url( $course->ID, 'large' ),
-			'course_types' => is_wp_error( $types ) ? array() : $types,
-			'lessons'      => $lessons,
+			'id'            => $course->ID,
+			'title'         => $course->post_title,
+			'content'       => apply_filters( 'the_content', $course->post_content ),
+			'thumbnail'     => get_the_post_thumbnail_url( $course->ID, 'large' ),
+			'image'         => $image_id ? wp_get_attachment_image_url( $image_id, 'full' ) : null,
+			'course_types'  => is_wp_error( $types ) ? array() : $types,
+			'overview_link' => get_post_meta( $course_id, '_tcnexus_overview_link', true ) ?: null,
+			'instructor'    => self::format_person( (int) get_post_meta( $course_id, '_tcnexus_instructor_id', true ) ),
+			'guest'         => self::format_person( (int) get_post_meta( $course_id, '_tcnexus_guest_id', true ) ),
+			'lessons'       => $lessons,
 		), 200 );
+	}
+
+	/** Instructor/Guest are both just tc_instructor posts (see TCNexus_Post_Types::get_person_role) — null if the course has none set for that role. */
+	private static function format_person( $person_id ) {
+		if ( ! $person_id ) {
+			return null;
+		}
+		$person = get_post( $person_id );
+		if ( ! $person || 'tc_instructor' !== $person->post_type ) {
+			return null;
+		}
+		return array(
+			'id'    => $person->ID,
+			'name'  => $person->post_title,
+			'photo' => get_the_post_thumbnail_url( $person->ID, 'medium' ) ?: null,
+		);
 	}
 
 	public static function get_lesson( \WP_REST_Request $request ) {

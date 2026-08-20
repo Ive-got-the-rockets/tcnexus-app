@@ -23,12 +23,23 @@ export interface Lesson {
   video_url: string | null;
 }
 
+export interface Person {
+  id: number;
+  name: string;
+  photo: string | null;
+}
+
 export interface CourseDetail {
   id: number;
   title: string;
   content: string;
   thumbnail: string | null;
+  /** The course's own "Course Image" (Course Builder's Media tab) — the main image for this page, distinct from thumbnail (used for catalog cards). */
+  image: string | null;
   course_types: string[];
+  overview_link: string | null;
+  instructor: Person | null;
+  guest: Person | null;
   lessons: Lesson[];
 }
 
