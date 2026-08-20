@@ -1,0 +1,190 @@
+@if (returnOverlay(); as overlay) {
+  <!--
+    Coming back from a course page: this floats a fullscreen copy of that
+    course's image over the catalog, then (once the real card has been
+    located and measured, after scroll restoration settles) shrinks down
+    onto it — kept permanently mounted while it exists rather than gated by
+    a second @if, same reasoning as course-detail's own .morph overlay: a
+    freshly-inserted element has no real "previous frame" for the shrink to
+    transition from.
+  -->
+  <div
+    class="return-overlay"
+    [class.return-overlay--settled]="returnSettled()"
+    [style.top.px]="returnRect()?.top"
+    [style.left.px]="returnRect()?.left"
+    [style.width.px]="returnRect()?.width"
+    [style.height.px]="returnRect()?.height"
+    (transitionend)="onReturnTransitionEnd($event)"
+  >
+    <img [src]="overlay.thumbnailUrl" alt="" />
+  </div>
+}
+
+@switch (status()) {
+  @case ('loading') {
+    <div class="hero hero--skeleton"></div>
+    <div class="rows">
+      @for (row of skeletonRows; track $index) {
+        <section class="row">
+          <div class="row__title skeleton-line"></div>
+          <div class="row__viewport">
+            <div class="row__track">
+              @for (card of skeletonCards; track $index) {
+                <div class="card card--skeleton" aria-hidden="true"></div>
+              }
+            </div>
+          </div>
+        </section>
+      }
+    </div>
+  }
+  @case ('error') {
+    <div class="state state--error">
+      <h2>The library didn't load.</h2>
+      <p>The course feed is unreachable right now.</p>
+      <button type="button" class="retry" (click)="load()">Try again</button>
+    </div>
+  }
+  @case ('ready') {
+    @if (courses().length === 0) {
+      <div class="state state--empty">
+        <h2>Nothing published yet.</h2>
+        <p>New courses land here the moment they go live.</p>
+      </div>
+    } @else {
+      @if (featured(); as course) {
+        <section
+          class="hero"
+          [style.background-image]="'url(' + backdropUrl(course) + ')'"
+        >
+          <div class="hero__scrim"></div>
+          <div class="hero__content">
+            <p class="hero__eyebrow">Featured Course</p>
+            <h1 class="hero__title">{{ course.title }}</h1>
+            <p class="hero__excerpt">{{ course.excerpt }}</p>
+            <div class="hero__meta">
+              <span class="hero__lessons">{{ course.lesson_count }} lessons</span>
+              @for (type of course.course_types; track type) {
+                <span class="tag">{{ type }}</span>
+              }
+            </div>
+            <div class="hero__actions">
+              <button type="button" class="btn btn--primary">▶ Start Watching</button>
+              <button type="button" class="btn btn--ghost">More Info</button>
+            </div>
+          </div>
+        </section>
+      }
+
+      <div class="rows">
+        @for (row of rows(); track row.title) {
+          <section class="row" [attr.data-row-title]="row.title">
+            <h2 class="row__title">{{ row.title }}</h2>
+            @if (row.courses.length === 0) {
+              <p class="row__empty">Coming soon.</p>
+            } @else {
+              <div
+                class="row__viewport"
+                [class.at-start]="edgesFor(row.title).atStart"
+                [class.at-end]="edgesFor(row.title).atEnd"
+              >
+                @if (!edgesFor(row.title).atStart) {
+                  <button
+                    type="button"
+                    class="row__nav row__nav--prev"
+                    aria-label="Scroll left"
+                    #prevBtn
+                    (click)="track.scrollBy({ left: -(track.clientWidth - prevBtn.offsetWidth), behavior: 'smooth' })"
+                  >‹</button>
+                }
+
+                <div class="row__track" #track [appRowScroll]="row.title" (edgesChange)="onRowEdges(row.title, $event)">
+                  @for (course of row.courses; track course.id) {
+                    <article
+                      class="card"
+                      #cardEl
+                      [attr.data-course-id]="course.id"
+                      (mouseenter)="onCardEnter(course, row.title, $event)"
+                      (mouseleave)="scheduleHide()"
+                      (click)="goToCourse(course, row.title, cardEl)"
+                    >
+                      <div class="card__thumb">
+                        @if (!failedImages().has(course.id)) {
+                          <img
+                            [src]="thumbnailUrl(course)"
+                            [alt]="course.title"
+                            loading="lazy"
+                            (error)="onImageError(course.id)"
+                          />
+                        } @else {
+                          <span class="card__thumb-mark">{{ course.title.charAt(0) }}</span>
+                        }
+                        <div class="card__scrim"></div>
+                        <div class="card__info">
+                          <h3 class="card__title">{{ course.title }}</h3>
+                        </div>
+                      </div>
+                    </article>
+                  }
+                </div>
+
+                @if (!edgesFor(row.title).atEnd) {
+                  <button
+                    type="button"
+                    class="row__nav row__nav--next"
+                    aria-label="Scroll right"
+                    #nextBtn
+                    (click)="track.scrollBy({ left: track.clientWidth - nextBtn.offsetWidth, behavior: 'smooth' })"
+                  >›</button>
+                }
+              </div>
+            }
+          </section>
+        }
+      </div>
+    }
+  }
+}
+
+@if (previewCourse(); as course) {
+  <div
+    class="preview"
+    [style.top]="previewPosition()?.top"
+    [style.left]="previewPosition()?.left"
+    (mouseenter)="cancelHide()"
+    (mouseleave)="scheduleHide()"
+  >
+    <div class="preview__image" (click)="goToCourseFromPreview(course)">
+      @if (!failedImages().has(course.id)) {
+        <img [src]="thumbnailUrl(course)" [alt]="course.title" (error)="onImageError(course.id)" />
+      } @else {
+        <span class="card__thumb-mark">{{ course.title.charAt(0) }}</span>
+      }
+    </div>
+    <div class="preview__body">
+      <div class="preview__controls">
+        <button type="button" class="preview__btn preview__btn--play" aria-label="Play" data-tooltip="Play Course" (click)="playCourse(course, $event)">▶</button>
+        <button
+          type="button"
+          class="preview__btn preview__btn--round preview__btn--help"
+          aria-label="More information"
+          data-tooltip="Course Overview"
+          (click)="goToCourseFromPreview(course)"
+        >?</button>
+      </div>
+      <h3 class="preview__title">{{ course.title }}</h3>
+      <div class="preview__subline">
+        <span class="preview__type">{{ courseTypeLabel(course) }}</span>
+        <span class="preview__lessons">{{ course.lesson_count }} Episodes</span>
+      </div>
+      <div class="preview__instructor">
+        <p class="preview__instructor-label">Instructor</p>
+        <div class="preview__instructor-row">
+          <img class="preview__instructor-avatar" src="https://i.pravatar.cc/80?u=coco-blanco" alt="Coco Blanco" />
+          <span class="preview__instructor-name">Coco Blanco</span>
+        </div>
+      </div>
+    </div>
+  </div>
+}

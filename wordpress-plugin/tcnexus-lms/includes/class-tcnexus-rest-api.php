@@ -86,13 +86,15 @@ class TCNexus_REST_API {
 		}
 
 		$lessons = self::get_course_lessons( $course_id );
+		$types   = wp_get_post_terms( $course->ID, 'course_type', array( 'fields' => 'names' ) );
 
 		return new WP_REST_Response( array(
-			'id'        => $course->ID,
-			'title'     => $course->post_title,
-			'content'   => apply_filters( 'the_content', $course->post_content ),
-			'thumbnail' => get_the_post_thumbnail_url( $course->ID, 'large' ),
-			'lessons'   => $lessons,
+			'id'           => $course->ID,
+			'title'        => $course->post_title,
+			'content'      => apply_filters( 'the_content', $course->post_content ),
+			'thumbnail'    => get_the_post_thumbnail_url( $course->ID, 'large' ),
+			'course_types' => is_wp_error( $types ) ? array() : $types,
+			'lessons'      => $lessons,
 		), 200 );
 	}
 
@@ -181,6 +183,16 @@ class TCNexus_REST_API {
 			'course_id'  => (int) get_post_meta( $lesson->ID, '_tcnexus_course_id', true ),
 			'thumbnail'  => get_the_post_thumbnail_url( $lesson->ID, 'medium' ),
 			'locked'     => 'paid' === $tier,
+			'excerpt'    => get_the_excerpt( $lesson ),
+			// Course Builder actually saves the id under _tcnexus_vimeo_id (plus
+			// a separate _tcnexus_video_source of 'vimeo'/'youtube') — this used
+			// to read a _tcnexus_video_url meta key that's never written
+			// anywhere, so video_url was always null for every real lesson.
+			// The frontend player only knows how to embed Vimeo right now (see
+			// parseVimeoRef() in lesson-player.ts), so a youtube-sourced
+			// lesson's id is still returned here for API honesty, but won't
+			// actually play until the player gains a youtube provider too.
+			'video_url'  => get_post_meta( $lesson->ID, '_tcnexus_vimeo_id', true ) ?: null,
 		);
 
 		if ( ! $minimal ) {

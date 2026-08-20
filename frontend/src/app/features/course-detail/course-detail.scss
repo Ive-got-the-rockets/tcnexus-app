@@ -1,0 +1,583 @@
+:host {
+  display: block;
+}
+
+/* --- Morph transition overlay --- */
+
+.morph {
+  position: fixed;
+  z-index: 200;
+  overflow: hidden;
+  border-radius: 2.5px;
+  transition:
+    top 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+    left 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+    height 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+    border-radius 0.3s ease;
+  will-change: top, left, width, height;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(0.85) contrast(1.05);
+  }
+}
+
+.morph--grown {
+  border-radius: 0;
+}
+
+/* No transition on opacity/pointer-events — this toggles instantly, since
+   at the moment it's un-hidden it's already positioned to match exactly
+   what's on screen (see goBack()), and at the moment it's hidden the real
+   page content has already faded in underneath it. */
+.morph--hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .morph {
+    transition: none;
+  }
+}
+
+/* --- Page --- */
+
+.detail {
+  min-height: 100vh;
+  background: var(--ink);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.detail--visible {
+  opacity: 1;
+}
+
+.detail__hero {
+  /* Sticky, not fixed: it stays pinned only for as long as its shared
+     parent with .detail__body still has height left to give — i.e. for
+     the full length of the lesson list. Once that parent's bottom edge
+     scrolls past, it releases naturally and the footer comes up right
+     behind it — no JS scroll-handling needed for either half of that. */
+  position: sticky;
+  top: 0;
+  min-height: 60vh;
+  display: flex;
+  align-items: flex-end;
+  background-color: var(--ink-raised);
+  background-size: cover;
+  background-position: center 30%;
+  padding: 0 clamp(1.25rem, 5vw, 4rem) clamp(2.5rem, 6vw, 4rem);
+}
+
+.detail__hero--skeleton {
+  min-height: 60vh;
+  background: linear-gradient(160deg, var(--ink-raised), var(--ink));
+}
+
+.detail__scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, var(--ink) 0%, color-mix(in srgb, var(--ink) 55%, transparent) 45%, transparent 75%),
+    linear-gradient(0deg, var(--ink) 0%, transparent 45%);
+}
+
+.detail__hero-content {
+  position: relative;
+  z-index: 3;
+  max-width: 42rem;
+  /* Shifts the whole stack (back link, title, lesson count, description)
+     down together, as one block, without disturbing their order or the
+     flex-end anchoring they're built on. */
+  transform: translateY(200px);
+
+  /* Each direct child (back link, title, meta row, description, instructor,
+     guests) starts hidden and slides/fades in one at a time, in DOM order,
+     once --revealed is added (same moment .detail--visible fires). */
+  > * {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.4s ease-in, transform 0.4s ease-in;
+  }
+}
+
+.detail__hero-content--revealed {
+  > * {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @for $i from 1 through 6 {
+    > *:nth-child(#{$i}) {
+      transition-delay: #{($i - 1) * 90}ms;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detail__hero-content > * {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+.detail__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--paper-dim);
+  text-decoration: none;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: var(--signal);
+
+    .detail__back-icon {
+      border-color: var(--signal);
+    }
+  }
+}
+
+.detail__back-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--paper) 35%, transparent);
+  transition: border-color 0.2s ease;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.detail__title {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+  text-wrap: balance;
+}
+
+.detail__meta {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.detail__meta-item {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  color: var(--paper-dim);
+  white-space: nowrap;
+}
+
+.detail__meta-dot {
+  width: 5px;
+  height: 5px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--signal);
+}
+
+.detail__overview-btn {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--paper);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--paper) 35%, transparent);
+  border-radius: 2.8px;
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+
+  &:hover {
+    border-color: var(--signal);
+    background: color-mix(in srgb, var(--paper) 8%, transparent);
+  }
+}
+
+.detail__hero .detail__description {
+  margin-top: 1rem;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+}
+
+/* Right-aligned with a fixed gap from the edge instead of centered — an
+   explicit width (not auto) is what makes margin-left: auto able to push it
+   over there instead of just stretching to fill the space. Top padding is
+   pulled way down so "Lessons" lands close to the now-lowered back-link
+   instead of the old, much larger gap. */
+.detail__body {
+  /* position:relative (no z-index) puts this in the same paint step as
+     .detail__hero (also position:relative) instead of the earlier
+     "static block" step — otherwise, wherever the negative margin makes
+     them overlap, the later-painted .detail__hero would render on top and
+     cut off whatever's underneath it here. */
+  position: relative;
+  width: 48rem;
+  max-width: calc(100% - clamp(1.25rem, 5vw, 4rem) - 100px);
+  margin-left: auto;
+  margin-right: clamp(1.25rem, 8vw, 100px);
+  margin-top: -200px;
+  padding-block: 0 clamp(4rem, 8vw, 6rem);
+}
+
+.detail__description {
+  margin-top: 20px;
+  color: var(--paper-dim);
+  font-size: 1rem;
+  line-height: 1.65;
+
+  p + p {
+    margin-top: 1rem;
+  }
+}
+
+/* Same instructor block as the catalog's hover popup. */
+.detail__instructor {
+  margin-top: 20px;
+}
+
+/* Guests reuse the exact instructor row/avatar/name styling — same visual
+   pattern, just possibly more than one of them. Gap is set to match
+   .detail__instructor-label's margin-bottom exactly, and the label's own
+   margin is zeroed below so label-to-first-row spacing isn't doubled up. */
+.detail__guests {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.detail__instructor-label,
+.detail__guests-label {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--paper);
+  margin-bottom: 0.5rem;
+}
+
+.detail__guests-label {
+  margin-bottom: 0;
+}
+
+.detail__instructor-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6rem;
+}
+
+.detail__instructor-avatar {
+  width: 60px;
+  height: 60px;
+  flex-shrink: 0;
+  border-radius: 0.25rem;
+  object-fit: cover;
+}
+
+.detail__instructor-name {
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  font-weight: 300;
+  color: var(--paper-dim);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.detail__lessons-title {
+  margin-top: 0;
+  margin-bottom: 1.25rem;
+  font-family: var(--font-ui);
+  font-size: 28px;
+  font-weight: 300;
+  /* Fades/slides in right as the rows below it start their own stagger,
+     same treatment as the hero-content elements on the left. */
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.4s ease-in, transform 0.4s ease-in;
+}
+
+.detail__lessons-title--revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.lesson-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.lesson-row {
+  position: relative;
+  display: flex;
+  /* flex-start (not center) is what makes the title's top line up with the
+     thumbnail's top. */
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.6rem;
+  border-radius: 0.3rem;
+  background: color-mix(in srgb, var(--ink-raised) 75%, transparent);
+  border: 1px solid #404040;
+  overflow: hidden;
+  /* Starts off-screen-right and invisible; .detail--visible (set the moment
+     the entry morph finishes) flips both back, and each row's own
+     transition-delay (bound per-index in the template) staggers the reveal. */
+  opacity: 0;
+  transform: translateX(40px);
+  transition: opacity 0.4s ease-in, transform 0.4s ease-in, border-color 0.2s ease-in;
+  cursor: pointer;
+
+  /* Green glow that fades in from the right edge on hover — z-index:0 (with
+     the thumb/order/info content below explicitly bumped to z-index:1) so
+     it actually sits behind that content instead of painting over the text,
+     which position:absolute here would otherwise do regardless of source
+     order (positioned elements paint after static ones by default). */
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+    background: linear-gradient(to left, color-mix(in srgb, var(--signal) 40%, transparent), transparent 65%);
+    opacity: 0;
+    transition: opacity 0.3s ease-in;
+    pointer-events: none;
+  }
+}
+
+/* Higher specificity than .lesson-list--revealed .lesson-row's own
+   transform rule (translateX(0) at rest) so hover reliably wins regardless
+   of source order — the whole row (image included, since it's a child)
+   pops up 5% larger, sitting above its neighbors via the z-index bump. */
+.lesson-list--revealed .lesson-row:hover {
+  transform: scale(1.05);
+  z-index: 2;
+  border-color: var(--signal);
+
+  &::after {
+    opacity: 1;
+  }
+}
+
+.lesson-row--locked {
+  cursor: default;
+
+  &:hover {
+    border-color: #404040;
+
+    &::after {
+      opacity: 0;
+    }
+  }
+}
+
+.lesson-list--revealed .lesson-row {
+  opacity: 1;
+  transform: translateX(0);
+  /* Once settled, the hover scale animates at its own (faster) speed —
+     separate from the 0.4s entrance-stagger transition on the base
+     .lesson-row rule, which this overrides for both hover in and out. */
+  transition: transform 0.2s ease-in, border-color 0.2s ease-in;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lesson-row,
+  .detail__lessons-title {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+.lesson-row__order {
+  position: relative;
+  z-index: 1;
+  width: 1.5rem;
+  flex-shrink: 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--paper-dim);
+}
+
+.lesson-row__thumb {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  width: 200px;
+  aspect-ratio: 16 / 9;
+  border-radius: 0.2rem;
+  overflow: hidden;
+  background: var(--ink);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(0.85) contrast(1.05);
+  }
+}
+
+.lesson-row__lock {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  color: var(--paper);
+
+  svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+/* Play + restart-from-beginning, side by side — same "green fill, dark
+   glyph" look as the catalog popup's play button on hover, shown here as
+   soon as you hover the thumbnail rather than gated behind a second
+   hover-on-the-button-itself. Only the restart button needs real
+   pointer-events; play is decorative (the whole row already navigates). */
+.lesson-row__actions {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.lesson-row__thumb:hover .lesson-row__actions {
+  opacity: 1;
+}
+
+.lesson-row__play svg,
+.lesson-row__restart svg {
+  display: block;
+  width: 34px;
+  height: 34px;
+  padding: 0.4rem;
+  border-radius: 0.25rem;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1.5px solid var(--signal);
+  color: var(--signal);
+}
+
+.lesson-row__restart {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform 0.15s ease;
+
+  &:hover {
+    transform: scale(1.08);
+  }
+}
+
+/* Reflects actual watch progress from the lesson player (see
+   WatchProgressService) — same track/fill idea as the video player's own
+   progress bar, just fixed to the bottom edge of the thumbnail instead of
+   floating over full video controls. */
+.lesson-row__progress {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 1px;
+  background: rgba(242, 242, 238, 0.4);
+}
+
+.lesson-row__progress-fill {
+  display: block;
+  height: 100%;
+  background: var(--signal);
+}
+
+.lesson-row__info {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-width: 0;
+}
+
+.lesson-row__title {
+  display: block;
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lesson-row__excerpt {
+  margin-top: 20px;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--paper-dim);
+}
+
+.state {
+  max-width: 28rem;
+  padding: clamp(6rem, 12vw, 9rem) clamp(1.25rem, 5vw, 4rem) 3rem;
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 400;
+    margin-bottom: 0.75rem;
+  }
+
+  p {
+    color: var(--paper-dim);
+    line-height: 1.5;
+  }
+}
+
+.retry {
+  display: inline-block;
+  margin-top: 1.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--signal);
+  border-radius: 999px;
+  padding: 0.6rem 1.25rem;
+  text-decoration: none;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: var(--signal-dim);
+  }
+}
+

@@ -1,0 +1,43 @@
+@if (authModal.isOpen()) {
+  <div class="auth-modal-overlay" (click)="close()">
+    <div class="auth-modal" (click)="$event.stopPropagation()">
+      <button type="button" class="auth-modal__close" aria-label="Close" (click)="close()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 6l12 12M18 6 6 18" />
+        </svg>
+      </button>
+
+      @if (visitor.isRegistered()) {
+        <h2 class="auth-modal__title">You're already registered</h2>
+        <p class="auth-modal__text">This browser already has a registered account linked to it.</p>
+      } @else {
+        @switch (status()) {
+          @case ('success') {
+            <h2 class="auth-modal__title">Check your email</h2>
+            <p class="auth-modal__text">We've sent your login details to <strong>{{ submittedEmail() }}</strong>.</p>
+          }
+          @default {
+            <h2 class="auth-modal__title">Create your free account</h2>
+            <p class="auth-modal__text">Register with your email to unlock registered-tier lessons and save your progress.</p>
+            <form (submit)="submit($event)">
+              <input
+                #emailInput
+                type="email"
+                required
+                placeholder="you@example.com"
+                class="auth-modal__input"
+                [disabled]="status() === 'submitting'"
+              />
+              @if (status() === 'error') {
+                <p class="auth-modal__error">{{ errorMessage() }}</p>
+              }
+              <button type="submit" class="auth-modal__submit" [disabled]="status() === 'submitting'">
+                {{ status() === 'submitting' ? 'Creating account…' : 'Create account' }}
+              </button>
+            </form>
+          }
+        }
+      }
+    </div>
+  </div>
+}

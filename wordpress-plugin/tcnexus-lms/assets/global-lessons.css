@@ -1,0 +1,56 @@
+/* Global Lessons List admin page — reuses course-builder.css's design
+   system/tokens and its .tcn-lessons-card/.tcn-lesson-row/.tcn-lesson-card
+   classes verbatim (this file only adds what's actually new: the page
+   title, the filter bar, and the Course column). */
+
+.tcn-global-lessons-wrap {
+  max-width: none;
+}
+
+.tcn-global-lessons-title {
+  font-family: 'Fraunces', 'Iowan Old Style', serif;
+  font-size: 26px;
+  font-weight: 400;
+  color: var(--tcn-text, #201f1c);
+  margin: 0 0 20px;
+}
+
+.tcn-filter-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+  background: var(--tcn-bg, #fffdf9);
+  border: 1px solid var(--tcn-border, #e5e2d9);
+  border-radius: var(--tcn-radius-md, 16px);
+  box-shadow: var(--tcn-shadow-2, 0 4px 12px rgba(32, 31, 28, 0.07));
+  padding: 18px 24px;
+  margin-bottom: 24px;
+}
+
+.tcn-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  flex: 0 1 260px;
+  min-width: 220px;
+}
+
+.tcn-filter-field .tcn-field__label {
+  margin-bottom: 0;
+}
+
+.tcn-filter-count {
+  font-size: 12.5px;
+  color: var(--tcn-text-dim, #8b887d);
+  align-self: center;
+}
+
+.tcn-filter-clear {
+  margin-top: 0;
+  margin-left: auto;
+  align-self: center;
+}
+
+.tcn-lessons-overview__course {
+  width: 220px;
+}

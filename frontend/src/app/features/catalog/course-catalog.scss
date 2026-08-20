@@ -1,0 +1,690 @@
+:host {
+  display: block;
+
+  /* Cards-per-page scales down at narrower widths so cards never shrink
+     past a usable size; 6 is the reference count at a ~1920px window. */
+  --card-gap: 5px;
+  --nav-w: 40px;
+  --cards-per-page: 2;
+  /* Shared with .row__nav and the edge fades so both line up with the card's
+     own top/bottom edge instead of the taller hover-scale headroom. */
+  --row-pad-top: 20px;
+  --row-pad-bottom: 1.75rem;
+}
+
+/* Cards-per-page scales up with viewport width; see the card width formula
+   further down for how --nav-w and --card-gap factor in. */
+@media (min-width: 600px) {
+  :host {
+    --cards-per-page: 3;
+  }
+}
+
+@media (min-width: 900px) {
+  :host {
+    --cards-per-page: 4;
+  }
+}
+
+@media (min-width: 1200px) {
+  :host {
+    --cards-per-page: 5;
+  }
+}
+
+@media (min-width: 1600px) {
+  :host {
+    --cards-per-page: 6;
+  }
+}
+
+/* Hero */
+
+.hero {
+  position: relative;
+  min-height: 78vh;
+  display: flex;
+  align-items: flex-end;
+  background-color: var(--ink-raised);
+  background-size: cover;
+  background-position: center 30%;
+  padding: 0 clamp(1.25rem, 5vw, 4rem) clamp(3rem, 8vw, 5rem);
+}
+
+.hero__scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, var(--ink) 0%, color-mix(in srgb, var(--ink) 55%, transparent) 45%, transparent 75%),
+    linear-gradient(0deg, var(--ink) 0%, transparent 45%);
+}
+
+.hero__content {
+  position: relative;
+  max-width: 38rem;
+}
+
+.hero__eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--signal);
+  margin-bottom: 1rem;
+}
+
+.hero__title {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+}
+
+.hero__excerpt {
+  margin-top: 1.25rem;
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  color: var(--paper-dim);
+  max-width: 32rem;
+}
+
+.hero__meta {
+  margin-top: 1.25rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.hero__lessons {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--paper-dim);
+}
+
+.hero__actions {
+  margin-top: 2rem;
+  display: flex;
+  gap: 0.85rem;
+}
+
+.btn {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  border: none;
+  border-radius: 0.25rem;
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
+.btn--primary {
+  background: var(--signal);
+  color: var(--ink);
+
+  &:hover {
+    background: var(--signal-dim);
+  }
+}
+
+.btn--ghost {
+  background: color-mix(in srgb, var(--paper) 22%, transparent);
+  color: var(--paper);
+  backdrop-filter: blur(6px);
+
+  &:hover {
+    background: color-mix(in srgb, var(--paper) 32%, transparent);
+  }
+}
+
+/* Skeleton hero */
+
+.hero--skeleton {
+  min-height: 78vh;
+  background: linear-gradient(160deg, var(--ink-raised), var(--ink));
+}
+
+/* Rows */
+
+.rows {
+  padding-block: clamp(1rem, 4vw, 2rem) clamp(4rem, 8vw, 6rem);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.75rem, 4vw, 2.5rem);
+}
+
+.row {
+  min-width: 0;
+}
+
+.row__title {
+  font-family: var(--font-ui);
+  font-size: 28px;
+  font-weight: 300;
+  padding-inline: 20px;
+  margin-bottom: 0;
+}
+
+.row__empty {
+  padding-inline: clamp(1.25rem, 5vw, 4rem);
+  color: var(--paper-dim);
+  font-size: 0.9375rem;
+}
+
+.row__viewport {
+  position: relative;
+  container-type: inline-size;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: var(--row-pad-top);
+    bottom: var(--row-pad-bottom);
+    width: var(--nav-w);
+    z-index: 4;
+    pointer-events: none;
+  }
+
+  &::before {
+    left: 0;
+    background: linear-gradient(90deg, var(--ink) 0%, transparent 100%);
+  }
+
+  &::after {
+    right: 0;
+    background: linear-gradient(270deg, var(--ink) 0%, transparent 100%);
+  }
+
+  /* Nothing left to peek at a scroll boundary, so drop that side's fade. */
+  &.at-start::before,
+  &.at-end::after {
+    display: none;
+  }
+}
+
+.row__track {
+  display: flex;
+  gap: var(--card-gap);
+  overflow-x: auto;
+  /* Top padding doubles as the visual gap under the row title (20px); bottom
+     padding is generous so hovered cards can scale up without being clipped
+     by the scroll container (overflow-x: auto forces overflow-y to auto too,
+     but content within the padding box is never clipped). Left padding holds
+     card 1 back by the same amount every later page rests at (see
+     scroll-padding-inline-start below), so the very first page peeks exactly
+     --nav-w of real card on its right too, same as every page after it. */
+  padding-block: var(--row-pad-top) var(--row-pad-bottom);
+  padding-inline-start: calc(var(--nav-w) + var(--card-gap));
+  scroll-snap-type: x mandatory;
+  /* Mandatory snap always rests with a card's start offset by this much from
+     the track edge, so whichever side is mid-scroll shows exactly --nav-w of
+     real card underneath its arrow (the --card-gap term cancels out the gap
+     that would otherwise eat into that peek). */
+  scroll-padding-inline-start: calc(var(--nav-w) + var(--card-gap));
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.row__nav {
+  position: absolute;
+  top: var(--row-pad-top);
+  bottom: var(--row-pad-bottom);
+  z-index: 6;
+  width: var(--nav-w);
+  border: none;
+  background: color-mix(in srgb, var(--ink) 55%, transparent);
+  color: var(--paper);
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, background 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    background: color-mix(in srgb, var(--ink) 80%, transparent);
+    color: var(--signal);
+  }
+}
+
+.row__nav--prev {
+  left: 0;
+}
+
+.row__nav--next {
+  right: 0;
+}
+
+.row:hover .row__nav {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (hover: none) {
+  .row__nav {
+    display: none;
+  }
+}
+
+/* Cards */
+
+.card {
+  position: relative;
+  flex: 0 0 auto;
+  /* Sized so exactly --cards-per-page cards fit between a --nav-w peek on
+     BOTH sides, not just the trailing one — the row track's own
+     padding-inline-start (--nav-w + --card-gap) reserves the matching space
+     on the left so page 1 lines up with every later page. Derivation: with
+     card+gap period T repeating from that reserved start, m full cards plus
+     peeks of --nav-w on both ends requires m*T = 100cqw - 2*(--nav-w) -
+     --card-gap, and card width = T - --card-gap. */
+  width: calc(
+    (100cqw - 2 * var(--nav-w) - var(--card-gap)) / var(--cards-per-page) - var(--card-gap)
+  );
+  aspect-ratio: 16 / 9;
+  border-radius: 2.5px;
+  overflow: hidden;
+  background: var(--ink-raised);
+  scroll-snap-align: start;
+  cursor: pointer;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(0.85) contrast(1.05);
+  }
+}
+
+.card__thumb {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1c2a22, #0b0d0c);
+}
+
+.card__thumb-mark {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  color: var(--signal-dim);
+}
+
+/* Static scrim so the title stays legible; the card itself has no hover
+   state of its own now — the popup (further down) is the only hover
+   animation left. */
+.card__scrim {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 75%;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.5) 45%, transparent 100%);
+  opacity: 0.6;
+}
+
+.card__info {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 0.6rem 0.75rem 0.65rem;
+}
+
+.card__title {
+  font-family: var(--font-ui);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.3;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tag {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--amber);
+  border: 1px solid color-mix(in srgb, var(--amber) 40%, transparent);
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+  white-space: nowrap;
+}
+
+/* Skeleton cards */
+
+.card--skeleton {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--paper) 6%, transparent) 25%,
+    color-mix(in srgb, var(--paper) 12%, transparent) 37%,
+    color-mix(in srgb, var(--paper) 6%, transparent) 63%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+.skeleton-line {
+  height: 0.85rem;
+  width: 10rem;
+  border-radius: 0.2rem;
+  background: color-mix(in srgb, var(--paper) 10%, transparent);
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .card--skeleton {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* Error / empty states */
+
+.state {
+  max-width: 28rem;
+  padding: clamp(6rem, 12vw, 9rem) clamp(1.25rem, 5vw, 4rem) 3rem;
+  text-align: left;
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 400;
+    margin-bottom: 0.75rem;
+  }
+
+  p {
+    color: var(--paper-dim);
+    line-height: 1.5;
+  }
+}
+
+.retry {
+  margin-top: 1.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--signal);
+  border: none;
+  border-radius: 999px;
+  padding: 0.6rem 1.25rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: var(--signal-dim);
+  }
+}
+
+/* Hover-expand preview (Netflix-style). Rendered fixed and outside any
+   transformed/clipped ancestor (.card, .row__track) so it can float above
+   everything instead of being scale-trapped or scroll-clipped. */
+.preview {
+  /* No overflow: hidden here — each half rounds/clips its own corners
+     instead, so button tooltips in .preview__body are free to overflow
+     past the popup's edge instead of being clipped by it. */
+  position: fixed;
+  z-index: 100;
+  width: 416px;
+  height: 460px;
+  border-radius: 0.4rem;
+  background: #181818;
+  box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.85);
+  animation: preview-in 0.18s ease;
+}
+
+@keyframes preview-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .preview {
+    animation: none;
+  }
+}
+
+.preview__image {
+  position: relative;
+  height: 50%;
+  width: 100%;
+  border-radius: 0.4rem 0.4rem 0 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1c2a22, #0b0d0c);
+  cursor: pointer;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(0.85) contrast(1.05);
+  }
+}
+
+.preview__body {
+  height: 50%;
+  border-radius: 0 0 0.4rem 0.4rem;
+  background: #181818;
+  padding: 20px 1.25rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.preview__controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.preview__btn {
+  position: relative;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid color-mix(in srgb, var(--paper) 35%, transparent);
+  background: transparent;
+  color: var(--paper);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+
+  &:hover {
+    transform: scale(1.06);
+  }
+}
+
+/* Only buttons carrying data-tooltip get one — the my-list toggle doesn't. */
+.preview__btn[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #000;
+  color: var(--paper);
+  font-family: var(--font-ui);
+  font-weight: 300;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.25rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.preview__btn[data-tooltip]:hover::after {
+  opacity: 1;
+}
+
+.preview__btn--play {
+  border-radius: 0.25rem;
+  border: 1px solid var(--signal);
+  background: transparent;
+  color: var(--signal);
+  font-size: 1.125rem;
+
+  &:hover {
+    background: var(--signal);
+    color: var(--ink);
+  }
+}
+
+.preview__btn--round {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--paper) 8%, transparent);
+
+  &:hover {
+    background: color-mix(in srgb, var(--paper) 18%, transparent);
+  }
+}
+
+.preview__btn--active {
+  background: var(--signal);
+  border-color: var(--signal);
+  color: var(--ink);
+}
+
+.preview__btn--help {
+  margin-left: auto;
+  border-radius: 0.25rem;
+}
+
+.preview__title {
+  margin-top: 20px;
+  font-family: var(--font-ui);
+  font-size: 1.125rem;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.preview__subline {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.preview__lessons {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--paper-dim);
+  white-space: nowrap;
+}
+
+.preview__type {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+.preview__instructor {
+  margin-top: 20px;
+}
+
+.preview__instructor-label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--paper-dim);
+  margin-bottom: 0.5rem;
+}
+
+.preview__instructor-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6rem;
+}
+
+.preview__instructor-avatar {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 0.25rem;
+  object-fit: cover;
+}
+
+.preview__instructor-name {
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--paper);
+}
+
+@media (hover: none) {
+  .preview {
+    display: none;
+  }
+}
+
+/* --- Return-from-detail shrink overlay ---
+   Mirrors course-detail.scss's .morph overlay: starts fullscreen (no
+   radius, matching the detail page it's standing in for) and shrinks down
+   onto the real card's rect once found, picking up the card's own corner
+   radius as it lands. */
+
+.return-overlay {
+  position: fixed;
+  z-index: 200;
+  overflow: hidden;
+  border-radius: 0;
+  transition:
+    top 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+    left 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+    height 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+    border-radius 0.3s ease;
+  will-change: top, left, width, height;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(0.85) contrast(1.05);
+  }
+}
+
+.return-overlay--settled {
+  border-radius: 2.5px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .return-overlay {
+    transition: none;
+  }
+}

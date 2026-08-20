@@ -1,0 +1,55 @@
+# Fresh, dedicated WordPress instance for this from-scratch rebuild — kept
+# completely separate from TC-Nexus/local-dev (the existing Streamit-theme
+# reference site) so the two never mix. Only our own tcnexus-lms plugin is
+# mounted here; no legacy theme/plugins, no shared volumes with the other
+# stack. Ports are offset from both TC-Nexus/local-dev (8080/8081/3307) and
+# its own temp-wp experiment (8090/8091/3308) to avoid collisions.
+services:
+  db:
+    image: mysql:8.0
+    container_name: tcnexus-new-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: tcnexus_new
+      MYSQL_USER: wpuser
+      MYSQL_PASSWORD: wppassword
+      MYSQL_ROOT_PASSWORD: rootpassword
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3309:3306"
+
+  wordpress:
+    image: wordpress:php8.2-apache
+    container_name: tcnexus-new-wp
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: tcnexus_new
+      WORDPRESS_DB_USER: wpuser
+      WORDPRESS_DB_PASSWORD: wppassword
+      WORDPRESS_DEBUG: 1
+    volumes:
+      - wp_content_data:/var/www/html/wp-content
+      - ../wordpress-plugin/tcnexus-lms:/var/www/html/wp-content/plugins/tcnexus-lms
+    ports:
+      - "8082:80"
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: tcnexus-new-pma
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      PMA_HOST: db
+      PMA_USER: root
+      PMA_PASSWORD: rootpassword
+    ports:
+      - "8083:80"
+
+volumes:
+  db_data:
+  wp_content_data:

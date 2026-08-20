@@ -1,0 +1,76 @@
+@switch (status()) {
+  @case ('loading') {
+    <div class="player-page">
+      <div class="player-wrap player-wrap--skeleton"></div>
+    </div>
+  }
+  @case ('error') {
+    <div class="state state--error">
+      <h2>This lesson isn't available.</h2>
+      <p>It may be locked, unpublished, or no longer exists.</p>
+      <a routerLink="/" class="retry">Back to the library</a>
+    </div>
+  }
+  @case ('blocked') {
+    <!-- Kept plain for now — real access enforcement is the point here, not the presentation. -->
+    <div class="state state--error">
+      @switch (accessResult()?.reason) {
+        @case ('requires_payment') {
+          <h2>This lesson requires a paid plan.</h2>
+          <p>Upgrade your account to unlock it.</p>
+        }
+        @default {
+          <h2>{{ accessResult()?.limit_reached ? "You've used your free lessons for now." : 'This lesson requires a free account.' }}</h2>
+          <p>Register with your email to keep watching.</p>
+          <button type="button" class="retry" (click)="openRegister()">Create free account</button>
+        }
+      }
+      <a routerLink="/" class="retry">Back to the library</a>
+    </div>
+  }
+  @case ('ready') {
+    @if (course()) {
+      @if (lesson()) {
+        <div class="player-page">
+          <div class="player-wrap" #playerWrap>
+            <!--
+              Plyr's constructor only recognizes a blank <div> as a vimeo
+              embed if data-plyr-provider/-embed-id are already on it when
+              `new Plyr(...)` runs (see parseVimeoRef's comment in
+              lesson-player.ts) — without them it silently aborts setup,
+              which is what was rendering solid black.
+            -->
+            <div
+              #embedEl
+              class="plyr__video-embed"
+              data-plyr-provider="vimeo"
+              [attr.data-plyr-embed-id]="embedId()"
+              [attr.data-plyr-embed-hash]="embedHash()"
+            ></div>
+
+            @if (upNextVisible() && nextLesson(); as next) {
+              <div class="up-next">
+                <button type="button" class="up-next__dismiss" aria-label="Dismiss" (click)="dismissUpNext($event)">✕</button>
+                <div class="up-next__body" (click)="playNextNow($event)">
+                  <div class="up-next__thumb">
+                    <img [src]="lessonThumbnailUrl(next)" alt="" />
+                    <span class="up-next__play" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"></path></svg>
+                    </span>
+                  </div>
+                  <div class="up-next__info">
+                    <p class="up-next__eyebrow">Up Next</p>
+                    <h3 class="up-next__title">{{ next.title }}</h3>
+                    <button type="button" class="up-next__cta" [style.--fill.%]="upNextFillPercent()">
+                      <span>Play Now · {{ upNextSecondsLeft() }}s</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    }
+  }
+}

@@ -1,1 +1,503 @@
-/* You can add global styles to this file, and also import other style files */
+/* Global styles, design tokens, reset. */
+
+:root {
+  --ink: #0b0d0c;
+  --ink-raised: #141715;
+  --ink-line: #23726b1a;
+  --paper: #f4f1e9;
+  --paper-dim: #b9b6ad;
+  --signal: #c7ff5c;
+  --signal-dim: #8fbf3f;
+  --amber: #f0a83c;
+  --rule: rgba(244, 241, 233, 0.1);
+
+  --font-display: 'Fraunces', 'Iowan Old Style', serif;
+  --font-body: 'Hanken Grotesk', -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-ui: 'Inter', -apple-system, sans-serif;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  margin: 0;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Plyr injects its controls as plain DOM, outside Angular's template — its
+   view encapsulation can't reach in to restyle them, so everything that
+   needs to reach past the .player-wrap boundary lives here instead of in
+   lesson-player.scss. */
+
+/* Plyr's default .plyr__video-embed forces a 16:9 box via the classic
+   height:0/padding-bottom:56.25% hack, sized off its own width — fine for a
+   normal contained player, but the lesson page instead wants the video to
+   fill however much height .player-wrap itself is given (see
+   lesson-player.scss), so this overrides that hack with a plain height:100%
+   down the chain instead. */
+.player-wrap .plyr,
+.player-wrap .plyr__video-embed {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  padding-bottom: 0;
+}
+
+/* Plyr's built-in clickToPlay only ever works for a same-document <video>
+   element — a click landing on the Vimeo iframe's own content happens in a
+   different browsing context and never reaches Plyr's own click listener
+   (attached to .plyr's container, outside the iframe). Making the iframe
+   click-transparent lets that click fall through to .plyr__video-embed
+   itself instead, which is where addClickToggleOverlay() in
+   lesson-player.ts attaches the real toggle-play listener — a stable
+   element that survives every lesson-to-lesson source swap, unlike the
+   iframe, which Plyr replaces on each one. */
+.player-wrap .plyr__video-embed iframe {
+  pointer-events: none;
+}
+
+/* --- Custom control skin ---
+   Plyr only ever builds one flat, bottom-anchored control bar — there's no
+   config for arranging controls into separate corner/center/bottom groups,
+   so lesson-player.ts's restructureControls() physically moves Plyr's own
+   (already-wired-up) control elements into new wrapper divs after they're
+   built, and this reskins the result. .plyr__controls itself becomes a
+   full-video-area, non-interactive overlay (pointer-events re-enabled only
+   on the actual controls) so both the top corner group and the bottom
+   groups can be positioned within one shared coordinate space. */
+
+.player-wrap .plyr__controls {
+  position: absolute;
+  inset: 0;
+  background: none;
+  padding: 0;
+  transition: opacity 0.25s ease;
+  /* This box covers the entire player (inset:0), not just a bottom bar —
+     the actual controls inside it are positioned freely via
+     tcn-corner-controls/tcn-center-controls/etc. Without this, empty space
+     over the video (anywhere not actually drawn by the child rule below)
+     still counted as "inside .plyr__controls" for hit-testing purposes,
+     which broke click-to-toggle-play on the video area — every click
+     inside this full-size box reported its target as .plyr__controls
+     itself, even ones nowhere near a real button. */
+  pointer-events: none;
+}
+
+.player-wrap .plyr__controls button,
+.player-wrap .plyr__controls a,
+.player-wrap .plyr__controls input,
+.player-wrap .plyr__menu__container {
+  pointer-events: auto;
+}
+
+/* Corner: settings, mute, fullscreen, close */
+
+.player-wrap .tcn-corner-controls {
+  position: absolute;
+  top: 14px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transform: translateY(0);
+  transition: transform 0.3s ease;
+}
+
+.player-wrap .tcn-corner-controls [data-plyr],
+.player-wrap .tcn-corner-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  color: #f2f2ee;
+  opacity: 0.9;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+
+  &:hover {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+.player-wrap .tcn-corner-controls [data-plyr='mute'] svg,
+.player-wrap .tcn-corner-btn--close svg {
+  width: 28px;
+  height: 28px;
+}
+
+/* These two are outline icons (the rewind/forward/fullscreen art above is
+   filled shapes instead) — Plyr's own `.plyr__control svg { fill:
+   currentColor }` rule beats a plain fill/stroke attribute set in JS
+   regardless of specificity, so it has to be overridden here in CSS. fill
+   inherits down to the path children; the settings icon's dots set their
+   own fill="currentColor" attribute directly and are unaffected. */
+.player-wrap .tcn-corner-controls [data-plyr='mute'] svg,
+.player-wrap .tcn-corner-controls [data-plyr='settings'] svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.player-wrap .tcn-corner-controls [data-plyr='fullscreen'] svg.icon--not-pressed {
+  width: 15.59px;
+  height: 15.79px;
+}
+
+.player-wrap .tcn-corner-controls [data-plyr='fullscreen'] svg.icon--pressed {
+  width: 17.14px;
+  height: 17.14px;
+}
+
+/* Settings is a plain button unless a menu is open, in which case Plyr's own JS toggles this on its wrapper. */
+.player-wrap .tcn-corner-controls [data-plyr='settings'] svg {
+  width: 28px;
+  height: 28px;
+}
+
+/* Plyr's default "active" treatment for [aria-expanded=true] is a 90deg
+   icon rotation — sensible for a gear, not for a sliders icon, so that's
+   cancelled here and replaced with each dot sliding to the mirror point on
+   its own line instead (8<->16 on lines 1/2, 10<->14 on line 3). */
+.player-wrap .tcn-corner-controls [data-plyr='settings'] .tcn-dot {
+  transition: transform 0.2s ease;
+}
+
+.player-wrap .tcn-corner-controls [data-plyr='settings'][aria-expanded='true'] svg {
+  transform: none;
+}
+
+.player-wrap .tcn-corner-controls [data-plyr='settings'][aria-expanded='true'] .tcn-dot--1 {
+  transform: translateX(8px);
+}
+
+.player-wrap .tcn-corner-controls [data-plyr='settings'][aria-expanded='true'] .tcn-dot--2 {
+  transform: translateX(-8px);
+}
+
+.player-wrap .tcn-corner-controls [data-plyr='settings'][aria-expanded='true'] .tcn-dot--3 {
+  transform: translateX(4px);
+}
+
+/* Plyr opens the settings popup upward (bottom: 100%) by default, which
+   made sense back when settings sat in the bottom control bar — now that
+   it's up in the top-right corner, opening upward pushed it off the top of
+   the window entirely. Flip it to open downward instead. */
+.player-wrap .plyr__menu__container {
+  bottom: auto;
+  top: 100%;
+  margin-bottom: 0;
+  margin-top: 10px;
+}
+
+/* The list of rows (Speed, plus each speed value once you're inside that
+   submenu) already stacks fine — this was never the actual problem. */
+.player-wrap .plyr__menu__container [role='menu'] {
+  display: flex;
+  flex-direction: column;
+}
+
+/* What actually needed fixing: Plyr's own JS nests the value badge INSIDE
+   the label's own <span> (not as a sibling of it) — controls.create() does
+   `flex.appendChild(value); menuItem.appendChild(flex)` — so the real flex
+   row laying "Speed" and "Normal" out side by side (value pushed right via
+   margin-left:auto) is that inner span, not .plyr__control itself. */
+.player-wrap .plyr__menu__container .plyr__control > span {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+}
+
+.player-wrap .plyr__menu__value {
+  margin-left: 0;
+  padding-left: 0;
+}
+
+/* The forward-into-submenu arrow (a CSS border-triangle) is vertically
+   centered on .plyr__control via top: 50% — that made sense as a trailing
+   "›" on a single-line row, but now that the row is two lines tall, its
+   center point sits between "Speed" and "Normal" instead of at either
+   edge. No repositioning of it reads cleanly in a stacked layout, so it's
+   just removed; the row is still clickable/hoverable without it. */
+.player-wrap .plyr__menu__container .plyr__control--forward::after {
+  display: none;
+}
+
+/* Center transport: rewind 15 / play-pause / forward 15 */
+
+.player-wrap .tcn-center-controls {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  transition: transform 0.3s ease;
+}
+
+.player-wrap .tcn-center-controls [data-plyr] {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  color: #f2f2ee;
+  opacity: 0.55;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.95;
+  }
+}
+
+/* The scrub icons carry a baked-in seconds numeral (see lesson-player.ts) —
+   sized close to the reference's 44x47 rewind/forward footprint. */
+.player-wrap .tcn-center-controls [data-plyr='rewind'] svg,
+.player-wrap .tcn-center-controls [data-plyr='fast-forward'] svg {
+  width: 44px;
+  height: 47px;
+}
+
+.player-wrap .tcn-center-controls [data-plyr='play'] svg {
+  width: 68px;
+  height: 68px;
+}
+
+/* Progress bar: Plyr's own range input, restyled rather than rebuilt from
+   scratch as separate hit/track/played divs — the input's own interactive
+   height already gives a bigger click target than its visible track, which
+   is the same idea as a dedicated hit-area layer. */
+
+.player-wrap .tcn-progress {
+  position: absolute;
+  bottom: 79px;
+  left: 20px;
+  right: 20px;
+  transform: translateY(0);
+  transition: transform 0.3s ease;
+
+  --plyr-range-track-height: 1px;
+  --plyr-range-thumb-height: 5px;
+  --plyr-video-range-track-background: rgba(242, 242, 238, 0.6);
+  /* The moving played-portion fill — the site's own green accent, not the
+     static off-white track color it sits on top of. */
+  --plyr-range-fill-background: var(--signal);
+  --plyr-video-progress-buffered-background: rgba(242, 242, 238, 0.3);
+}
+
+/* Time readout */
+
+.player-wrap .tcn-time {
+  position: absolute;
+  bottom: 46px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  color: #f2f2ee;
+  opacity: 0.7;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  transform: translateY(0);
+  transition: transform 0.3s ease;
+}
+
+/* X-Ray toggle — placeholder until its real design/behavior is defined; a
+   text label standing in for what the reference shows as a 110x14 wordmark icon. */
+.player-wrap .tcn-ctrl-xray {
+  position: absolute;
+  bottom: 46px;
+  right: 20px;
+  background: none;
+  border: none;
+  padding: 0;
+  color: #f2f2ee;
+  opacity: 0.7;
+  font-size: 11px;
+  font-family: var(--font-ui);
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  transform: translateY(0);
+
+  &:hover {
+    opacity: 1;
+    transform: scale(1.1) translateY(0);
+  }
+}
+
+.player-wrap .tcn-ctrl-xray__trade {
+  font-weight: 300;
+}
+
+.player-wrap .tcn-ctrl-xray__cheetah {
+  font-weight: 500;
+  color: var(--signal);
+}
+
+/* Reveal choreography: corner group slides down from above, everything
+   anchored to the bottom slides up from below — matches the reference
+   instead of Plyr's own single slide-and-fade for the whole bar. */
+.player-wrap .plyr--hide-controls .plyr__controls {
+  opacity: 0;
+  pointer-events: none;
+  /* Cancels Plyr's own default translateY(100%) on this element — with
+     .plyr__controls now spanning the full video area (not just a bottom
+     strip), that default slide would fly the whole overlay off-screen;
+     the per-group transforms below are what should actually move. */
+  transform: none;
+}
+
+.player-wrap .plyr--hide-controls .tcn-corner-controls {
+  transform: translateY(-100%);
+}
+
+.player-wrap .plyr--hide-controls .tcn-center-controls {
+  /* Slides down/away from its true centered position (translate(-50%,-50%))
+     rather than sitting still — grouped with the "slides up from below"
+     set along with progress/time/xray. */
+  transform: translate(-50%, -30%);
+}
+
+.player-wrap .plyr--hide-controls .tcn-progress,
+.player-wrap .plyr--hide-controls .tcn-time,
+.player-wrap .plyr--hide-controls .tcn-ctrl-xray {
+  transform: translateY(100%);
+}
+
+/* --- X-Ray panel/bottom bar ---
+   Ported from the reference theme's functions.php + st_frontend_child.css.
+   lesson-player.ts's placeXray() pins .player-wrap (position:fixed) to a
+   JS-computed rect while open, so its own left/top/width/height animate via
+   this transition; the panel/bar are separate fixed-position siblings
+   (mounted inside .plyr, not .player-wrap, so they survive native
+   fullscreen) that slide in from the right/bottom over it. */
+
+.player-wrap {
+  transition:
+    left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+    top 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+    width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+    height 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.tcn-xray-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 400px;
+  background: #0b0b0b;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  transform: translateX(100%);
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  z-index: 30;
+}
+
+.player-wrap.tcn-xray-open .tcn-xray-panel {
+  transform: translateX(0);
+}
+
+.tcn-xray-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.tcn-xray-panel-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  background: rgba(0, 0, 0, 0.5);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #f2f2ee;
+  opacity: 0.85;
+  transition: opacity 0.15s ease;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+.tcn-xray-bottombar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 120px;
+  background: #0b0b0b;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  transform: translateY(100%);
+  /* right is also set inline by placeXray() once open, since the exact
+     panel width (and so how far the bar needs to fall short of the panel)
+     depends on whether the video ended up width- or height-bound — this
+     transition just makes that inline change animate too. */
+  transition:
+    transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+    right 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  z-index: 25;
+}
+
+.player-wrap.tcn-xray-open .tcn-xray-bottombar {
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .player-wrap,
+  .tcn-xray-panel,
+  .tcn-xray-bottombar {
+    transition: none;
+  }
+}

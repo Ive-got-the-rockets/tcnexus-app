@@ -36,6 +36,31 @@ class TCNexus_Access_Control {
 		return (int) $wpdb->get_var( $sql ) > 0;
 	}
 
+	/**
+	 * A per-lesson view count for the Course Builder's Lessons overview —
+	 * one row per unique viewer already exists per lesson (record_view_once
+	 * dedupes at insert time), so a plain COUNT(*) per lesson_id is already
+	 * a unique-viewer count, not a raw hit count.
+	 */
+	public static function count_views_for_lessons( array $lesson_ids ) {
+		global $wpdb;
+		if ( empty( $lesson_ids ) ) {
+			return array();
+		}
+		$table        = self::table();
+		$placeholders = implode( ',', array_fill( 0, count( $lesson_ids ), '%d' ) );
+		$sql          = $wpdb->prepare(
+			"SELECT lesson_id, COUNT(*) as views FROM {$table} WHERE lesson_id IN ({$placeholders}) GROUP BY lesson_id",
+			$lesson_ids
+		);
+		$rows   = $wpdb->get_results( $sql );
+		$counts = array();
+		foreach ( $rows as $row ) {
+			$counts[ (int) $row->lesson_id ] = (int) $row->views;
+		}
+		return $counts;
+	}
+
 	public static function count_distinct_tier_views( $visitor_id, $ip, $user_id, $tier ) {
 		global $wpdb;
 		$table = self::table();

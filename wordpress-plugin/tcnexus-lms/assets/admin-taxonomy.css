@@ -1,0 +1,156 @@
+/* Reskins the native Course Types taxonomy screen (edit-tags.php / term.php)
+   to the TC Nexus backend design system. This is a native WordPress-rendered
+   screen (not one of our own custom pages), so unlike Course Builder /
+   Instructors this works by overriding wp-admin's own markup/classes rather
+   than building fresh markup — scoped to .taxonomy-course_type so it can
+   never affect any other taxonomy screen. */
+
+body.taxonomy-course_type {
+  --tcn-bg: #fffdf9;
+  --tcn-bg-sunken: #f1efe7;
+  --tcn-border: #e5e2d9;
+  --tcn-text: #201f1c;
+  --tcn-text-dim: #8b887d;
+  --tcn-primary: #8fd8c2;
+  --tcn-primary-strong: #5fc7a8;
+  --tcn-primary-text: #12352c;
+  --tcn-radius-sm: 10px;
+  --tcn-radius-pill: 999px;
+}
+
+body.taxonomy-course_type #wpbody-content {
+  background: var(--tcn-bg);
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+}
+
+body.taxonomy-course_type .wrap h1.wp-heading-inline {
+  font-family: 'Fraunces', 'Iowan Old Style', serif;
+  font-weight: 400;
+  color: var(--tcn-text);
+}
+
+/* Inputs, selects, textareas */
+
+body.taxonomy-course_type input[type='text'],
+body.taxonomy-course_type input[type='search'],
+body.taxonomy-course_type textarea,
+body.taxonomy-course_type select {
+  background: var(--tcn-bg-sunken);
+  border-color: var(--tcn-border);
+  border-radius: var(--tcn-radius-sm);
+  color: var(--tcn-text);
+}
+
+body.taxonomy-course_type input[type='text']:focus,
+body.taxonomy-course_type input[type='search']:focus,
+body.taxonomy-course_type textarea:focus,
+body.taxonomy-course_type select:focus {
+  border-color: var(--tcn-primary-strong);
+  box-shadow: 0 0 0 1.5px var(--tcn-primary-strong);
+}
+
+body.taxonomy-course_type input[type='checkbox'],
+body.taxonomy-course_type input[type='radio'] {
+  accent-color: var(--tcn-primary-strong);
+}
+
+/* Buttons */
+
+body.taxonomy-course_type .button-primary {
+  background: var(--tcn-primary);
+  border-color: var(--tcn-primary);
+  color: var(--tcn-primary-text);
+  text-shadow: none;
+  border-radius: var(--tcn-radius-pill);
+  box-shadow: none;
+}
+
+body.taxonomy-course_type .button-primary:hover,
+body.taxonomy-course_type .button-primary:focus {
+  background: var(--tcn-primary-strong);
+  border-color: var(--tcn-primary-strong);
+  color: var(--tcn-primary-text);
+}
+
+body.taxonomy-course_type .button-primary:focus {
+  box-shadow: 0 0 0 1.5px var(--tcn-primary-strong);
+}
+
+body.taxonomy-course_type .button,
+body.taxonomy-course_type .button-secondary {
+  background: var(--tcn-bg);
+  border-color: var(--tcn-border);
+  color: var(--tcn-text);
+  border-radius: var(--tcn-radius-pill);
+  box-shadow: none;
+}
+
+body.taxonomy-course_type .button:hover,
+body.taxonomy-course_type .button-secondary:hover {
+  border-color: var(--tcn-primary-strong);
+  color: var(--tcn-primary-text);
+}
+
+/* Links (row actions, pagination, sortable column headers) */
+
+body.taxonomy-course_type a,
+body.taxonomy-course_type .subsubsub a,
+body.taxonomy-course_type .row-actions a,
+body.taxonomy-course_type .tablenav-pages a,
+body.taxonomy-course_type th.column-name a {
+  color: var(--tcn-text);
+}
+
+body.taxonomy-course_type a:hover,
+body.taxonomy-course_type .subsubsub a:hover,
+body.taxonomy-course_type .row-actions a:hover,
+body.taxonomy-course_type .tablenav-pages a:hover {
+  color: var(--tcn-primary-text);
+}
+
+body.taxonomy-course_type .subsubsub a.current {
+  color: var(--tcn-primary-text);
+  border-color: var(--tcn-primary-text);
+}
+
+body.taxonomy-course_type .tablenav-pages a.current-page,
+body.taxonomy-course_type .tablenav-pages span.current {
+  border-color: var(--tcn-primary-strong);
+  background: var(--tcn-primary);
+  color: var(--tcn-primary-text);
+}
+
+/* Panels (add-term form box, list table) */
+
+body.taxonomy-course_type #col-left .form-wrap,
+body.taxonomy-course_type .form-field {
+  color: var(--tcn-text);
+}
+
+body.taxonomy-course_type .form-wrap label {
+  color: var(--tcn-text);
+}
+
+body.taxonomy-course_type .form-wrap p.description {
+  color: var(--tcn-text-dim);
+}
+
+body.taxonomy-course_type .wp-list-table {
+  background: var(--tcn-bg);
+  border-color: var(--tcn-border);
+}
+
+body.taxonomy-course_type .wp-list-table th,
+body.taxonomy-course_type .wp-list-table td {
+  border-color: var(--tcn-border);
+  color: var(--tcn-text);
+}
+
+body.taxonomy-course_type .wp-list-table tbody tr:hover {
+  background: var(--tcn-bg-sunken);
+}
+
+body.taxonomy-course_type .wp-list-table thead th,
+body.taxonomy-course_type .wp-list-table tfoot th {
+  background: var(--tcn-bg-sunken);
+}

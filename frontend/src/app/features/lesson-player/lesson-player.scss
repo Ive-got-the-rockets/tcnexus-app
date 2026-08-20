@@ -1,0 +1,221 @@
+:host {
+  display: block;
+}
+
+/* Immersive watch page (site header/footer hidden via app.ts's chromeHidden).
+   Height is the driving constraint — the player fills the window exactly
+   from top to bottom with no gap, and width is derived from that via
+   aspect-ratio, centered horizontally so any leftover space becomes a
+   letterboxed gutter on the sides instead of the other way around. */
+.player-page {
+  height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.player-wrap {
+  position: relative;
+  height: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  overflow: hidden;
+
+  /* Plyr theme tokens — swaps its default blue for the site's own accent
+     and typefaces instead of overriding individual component rules. */
+  --plyr-color-main: var(--signal);
+  --plyr-video-control-color: var(--paper);
+  --plyr-video-control-color-hover: var(--ink);
+  --plyr-video-control-background-hover: var(--signal);
+  --plyr-video-controls-background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.75));
+  --plyr-control-radius: 4px;
+  --plyr-menu-radius: 6px;
+  --plyr-menu-background: rgba(24, 24, 24, 0.4);
+  --plyr-menu-color: var(--paper);
+  --plyr-menu-arrow-color: var(--paper);
+  --plyr-font-family: var(--font-ui);
+  --plyr-tooltip-background: #000;
+  --plyr-tooltip-color: var(--paper);
+}
+
+.player-wrap--skeleton {
+  background: linear-gradient(160deg, var(--ink-raised), var(--ink));
+}
+
+/* --- Up next card --- */
+
+.up-next {
+  position: absolute;
+  z-index: 5;
+  right: 1.25rem;
+  bottom: 5rem;
+  width: 20rem;
+  max-width: calc(100% - 2.5rem);
+  background: var(--ink-raised);
+  border-radius: 0.4rem;
+  box-shadow: 0 20px 48px -12px rgba(0, 0, 0, 0.85);
+  opacity: 0;
+  transform: translateY(12px);
+  animation: up-next-in 0.35s ease-in forwards;
+}
+
+@keyframes up-next-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.up-next__dismiss {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  z-index: 1;
+  width: 1.4rem;
+  height: 1.4rem;
+  border: none;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--paper);
+  font-size: 0.7rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s ease-in;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.85);
+  }
+}
+
+.up-next__body {
+  padding: 1.25rem;
+  cursor: pointer;
+}
+
+.up-next__thumb {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 0.3rem;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1c2a22, #0b0d0c);
+  margin-bottom: 1rem;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(0.85) contrast(1.05);
+  }
+}
+
+.up-next__play {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  svg {
+    width: 34px;
+    height: 34px;
+    padding: 0.4rem;
+    border-radius: 0.25rem;
+    background: var(--signal);
+    color: var(--ink);
+  }
+}
+
+.up-next__eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--paper-dim);
+  margin-bottom: 0.4rem;
+}
+
+.up-next__title {
+  font-family: var(--font-ui);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.3;
+  margin-bottom: 1rem;
+}
+
+.up-next__cta {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border: none;
+  border-radius: 0.25rem;
+  background: color-mix(in srgb, var(--paper) 10%, transparent);
+  color: var(--paper);
+  font-family: var(--font-ui);
+  font-size: 0.8125rem;
+  padding: 0.6rem 0.9rem;
+  cursor: pointer;
+
+  span {
+    position: relative;
+    z-index: 1;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    width: var(--fill, 0%);
+    background: var(--signal-dim);
+    transition: width 1s linear;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .up-next {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .up-next__cta::after {
+    transition: none;
+  }
+}
+
+/* --- Error state --- */
+
+.state {
+  max-width: 28rem;
+  padding: clamp(3rem, 8vw, 5rem) clamp(1.25rem, 5vw, 4rem) 3rem;
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 400;
+    margin-bottom: 0.75rem;
+  }
+
+  p {
+    color: var(--paper-dim);
+    line-height: 1.5;
+  }
+}
+
+.retry {
+  display: inline-block;
+  margin-top: 1.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--signal);
+  border-radius: 999px;
+  padding: 0.6rem 1.25rem;
+  text-decoration: none;
+  transition: background 0.2s ease-in;
+
+  &:hover {
+    background: var(--signal-dim);
+  }
+}

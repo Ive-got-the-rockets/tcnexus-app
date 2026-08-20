@@ -1,0 +1,1305 @@
+/* Course Builder admin page — a self-contained "app" surface dropped into
+   wp-admin, styled to the TC Nexus backend design system (soft cream/mint,
+   per the Product UI Styleguide reference) instead of default wp-admin
+   form-table chrome. This is a distinct palette from the Angular frontend's
+   dark trading-brand look — backend screens only. Scoped entirely under
+   #tcnexus-builder so it can never leak into the rest of wp-admin. */
+
+.tcn-builder-wrap {
+  --tcn-bg: #fffdf9;
+  --tcn-bg-sunken: #f1efe7;
+  --tcn-border: #e5e2d9;
+  --tcn-text: #201f1c;
+  --tcn-text-dim: #8b887d;
+  --tcn-primary: #8fd8c2;
+  --tcn-primary-strong: #5fc7a8;
+  --tcn-primary-text: #12352c;
+  --tcn-warning: #f0cb7e;
+  --tcn-warning-text: #6b4e14;
+  --tcn-error: #efa79c;
+  --tcn-error-text: #6b2a1e;
+  --tcn-disabled-bg: #e7e4db;
+  --tcn-disabled-text: #ada99e;
+  --tcn-radius-sm: 10px;
+  --tcn-radius-md: 16px;
+  --tcn-radius-pill: 999px;
+  --tcn-shadow-1: 0 1px 2px rgba(32, 31, 28, 0.05);
+  --tcn-shadow-2: 0 4px 12px rgba(32, 31, 28, 0.07);
+  --tcn-shadow-3: 0 12px 28px rgba(32, 31, 28, 0.1);
+}
+
+#tcnexus-builder {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  color: var(--tcn-text);
+  background: var(--tcn-bg);
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-md);
+  margin: 20px 0 40px;
+  box-shadow: var(--tcn-shadow-2);
+  /* Not overflow:hidden — no child needs corner-clipping (nothing has a
+     background that would poke a sharp corner past the rounded border), and
+     hiding overflow here was clipping/misplacing the custom select dropdown
+     lists, which are absolutely positioned and can extend past a short
+     panel's bottom edge on a mostly-empty tab. */
+  overflow: visible;
+}
+
+#tcnexus-builder * {
+  box-sizing: border-box;
+}
+
+#tcnexus-builder a {
+  color: var(--tcn-primary-text);
+}
+
+/* ---------- Header ---------- */
+
+.tcn-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 28px 32px 22px;
+  border-bottom: 1px solid var(--tcn-border);
+}
+
+.tcn-header__title-row {
+  flex: 1;
+  min-width: 0;
+}
+
+.tcn-header__eyebrow {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--tcn-text-dim);
+  margin: 0 0 8px;
+}
+
+.tcn-title-input {
+  font-family: 'Fraunces', 'Iowan Old Style', serif;
+  font-size: 32px;
+  font-weight: 400;
+  color: var(--tcn-text);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid transparent;
+  padding: 2px 0;
+  width: 100%;
+  max-width: 640px;
+  transition: border-color 0.15s ease;
+}
+
+.tcn-title-input:hover {
+  border-bottom-color: var(--tcn-border);
+}
+
+.tcn-title-input:focus {
+  outline: none;
+  border-bottom-color: var(--tcn-primary-strong);
+}
+
+.tcn-slug-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 12.5px;
+  color: var(--tcn-text-dim);
+}
+
+.tcn-slug-row span.tcn-slug-prefix {
+  opacity: 0.7;
+}
+
+.tcn-slug-input {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 12.5px;
+  background: var(--tcn-bg-sunken);
+  border: 1px solid var(--tcn-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: var(--tcn-text);
+  min-width: 220px;
+}
+
+.tcn-header__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.tcn-status-toggle {
+  position: relative;
+  display: inline-flex;
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-pill);
+  padding: 3px;
+  background: var(--tcn-bg-sunken);
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+}
+
+.tcn-status-toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tcn-status-toggle label {
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  padding: 6px 14px;
+  border-radius: var(--tcn-radius-pill);
+  cursor: pointer;
+  color: var(--tcn-text-dim);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tcn-status-toggle input:checked + label {
+  background: var(--tcn-primary);
+  color: var(--tcn-primary-text);
+}
+
+.tcn-save-btn {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  text-decoration: none;
+  display: inline-block;
+  background: var(--tcn-primary);
+  color: var(--tcn-primary-text);
+  border: none;
+  border-radius: var(--tcn-radius-pill);
+  padding: 10px 22px;
+  cursor: pointer;
+  box-shadow: var(--tcn-shadow-1);
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.tcn-save-btn:hover {
+  background: var(--tcn-primary-strong);
+  box-shadow: var(--tcn-shadow-2);
+}
+
+.tcn-save-btn:active {
+  transform: translateY(1px);
+}
+
+.tcn-back-link {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--tcn-text);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--tcn-bg);
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-pill);
+  padding: 9px 18px;
+  margin-bottom: 16px;
+  box-shadow: var(--tcn-shadow-1);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tcn-back-link:hover {
+  color: var(--tcn-text);
+  border-color: var(--tcn-primary-strong);
+  box-shadow: var(--tcn-shadow-2);
+}
+
+/* ---------- Tabs (underline style) ---------- */
+
+.tcn-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 32px;
+  border-bottom: 1px solid var(--tcn-border);
+  overflow-x: auto;
+}
+
+.tcn-tab {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: var(--tcn-text-dim);
+  background: none;
+  border: none;
+  padding: 14px 16px 12px;
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+}
+
+.tcn-tab::after {
+  content: '';
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: -1px;
+  height: 2px;
+  background: transparent;
+  border-radius: 2px 2px 0 0;
+}
+
+.tcn-tab[aria-selected='true'] {
+  color: var(--tcn-text);
+}
+
+.tcn-tab[aria-selected='true']::after {
+  background: var(--tcn-primary-strong);
+}
+
+.tcn-tab:hover {
+  color: var(--tcn-text);
+}
+
+/* ---------- Panels ---------- */
+
+.tcn-panel {
+  display: none;
+  padding: 28px 32px 36px;
+}
+
+.tcn-panel.is-active {
+  display: block;
+}
+
+.tcn-field {
+  margin-bottom: 22px;
+}
+
+.tcn-field:last-child {
+  margin-bottom: 0;
+}
+
+.tcn-field__label {
+  display: block;
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--tcn-text-dim);
+  margin-bottom: 8px;
+}
+
+.tcn-field__hint {
+  font-size: 12.5px;
+  color: var(--tcn-text-dim);
+  margin: 6px 0 0;
+}
+
+.tcn-input,
+.tcn-select,
+.tcn-textarea {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 14px;
+  color: var(--tcn-text);
+  background: var(--tcn-bg-sunken);
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-sm);
+  padding: 10px 12px;
+  width: 100%;
+  max-width: 480px;
+}
+
+.tcn-input:focus,
+.tcn-select:focus,
+.tcn-textarea:focus {
+  outline: none;
+  border-color: var(--tcn-primary-strong);
+}
+
+/* wp-admin's own core CSS (.wp-core-ui select:focus, etc.) styles focus with
+   WordPress's blue admin theme color via border-color + box-shadow, at
+   higher specificity than a plain class selector — override it explicitly,
+   using #tcnexus-builder's ID for specificity instead of !important.
+   .tcn-lessons-card needs the same override since it sits outside
+   #tcnexus-builder (a sibling card, not one of its tabs), so its own
+   selects/inputs (the lesson editor's Order, Title, Duration) would
+   otherwise fall back to the unscoped, lower-specificity rule below and
+   still show WordPress's blue ring instead of ours. */
+#tcnexus-builder .tcn-input:focus,
+#tcnexus-builder .tcn-select:focus,
+#tcnexus-builder .tcn-textarea:focus,
+.tcn-lessons-card .tcn-input:focus,
+.tcn-lessons-card .tcn-select:focus,
+.tcn-lessons-card .tcn-textarea:focus {
+  border-color: var(--tcn-primary-strong);
+  box-shadow: 0 0 0 1.5px var(--tcn-primary-strong);
+}
+
+/* ---------- Custom select (replaces native <select> popup) ----------
+   The native open-list popup is OS-rendered and ignores CSS in Chromium, so
+   course-builder.js swaps in this markup for the visible list while keeping
+   the real <select> (hidden, but still submits its value with the form). */
+
+.tcn-select-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+}
+
+.tcn-select-wrap select {
+  display: none;
+}
+
+/* Instructor/Guest: dropdown + a "+" to create a new person without
+   leaving the course (see the quick-create-person modal). */
+.tcn-person-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tcn-person-field .tcn-select-wrap {
+  flex: 1;
+}
+
+.tcn-select-trigger {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 14px;
+  text-align: left;
+  color: var(--tcn-text);
+  background: var(--tcn-bg-sunken);
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-sm);
+  padding: 0 36px 0 12px;
+  width: 100%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.tcn-select-trigger::after {
+  content: '';
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-right: 1.5px solid var(--tcn-text-dim);
+  border-bottom: 1.5px solid var(--tcn-text-dim);
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+
+.tcn-select-trigger[aria-expanded='true'] {
+  border-color: var(--tcn-primary-strong);
+  box-shadow: 0 0 0 1.5px var(--tcn-primary-strong);
+}
+
+.tcn-select-list {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #f1efe7;
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-sm);
+  box-shadow: var(--tcn-shadow-2);
+  padding: 4px;
+  max-height: 260px;
+  overflow-y: auto;
+  z-index: 20;
+}
+
+.tcn-select-list.is-open {
+  display: block;
+}
+
+.tcn-select-option {
+  font-size: 14px;
+  color: var(--tcn-text);
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.tcn-select-option:hover {
+  background: var(--tcn-primary);
+  color: var(--tcn-primary-text);
+}
+
+.tcn-select-option.is-selected {
+  background: var(--tcn-primary);
+  color: var(--tcn-primary-text);
+  font-weight: 400;
+}
+
+.tcn-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.tcn-row .tcn-field {
+  flex: 1;
+  min-width: 220px;
+}
+
+.tcn-checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tcn-chip-checkbox {
+  position: relative;
+}
+
+.tcn-chip-checkbox input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tcn-chip-checkbox label {
+  display: inline-block;
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: var(--tcn-radius-pill);
+  border: 1px solid var(--tcn-border);
+  background: var(--tcn-bg-sunken);
+  color: var(--tcn-text-dim);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tcn-chip-checkbox input:checked + label {
+  background: var(--tcn-primary);
+  border-color: var(--tcn-primary);
+  color: var(--tcn-primary-text);
+}
+
+/* Rich text editor: retheme WP's editor chrome to sit on the cream surface */
+
+.tcn-panel .wp-editor-container {
+  border-color: var(--tcn-border);
+  border-radius: var(--tcn-radius-sm);
+  overflow: hidden;
+}
+
+.tcn-panel .wp-editor-tabs {
+  background: var(--tcn-bg-sunken);
+}
+
+.tcn-panel .wp-editor-tabs button {
+  color: var(--tcn-text-dim);
+}
+
+.tcn-panel .mce-toolbar-grp,
+.tcn-panel .quicktags-toolbar {
+  background: var(--tcn-bg-sunken) !important;
+  border-color: var(--tcn-border) !important;
+}
+
+.tcn-panel .mce-btn button {
+  color: var(--tcn-text) !important;
+}
+
+/* ---------- Media pickers ---------- */
+
+.tcn-media-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.tcn-media-picker {
+  border: 1px dashed var(--tcn-border);
+  border-radius: var(--tcn-radius-sm);
+  padding: 16px;
+  background: var(--tcn-bg-sunken);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+/* Toggled by course-builder.js while a dragged file is over the picker,
+   dropping it anywhere in this box uploads it via wp.Uploader. */
+.tcn-media-picker.is-drag-over {
+  border-color: var(--tcn-primary-strong);
+  background: rgba(95, 199, 168, 0.12);
+}
+
+.tcn-media-picker__empty--error {
+  color: var(--tcn-error-text);
+}
+
+.tcn-media-picker__preview {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 6px;
+  background: rgba(32, 31, 28, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.tcn-media-picker__preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tcn-media-picker__empty {
+  font-size: 12px;
+  color: var(--tcn-text-dim);
+}
+
+.tcn-media-picker__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.tcn-btn-ghost {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 12.5px;
+  font-weight: 400;
+  text-decoration: none;
+  display: inline-block;
+  background: var(--tcn-bg);
+  color: var(--tcn-text);
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-pill);
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.tcn-btn-ghost:hover {
+  border-color: var(--tcn-primary-strong);
+  color: var(--tcn-primary-text);
+}
+
+.tcn-add-person {
+  width: 40px;
+  height: 40px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #E5E3DB;
+}
+
+.tcn-add-person:hover {
+  color: var(--tcn-primary-strong);
+  border-color: var(--tcn-primary-strong);
+}
+
+#tcn-quick-person-create {
+  font-size: 12.5px;
+  padding: 7px 14px;
+}
+
+#tcn-quick-person-cancel {
+  margin-top: 0;
+}
+
+.tcn-btn-ghost--danger:hover {
+  border-color: var(--tcn-error);
+  color: var(--tcn-error-text);
+}
+
+/* ---------- Lessons card (separate from #tcnexus-builder, sits below it) ---------- */
+
+.tcn-lessons-card {
+  background: var(--tcn-bg);
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-md);
+  box-shadow: var(--tcn-shadow-2);
+  margin: 20px 0 40px;
+  /* Not overflow:hidden — same reasoning as #tcnexus-builder above: nothing
+     here has a background that touches the card's rounded top/bottom
+     corners (the table's sunken header row sits below the title bar, not
+     flush with the card edge), and hiding overflow clipped the Order
+     field's dropdown list once its row was expanded. */
+  overflow: visible;
+}
+
+.tcn-lessons-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 32px;
+  border-bottom: 1px solid var(--tcn-border);
+}
+
+.tcn-lessons-card__title {
+  font-family: 'Fraunces', 'Iowan Old Style', serif;
+  font-size: 19px;
+  font-weight: 400;
+  margin: 0;
+  color: var(--tcn-text);
+}
+
+.tcn-lessons-card__header .tcn-btn-ghost {
+  margin-top: 0;
+}
+
+.tcn-lessons-overview {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.tcn-lessons-overview th {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--tcn-text-dim);
+  text-align: left;
+  padding: 12px 32px;
+  background: var(--tcn-bg-sunken);
+}
+
+.tcn-lessons-overview__order,
+.tcn-lessons-overview__level,
+.tcn-lessons-overview__duration,
+.tcn-lessons-overview__views {
+  width: 120px;
+}
+
+.tcn-lessons-overview__order,
+.tcn-lessons-overview__duration,
+.tcn-lessons-overview__views {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* .tcn-lessons-overview th's own text-align:left (element+class) otherwise
+   outranks the class-only rule above, so the header stays left-aligned
+   while its column's values center underneath — matching specificity here
+   is what actually centers the header text over the numbers. */
+.tcn-lessons-overview th.tcn-lessons-overview__order,
+.tcn-lessons-overview th.tcn-lessons-overview__duration,
+.tcn-lessons-overview th.tcn-lessons-overview__views {
+  text-align: center;
+}
+
+.tcn-lessons-empty-row td {
+  padding: 20px 32px;
+  color: var(--tcn-text-dim);
+}
+
+.tcn-lesson-row {
+  cursor: pointer;
+  border-top: 1px solid var(--tcn-border);
+  transition: background 0.12s ease;
+}
+
+.tcn-lesson-row:hover,
+.tcn-lesson-row.is-open {
+  background: var(--tcn-bg-sunken);
+}
+
+.tcn-lesson-row td {
+  padding: 14px 32px;
+  vertical-align: middle;
+}
+
+.tcn-lesson-row__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tcn-lesson-row__chevron {
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.tcn-lesson-row.is-open .tcn-lesson-row__chevron {
+  transform: rotate(90deg);
+}
+
+.tcn-level-chip {
+  display: inline-block;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  padding: 3px 10px;
+  border-radius: var(--tcn-radius-pill);
+  background: var(--tcn-bg-sunken);
+  color: var(--tcn-text-dim);
+  border: 1px solid var(--tcn-border);
+}
+
+.tcn-level-chip--paid {
+  background: var(--tcn-warning);
+  color: var(--tcn-warning-text);
+  border-color: transparent;
+}
+
+.tcn-level-chip--free {
+  background: var(--tcn-primary);
+  color: var(--tcn-primary-text);
+  border-color: transparent;
+}
+
+/* Collapsed by default; toggled open by course-builder.js when its summary
+   row (the sibling .tcn-lesson-row directly above) is clicked. */
+.tcn-lesson-expand td {
+  padding: 0;
+  border-top: none;
+}
+
+.tcn-lesson-expand__panel {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.2s ease;
+}
+
+.tcn-lesson-expand.is-open .tcn-lesson-expand__panel {
+  max-height: 500px;
+}
+
+/* Toggled by course-builder.js once the open transition has actually
+   finished (see wireLessonRow) — overflow:hidden has to stay in place
+   during the max-height animation itself, but once a row is fully open
+   the Order dropdown needs overflow:visible to escape the panel instead
+   of being clipped by it. */
+.tcn-lesson-expand__panel--settled {
+  overflow: visible;
+}
+
+.tcn-lesson-card {
+  display: flex;
+  gap: 20px;
+  padding: 22px 32px;
+  border-top: 1px solid var(--tcn-border);
+}
+
+.tcn-lesson-card__media {
+  width: 300px;
+  flex-shrink: 0;
+}
+
+.tcn-lesson-card__media .tcn-media-picker {
+  padding: 10px;
+}
+
+.tcn-lesson-card__media .tcn-media-picker__preview {
+  margin-bottom: 8px;
+}
+
+.tcn-lesson-card__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  justify-content: center;
+}
+
+.tcn-lesson-card__row {
+  display: flex;
+  gap: 12px;
+}
+
+.tcn-lesson-card__row--top .tcn-lesson-card__order {
+  width: 90px;
+  flex-shrink: 0;
+}
+
+.tcn-lesson-card__row--top .tcn-lesson-card__title {
+  flex: 1;
+  min-width: 0;
+}
+
+.tcn-lesson-card__row--video {
+  align-items: center;
+}
+
+.tcn-lesson-card__row--video .tcn-video-id-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.tcn-lesson-card__row--meta {
+  align-items: center;
+}
+
+.tcn-lesson-card__row--meta .tcn-lesson-card__duration {
+  width: 160px;
+  flex-shrink: 0;
+}
+
+.tcn-lesson-card__row--meta .tcn-lesson-card__tier {
+  flex-shrink: 0;
+}
+
+.tcn-lesson-card__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.tcn-lesson-card input {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 13.5px;
+  color: var(--tcn-text);
+  background: var(--tcn-bg-sunken);
+  border: 1px solid var(--tcn-border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  width: 100%;
+  height: 34px;
+  box-sizing: border-box;
+}
+
+/* The Order field is enhanceSelect()'d like every other .tcn-select on this
+   page (see course-builder.js) instead of staying a native <select> — a
+   native popup's option list is OS/browser chrome that ignores our CSS
+   (highlights in the browser's blue, not this design system's green), so
+   matching Order's field height/centering onto the custom trigger button
+   is what keeps parity with the Title field beside it. */
+.tcn-lesson-card__order .tcn-select-trigger {
+  height: 34px;
+  padding: 0 24px 0 8px;
+  justify-content: center;
+  text-align: center;
+}
+
+.tcn-panel .tcn-btn-ghost {
+  margin-top: 14px;
+}
+
+/* The rule above is meant for standalone buttons like "+ Add Lesson" on a
+   .tcn-panel, but .tcn-btn-ghost is reused for buttons inside a lesson card
+   too (Remove, and the image picker's Select/Remove) — an unbalanced
+   margin-top there fights vertical alignment and visibly pushes them down
+   relative to the card's other fields. */
+.tcn-lesson-card .tcn-btn-ghost,
+.tcn-panel .tcn-add-person {
+  margin-top: 0;
+}
+
+/* ---------- Compact pill toggle (video source, tier) ---------- */
+
+.tcn-pill-toggle {
+  position: relative;
+  display: inline-flex;
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-pill);
+  padding: 2px;
+  background: var(--tcn-bg-sunken);
+}
+
+.tcn-pill-toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: auto;
+  height: auto;
+}
+
+.tcn-pill-toggle label {
+  font-size: 11.5px;
+  padding: 5px 10px;
+  border-radius: var(--tcn-radius-pill);
+  cursor: pointer;
+  color: var(--tcn-text-dim);
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tcn-pill-toggle input:checked + label {
+  background: var(--tcn-primary);
+  color: var(--tcn-primary-text);
+}
+
+.tcn-lesson-save-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 22px 32px;
+  border-top: 1px solid var(--tcn-border);
+}
+
+.tcn-lesson-save-actions .tcn-btn-ghost {
+  margin-top: 0;
+}
+
+/* ---------- Alerts (success / warning / error) ---------- */
+
+.tcn-notice {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--tcn-radius-pill);
+  padding: 10px 18px;
+  margin: 20px 0 0;
+}
+
+.tcn-notice::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tcn-notice,
+.tcn-notice--success {
+  background: rgba(143, 216, 194, 0.25);
+  color: var(--tcn-primary-text);
+}
+
+.tcn-notice::before,
+.tcn-notice--success::before {
+  background: var(--tcn-primary-strong);
+}
+
+.tcn-notice--warning {
+  background: rgba(240, 203, 126, 0.3);
+  color: var(--tcn-warning-text);
+}
+
+.tcn-notice--warning::before {
+  background: var(--tcn-warning);
+}
+
+.tcn-notice--error {
+  background: rgba(239, 167, 156, 0.3);
+  color: var(--tcn-error-text);
+}
+
+.tcn-notice--error::before {
+  background: var(--tcn-error);
+}
+
+/* ---------- List screen ---------- */
+
+.tcn-list-wrap {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  --tcn-bg: #fffdf9;
+  --tcn-bg-sunken: #f1efe7;
+  --tcn-border: #e5e2d9;
+  --tcn-text: #201f1c;
+  --tcn-text-dim: #8b887d;
+  --tcn-primary: #8fd8c2;
+  --tcn-primary-strong: #5fc7a8;
+  --tcn-primary-text: #12352c;
+  --tcn-warning: #f0cb7e;
+  --tcn-warning-text: #6b4e14;
+  --tcn-error: #efa79c;
+  --tcn-error-text: #6b2a1e;
+  --tcn-disabled-bg: #e7e4db;
+  --tcn-disabled-text: #ada99e;
+  --tcn-radius-sm: 10px;
+  --tcn-radius-md: 16px;
+  --tcn-radius-pill: 999px;
+  --tcn-shadow-1: 0 1px 2px rgba(32, 31, 28, 0.05);
+  --tcn-shadow-2: 0 4px 12px rgba(32, 31, 28, 0.07);
+  --tcn-shadow-3: 0 12px 28px rgba(32, 31, 28, 0.1);
+}
+
+.tcn-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.tcn-list-header h1 {
+  font-family: 'Fraunces', 'Iowan Old Style', serif;
+  font-weight: 400;
+  color: var(--tcn-text);
+}
+
+.tcn-person-section {
+  margin-top: 32px;
+}
+
+.tcn-person-section:first-of-type {
+  margin-top: 0;
+}
+
+/* The Guests section (title + its "+ Add New Guest" button) sits another
+   50px further down than the default gap above Instructors' cards. */
+.tcn-person-section--guests {
+  margin-top: 82px;
+}
+
+.tcn-list-header--sub {
+  /* Overrides the base .tcn-list-header's space-between — the "+ Add New"
+     button sits a fixed distance right of the title instead of pushed all
+     the way to the far edge of the page. */
+  justify-content: flex-start;
+  gap: 50px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--tcn-border);
+}
+
+.tcn-list-header--sub h2 {
+  font-family: 'Fraunces', 'Iowan Old Style', serif;
+  font-weight: 400;
+  font-size: 20px;
+  color: var(--tcn-text);
+  margin: 0;
+}
+
+.tcn-empty-note {
+  font-size: 13px;
+  color: var(--tcn-text-dim);
+}
+
+.tcn-add-course-btn {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-weight: 400;
+  font-size: 13px;
+  background: var(--tcn-primary);
+  color: var(--tcn-primary-text);
+  border: none;
+  border-radius: var(--tcn-radius-pill);
+  padding: 10px 20px;
+  text-decoration: none;
+  display: inline-block;
+  box-shadow: var(--tcn-shadow-1);
+}
+
+.tcn-add-course-btn:hover {
+  background: var(--tcn-primary-strong);
+  color: var(--tcn-primary-text);
+}
+
+.tcn-course-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.tcn-course-card {
+  position: relative;
+  background: var(--tcn-bg);
+  border-radius: var(--tcn-radius-md);
+  border: 1px solid var(--tcn-border);
+  box-shadow: var(--tcn-shadow-1);
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.tcn-course-card:hover {
+  border-color: var(--tcn-primary-strong);
+  box-shadow: var(--tcn-shadow-2);
+}
+
+.tcn-course-card__link {
+  color: var(--tcn-text);
+  text-decoration: none;
+  display: block;
+  padding: 18px 20px;
+  padding-right: 44px;
+}
+
+.tcn-course-card__link:hover {
+  color: var(--tcn-text);
+}
+
+.tcn-course-card__delete {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--tcn-text-dim);
+  border: 1px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.tcn-course-card__delete:hover {
+  background: rgba(239, 167, 156, 0.2);
+  border-color: var(--tcn-error);
+  color: var(--tcn-error-text);
+}
+
+.tcn-course-card__title {
+  font-family: 'Fraunces', 'Iowan Old Style', serif;
+  font-size: 18px;
+  margin: 0 0 10px;
+}
+
+.tcn-course-card__meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--tcn-text-dim);
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+}
+
+.tcn-course-card__status {
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-size: 10.5px;
+}
+
+.tcn-course-card__status--publish {
+  color: var(--tcn-primary-strong);
+}
+
+.tcn-course-card__status--draft {
+  color: var(--tcn-warning);
+}
+
+/* ---------- Confirmation modal ---------- */
+
+.tcn-modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(32, 31, 28, 0.4);
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
+}
+
+.tcn-modal-backdrop.is-open {
+  display: flex;
+}
+
+.tcn-modal {
+  background: var(--tcn-bg);
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-md);
+  box-shadow: var(--tcn-shadow-3);
+  padding: 26px 28px;
+  width: 100%;
+  max-width: 380px;
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  color: var(--tcn-text);
+}
+
+.tcn-modal h2 {
+  font-family: 'Fraunces', 'Iowan Old Style', serif;
+  font-weight: 400;
+  font-size: 21px;
+  margin: 0 0 10px;
+  color: var(--tcn-text);
+}
+
+.tcn-modal p {
+  font-size: 13.5px;
+  color: var(--tcn-text-dim);
+  margin: 0 0 22px;
+}
+
+.tcn-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.tcn-modal--center h2,
+.tcn-modal--center p {
+  text-align: center;
+}
+
+.tcn-modal--center .tcn-modal__actions {
+  justify-content: center;
+}
+
+.tcn-btn-danger {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 12.5px;
+  font-weight: 400;
+  background: var(--tcn-error);
+  color: var(--tcn-error-text);
+  border: none;
+  border-radius: var(--tcn-radius-pill);
+  padding: 8px 16px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: background 0.15s ease;
+}
+
+.tcn-btn-danger:hover {
+  background: #e88f81;
+  color: var(--tcn-error-text);
+}
+
+/* ---------- Image cropper ---------- */
+
+.tcn-cropper-modal {
+  max-width: 520px;
+  background: #8a8781;
+  border-color: #8a8781;
+}
+
+.tcn-cropper-modal h2 {
+  color: #201f1c;
+}
+
+.tcn-cropper-modal p {
+  color: #38362f;
+}
+
+.tcn-cropper-stage {
+  position: relative;
+  margin: 16px auto;
+  overflow: hidden;
+  background: #000;
+  border-radius: 8px;
+}
+
+.tcn-cropper-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.tcn-cropper-frame {
+  position: absolute;
+  border: 2px solid var(--tcn-primary);
+  box-shadow: 0 0 0 9999px rgba(11, 13, 12, 0.55);
+  cursor: move;
+  touch-action: none;
+}
+
+.tcn-cropper-zoom {
+  width: 100%;
+  margin: 6px 0 0;
+  accent-color: var(--tcn-primary-strong);
+}
+
+.tcn-cropper-error {
+  font-size: 13px;
+  color: #4a1610;
+  background: rgba(239, 167, 156, 0.95);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 12px 0 0;
+}

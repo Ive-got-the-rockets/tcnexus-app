@@ -8,6 +8,11 @@ class TCNexus_CORS {
 	private static $allowed_origins = array(
 		'https://dev.tcnexus.tv',
 		'http://localhost:4200',
+		// Browsers treat 127.0.0.1 and localhost as different origins even
+		// though they're the same machine — the frontend's own `npm start`
+		// (`ng serve --host 127.0.0.1 --port 4200`) binds to this one
+		// specifically, so it needs its own entry alongside localhost:4200.
+		'http://127.0.0.1:4200',
 	);
 
 	public static function register() {

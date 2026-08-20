@@ -28,16 +28,36 @@ class TCNexus_Post_Types {
 			'labels'       => array(
 				'name'          => 'Episodes',
 				'singular_name' => 'Episode',
-				'add_new_item'  => 'Add New Episode',
-				'edit_item'     => 'Edit Episode',
-				'all_items'     => 'Episode List',
+			),
+			'public'       => false,
+			// No native admin UI — lessons are fully managed from the Course
+			// Builder's Lessons tab (a lesson only ever makes sense in the
+			// context of its course), so a standalone WordPress-styled
+			// editor screen would just be a redundant, inconsistent surface.
+			'show_ui'      => false,
+			'show_in_rest' => true,
+			'rest_base'    => 'tc_lesson',
+			'supports'     => array( 'title', 'editor', 'thumbnail', 'page-attributes' ),
+		) );
+
+		register_post_type( 'tc_instructor', array(
+			// One shared pool of people — the same profile (name/photo/bio)
+			// can be picked as a course's Instructor or as its Guest, so the
+			// menu/labels describe both roles instead of just one.
+			'label'        => 'Instructors & Guests',
+			'labels'       => array(
+				'name'          => 'Instructors & Guests',
+				'singular_name' => 'Instructor/Guest',
+				'add_new_item'  => 'Add New Instructor/Guest',
+				'edit_item'     => 'Edit Instructor/Guest',
+				'all_items'     => 'Instructors & Guests',
 			),
 			'public'       => false,
 			'show_ui'      => true,
 			'show_in_menu' => 'edit.php?post_type=tc_course',
 			'show_in_rest' => true,
-			'rest_base'    => 'tc_lesson',
-			'supports'     => array( 'title', 'editor', 'thumbnail', 'page-attributes' ),
+			'rest_base'    => 'tc_instructor',
+			'supports'     => array( 'title', 'editor', 'thumbnail' ),
 		) );
 
 		register_taxonomy( 'course_type', 'tc_course', array(
@@ -71,9 +91,29 @@ class TCNexus_Post_Types {
 	}
 
 	public static function set_lesson_tier( $lesson_id, $tier ) {
-		if ( ! in_array( $tier, array( 'free', 'registered', 'paid' ), true ) ) {
+		// Only two tiers are ever assigned to a lesson directly. "Registered"
+		// isn't a per-lesson tag — it's what a free lesson effectively
+		// becomes for a visitor who has used up their free-view allowance
+		// (see TCNexus_Access_Control), not a choice made when creating the
+		// lesson.
+		if ( ! in_array( $tier, array( 'free', 'paid' ), true ) ) {
 			return;
 		}
 		wp_set_object_terms( $lesson_id, $tier, 'access_tier', false );
+	}
+
+	/**
+	 * A tc_instructor post is either an "instructor" or a "guest" — the same
+	 * profile shape (name/photo/bio), just tagged for which dropdown it
+	 * belongs in on the course. Defaults to 'instructor' for any profile
+	 * created before this distinction existed.
+	 */
+	public static function get_person_role( $person_id ) {
+		$role = get_post_meta( $person_id, '_tcnexus_person_role', true );
+		return 'guest' === $role ? 'guest' : 'instructor';
+	}
+
+	public static function set_person_role( $person_id, $role ) {
+		update_post_meta( $person_id, '_tcnexus_person_role', 'guest' === $role ? 'guest' : 'instructor' );
 	}
 }

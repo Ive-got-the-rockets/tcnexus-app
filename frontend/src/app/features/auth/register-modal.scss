@@ -1,0 +1,124 @@
+:host {
+  display: contents;
+}
+
+.auth-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  animation: auth-fade-in 0.2s ease;
+}
+
+@keyframes auth-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.auth-modal {
+  position: relative;
+  width: 24rem;
+  max-width: calc(100% - 2.5rem);
+  background: var(--ink-raised);
+  border-radius: 0.5rem;
+  padding: 2rem;
+  box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.85);
+}
+
+.auth-modal__close {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: var(--paper-dim);
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:hover {
+    color: var(--paper);
+    background: color-mix(in srgb, var(--paper) 10%, transparent);
+  }
+}
+
+.auth-modal__title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 400;
+  margin-bottom: 0.75rem;
+  padding-right: 1.5rem;
+}
+
+.auth-modal__text {
+  color: var(--paper-dim);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+form {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.auth-modal__input {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  color: var(--paper);
+  background: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--paper) 20%, transparent);
+  border-radius: 0.3rem;
+  padding: 0.7rem 0.85rem;
+  transition: border-color 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: var(--signal);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+  }
+}
+
+.auth-modal__error {
+  color: var(--amber);
+  font-size: 0.8125rem;
+}
+
+.auth-modal__submit {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  color: var(--ink);
+  background: var(--signal);
+  border: none;
+  border-radius: 999px;
+  padding: 0.7rem 1.25rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: var(--signal-dim);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}

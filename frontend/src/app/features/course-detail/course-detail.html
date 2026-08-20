@@ -1,0 +1,133 @@
+@if (morph; as m) {
+  <!--
+    Stays mounted for the component's whole life once it exists — toggled
+    via .morph--hidden (opacity, instant, not transitioned) rather than
+    being destroyed and recreated through @if. A freshly-recreated element
+    has no real "previous frame" for a CSS transition to animate from, which
+    is what made the reverse (shrink) animation unreliable.
+  -->
+  <div
+    class="morph"
+    [class.morph--grown]="grown()"
+    [class.morph--hidden]="overlayHidden()"
+    [style.top.px]="morphRect()?.top"
+    [style.left.px]="morphRect()?.left"
+    [style.width.px]="morphRect()?.width"
+    [style.height.px]="morphRect()?.height"
+    (transitionend)="onMorphTransitionEnd($event)"
+  >
+    <img [src]="m.thumbnailUrl" alt="" />
+  </div>
+}
+
+<div class="detail" [class.detail--visible]="contentVisible()">
+  @switch (status()) {
+    @case ('loading') {
+      <div class="detail__hero detail__hero--skeleton"></div>
+    }
+    @case ('error') {
+      <div class="state state--error">
+        <h2>Couldn't load this course.</h2>
+        <p>Try going back and picking it again.</p>
+        <a routerLink="/" class="retry">Back to the library</a>
+      </div>
+    }
+    @case ('ready') {
+      @if (course(); as c) {
+        <section class="detail__hero" [style.background-image]="'url(' + backdropUrl() + ')'">
+          <div class="detail__scrim"></div>
+          <div class="detail__hero-content" [class.detail__hero-content--revealed]="contentVisible()">
+            <a href="/" class="detail__back" (click)="goBack($event)">
+              <span class="detail__back-icon" #backIconEl>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 12H5M11 18l-6-6 6-6"></path>
+                </svg>
+              </span>
+              Back To Home
+            </a>
+            <h1 class="detail__title">{{ c.title }}</h1>
+            <div class="detail__meta">
+              <span class="detail__meta-item">{{ courseTypeLabel(c) }}</span>
+              <span class="detail__meta-dot" aria-hidden="true"></span>
+              <span class="detail__meta-item">{{ c.lessons.length }} Lessons</span>
+              <span class="detail__meta-dot" aria-hidden="true"></span>
+              <button type="button" class="detail__overview-btn">Course Overview</button>
+            </div>
+            <div class="detail__description" [innerHTML]="c.content"></div>
+            <div class="detail__instructor">
+              <p class="detail__instructor-label">Instructor</p>
+              <div class="detail__instructor-row">
+                <img class="detail__instructor-avatar" src="https://i.pravatar.cc/80?u=coco-blanco" alt="Coco Blanco" />
+                <span class="detail__instructor-name">Coco Blanco</span>
+              </div>
+            </div>
+            <div class="detail__guests">
+              <p class="detail__guests-label">{{ guestsLabel() }}</p>
+              @for (guest of guests; track guest.name) {
+                <div class="detail__instructor-row">
+                  <img class="detail__instructor-avatar" [src]="guestAvatarUrl(guest)" [alt]="guest.name" />
+                  <span class="detail__instructor-name">{{ guest.name }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        </section>
+
+        <section class="detail__body">
+          <h2 class="detail__lessons-title" [class.detail__lessons-title--revealed]="rowsRevealed()" #lessonsTitleEl>Lessons</h2>
+          <ol class="lesson-list" [class.lesson-list--revealed]="rowsRevealed()">
+            @for (lesson of c.lessons; track lesson.id; let i = $index) {
+              <li
+                class="lesson-row"
+                [class.lesson-row--locked]="isLessonLocked(lesson)"
+                [style.transition-delay]="lessonRowDelay(i)"
+                (click)="openLesson(lesson)"
+              >
+                <span class="lesson-row__order">{{ lesson.order }}</span>
+                <span class="lesson-row__thumb">
+                  <img [src]="lessonThumbnailUrl(lesson)" alt="" />
+                  @if (isLessonLocked(lesson)) {
+                    <span class="lesson-row__lock" aria-label="Locked">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="5" y="11" width="14" height="9" rx="1.6"></rect>
+                        <path d="M8 11V7.5a4 4 0 0 1 8 0V11"></path>
+                      </svg>
+                    </span>
+                  } @else {
+                    <span class="lesson-row__actions">
+                      <span class="lesson-row__play" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M8 5.5v13l11-6.5z"></path></svg>
+                      </span>
+                      <!-- TODO: swap for the picked icon once you choose from the 10 options. -->
+                      <button
+                        type="button"
+                        class="lesson-row__restart"
+                        aria-label="Restart from the beginning"
+                        (click)="restartLesson(lesson, $event)"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M3 12a9 9 0 1 0 3-6.7" />
+                          <path d="M3 4v5h5" />
+                          <path d="M10.3 9.6v4.8l4-2.4z" fill="currentColor" stroke="none" />
+                        </svg>
+                      </button>
+                    </span>
+                  }
+                  @if (watchedPercent(lesson) > 0) {
+                    <span class="lesson-row__progress">
+                      <span class="lesson-row__progress-fill" [style.width.%]="watchedPercent(lesson)"></span>
+                    </span>
+                  }
+                </span>
+                <div class="lesson-row__info">
+                  <span class="lesson-row__title">{{ lesson.title }}</span>
+                  <p class="lesson-row__excerpt">{{ lesson.excerpt }}</p>
+                </div>
+              </li>
+            }
+          </ol>
+        </section>
+      }
+    }
+  }
+</div>
