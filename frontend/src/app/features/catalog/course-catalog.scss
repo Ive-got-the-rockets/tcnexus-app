@@ -561,6 +561,31 @@
   }
 }
 
+.preview__btn--continue {
+  width: auto;
+  padding: 0 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  border-radius: 0.25rem;
+  border: 1px solid var(--signal);
+  color: var(--signal);
+  font-family: var(--font-ui);
+  font-size: 0.8125rem;
+  font-weight: 400;
+
+  &:hover {
+    background: var(--signal);
+    color: var(--ink);
+  }
+}
+
+.preview__btn-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
 .preview__btn--round {
   border-radius: 999px;
   background: color-mix(in srgb, var(--paper) 8%, transparent);

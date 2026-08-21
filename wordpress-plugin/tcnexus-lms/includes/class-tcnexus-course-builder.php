@@ -342,7 +342,7 @@ class TCNexus_Course_Builder {
 								<input type="radio" id="status_publish" name="course_status" value="publish" <?php checked( 'publish', $course->post_status ); ?> />
 								<label for="status_publish">Published</label>
 							</div>
-							<button type="submit" class="tcn-save-btn">Save Course</button>
+							<button type="submit" class="tcn-btn-ghost tcn-header__save-btn" id="tcnexus-save-course">Save Course</button>
 						</div>
 					</div>
 
@@ -489,7 +489,7 @@ class TCNexus_Course_Builder {
 				<div class="tcn-lessons-card">
 					<div class="tcn-lessons-card__header">
 						<h2 class="tcn-lessons-card__title">Lessons</h2>
-						<button type="button" class="tcn-btn-ghost" id="tcnexus-add-lesson">+ Add Lesson</button>
+						<button type="button" class="tcn-btn-ghost tcn-add-lesson-btn" id="tcnexus-add-lesson">+ Add Lesson</button>
 					</div>
 
 					<table class="tcn-lessons-overview">
@@ -513,6 +513,7 @@ class TCNexus_Course_Builder {
 									$video_id          = get_post_meta( $lesson->ID, '_tcnexus_vimeo_id', true );
 									$video_source      = get_post_meta( $lesson->ID, '_tcnexus_video_source', true ) ?: 'vimeo';
 									$duration          = get_post_meta( $lesson->ID, '_tcnexus_duration', true );
+									$description       = $lesson->post_content;
 									$thumbnail_id      = get_post_thumbnail_id( $lesson->ID );
 									$row_key           = $lesson->ID;
 									$video_placeholder = 'youtube' === $video_source ? 'YouTube Video ID' : 'Vimeo Video ID';
@@ -534,6 +535,15 @@ class TCNexus_Course_Builder {
 										<td colspan="5">
 											<div class="tcn-lesson-expand__panel">
 												<div class="tcn-lesson-card">
+													<button type="button" class="tcn-lesson-card__delete tcn-remove-row" aria-label="Remove lesson">
+														<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+															<path d="M4 7h16"></path>
+															<path d="M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7"></path>
+															<path d="M6 7l1 13a2 2 0 0 0 2 1.9h6a2 2 0 0 0 2-1.9l1-13"></path>
+															<path d="M10 11v6"></path>
+															<path d="M14 11v6"></path>
+														</svg>
+													</button>
 													<div class="tcn-lesson-card__media">
 														<?php TCNexus_Media::render_picker( 'Select Image', "lessons[existing][{$row_key}][thumbnail_id]", $thumbnail_id, 'Select episode image', 640, 360 ); ?>
 													</div>
@@ -548,6 +558,10 @@ class TCNexus_Course_Builder {
 															<div class="tcn-lesson-card__title">
 																<label class="tcn-field__label">Title</label>
 																<input type="text" name="lessons[existing][<?php echo esc_attr( $row_key ); ?>][title]" value="<?php echo esc_attr( $lesson->post_title ); ?>" />
+															</div>
+															<div class="tcn-lesson-card__description">
+																<label class="tcn-field__label">Description</label>
+																<textarea name="lessons[existing][<?php echo esc_attr( $row_key ); ?>][description]" rows="2" placeholder="Short description shown with this lesson"><?php echo esc_textarea( $description ); ?></textarea>
 															</div>
 														</div>
 														<div class="tcn-lesson-card__row tcn-lesson-card__row--video">
@@ -566,7 +580,8 @@ class TCNexus_Course_Builder {
 														</div>
 														<div class="tcn-lesson-card__footer">
 															<input type="checkbox" class="tcn-lesson-delete-flag" name="lessons[existing][<?php echo esc_attr( $row_key ); ?>][delete]" value="1" style="display:none;" />
-															<button type="button" class="tcn-btn-ghost tcn-btn-ghost--danger tcn-remove-row">Remove</button>
+															<button type="submit" name="lesson_action" value="save" class="tcn-btn-ghost">Save Lesson</button>
+															<button type="submit" name="lesson_action" value="save_add_new" class="tcn-btn-ghost">Save Lesson &amp; Add New</button>
 														</div>
 													</div>
 												</div>
@@ -578,9 +593,8 @@ class TCNexus_Course_Builder {
 						</tbody>
 					</table>
 
-					<div class="tcn-lesson-save-actions">
-						<button type="submit" name="lesson_action" value="save" class="tcn-btn-ghost">Save Lesson</button>
-						<button type="submit" name="lesson_action" value="save_add_new" class="tcn-btn-ghost">Save Lesson &amp; Add New</button>
+					<div class="tcn-lessons-card__footer">
+						<button type="button" class="tcn-btn-ghost tcn-add-lesson-btn">+ Add Lesson</button>
 					</div>
 
 					<template id="tcnexus-lesson-row-template">
@@ -600,6 +614,15 @@ class TCNexus_Course_Builder {
 							<td colspan="5">
 								<div class="tcn-lesson-expand__panel">
 									<div class="tcn-lesson-card">
+										<button type="button" class="tcn-lesson-card__delete tcn-remove-row" aria-label="Remove lesson">
+											<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+												<path d="M4 7h16"></path>
+												<path d="M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7"></path>
+												<path d="M6 7l1 13a2 2 0 0 0 2 1.9h6a2 2 0 0 0 2-1.9l1-13"></path>
+												<path d="M10 11v6"></path>
+												<path d="M14 11v6"></path>
+											</svg>
+										</button>
 										<div class="tcn-lesson-card__media">
 											<?php TCNexus_Media::render_picker( 'Select Image', 'lessons[new][__INDEX__][thumbnail_id]', 0, 'Select episode image', 640, 360 ); ?>
 										</div>
@@ -614,6 +637,10 @@ class TCNexus_Course_Builder {
 												<div class="tcn-lesson-card__title">
 													<label class="tcn-field__label">Title</label>
 													<input type="text" name="lessons[new][__INDEX__][title]" placeholder="Lesson title" />
+												</div>
+												<div class="tcn-lesson-card__description">
+													<label class="tcn-field__label">Description</label>
+													<textarea name="lessons[new][__INDEX__][description]" rows="2" placeholder="Short description shown with this lesson"></textarea>
 												</div>
 											</div>
 											<div class="tcn-lesson-card__row tcn-lesson-card__row--video">
@@ -631,7 +658,8 @@ class TCNexus_Course_Builder {
 												</div>
 											</div>
 											<div class="tcn-lesson-card__footer">
-												<button type="button" class="tcn-btn-ghost tcn-btn-ghost--danger tcn-remove-row">Remove</button>
+												<button type="submit" name="lesson_action" value="save" class="tcn-btn-ghost">Save Lesson</button>
+												<button type="submit" name="lesson_action" value="save_add_new" class="tcn-btn-ghost">Save Lesson &amp; Add New</button>
 											</div>
 										</div>
 									</div>
@@ -794,10 +822,11 @@ class TCNexus_Course_Builder {
 				}
 
 				$new_id = wp_insert_post( array(
-					'post_type'   => 'tc_lesson',
-					'post_title'  => $title,
-					'post_status' => 'publish',
-					'menu_order'  => isset( $data['order'] ) ? absint( $data['order'] ) : 0,
+					'post_type'    => 'tc_lesson',
+					'post_title'   => $title,
+					'post_content' => wp_kses_post( wp_unslash( $data['description'] ?? '' ) ),
+					'post_status'  => 'publish',
+					'menu_order'   => isset( $data['order'] ) ? absint( $data['order'] ) : 0,
 				) );
 
 				if ( ! is_wp_error( $new_id ) ) {
@@ -840,9 +869,10 @@ class TCNexus_Course_Builder {
 	 */
 	public static function persist_lesson_fields( $lesson_id, array $data ) {
 		wp_update_post( array(
-			'ID'         => $lesson_id,
-			'post_title' => sanitize_text_field( wp_unslash( $data['title'] ?? '' ) ),
-			'menu_order' => isset( $data['order'] ) ? absint( $data['order'] ) : 0,
+			'ID'           => $lesson_id,
+			'post_title'   => sanitize_text_field( wp_unslash( $data['title'] ?? '' ) ),
+			'post_content' => wp_kses_post( wp_unslash( $data['description'] ?? '' ) ),
+			'menu_order'   => isset( $data['order'] ) ? absint( $data['order'] ) : 0,
 		) );
 		update_post_meta( $lesson_id, '_tcnexus_vimeo_id', sanitize_text_field( wp_unslash( $data['vimeo_id'] ?? '' ) ) );
 		update_post_meta( $lesson_id, '_tcnexus_video_source', self::sanitize_video_source( $data['video_source'] ?? 'vimeo' ) );

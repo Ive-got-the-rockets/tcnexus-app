@@ -190,8 +190,9 @@ export class CourseCatalog implements OnDestroy {
     return course.thumbnail ?? `https://picsum.photos/seed/tcnexus-${course.id}/640/360`;
   }
 
+  /** The hero banner is much larger than a catalog card, so it needs the high-res "Course Image", not the small card thumbnail — see Course.image. */
   protected backdropUrl(course: Course): string {
-    return course.thumbnail ?? `https://picsum.photos/seed/tcnexus-${course.id}/1600/900`;
+    return course.image ?? course.thumbnail ?? `https://picsum.photos/seed/tcnexus-${course.id}/1600/900`;
   }
 
   protected onImageError(courseId: number): void {
@@ -232,32 +233,41 @@ export class CourseCatalog implements OnDestroy {
   }
 
   /**
-   * The card's own Play button — jumps straight into the lesson the visitor
-   * last left off on (same lesson, same position, resumed the same way the
-   * lesson player already resumes from a direct link), or lesson 1 if
-   * they've never started this course. Works the same for registered and
-   * anonymous visitors, since watch progress is tracked locally either way.
-   * Needs the full course record (the catalog only holds the lightweight
-   * list-page Course, with no lessons array) to know lesson 1's real id
-   * when there's nothing to resume.
+   * The card's own Play button — always starts the course from lesson 1
+   * (restart=1 skips resuming even if lesson 1 itself has saved progress).
+   * Resuming where the visitor left off is Continue Watching's job now (see
+   * hasProgress/continueWatching below). Needs the full course record (the
+   * catalog only holds the lightweight list-page Course, with no lessons
+   * array) to know lesson 1's real id.
    */
   protected playCourse(course: Course, event: Event): void {
     event.stopPropagation();
-
-    const resumeLessonId = this.watchProgress.lastLessonForCourse(course.id);
-    if (resumeLessonId) {
-      this.router.navigate(['/courses', course.id, 'lessons', resumeLessonId]);
-      return;
-    }
 
     this.coursesService.getCourse(course.id).subscribe({
       next: (detail) => {
         const firstLesson = detail.lessons[0];
         if (firstLesson) {
-          this.router.navigate(['/courses', course.id, 'lessons', firstLesson.id]);
+          this.router.navigate(['/courses', course.id, 'lessons', firstLesson.id], {
+            queryParams: { restart: '1' }
+          });
         }
       }
     });
+  }
+
+  /** Whether this course has any saved local progress — drives the Continue Watching button's visibility. */
+  protected hasProgress(courseId: number): boolean {
+    return this.watchProgress.lastLessonForCourse(courseId) !== null;
+  }
+
+  /** Jumps straight into the lesson (and position) the visitor last left off on. Only shown when hasProgress() is true. */
+  protected continueWatching(course: Course, event: Event): void {
+    event.stopPropagation();
+
+    const resumeLessonId = this.watchProgress.lastLessonForCourse(course.id);
+    if (resumeLessonId) {
+      this.router.navigate(['/courses', course.id, 'lessons', resumeLessonId]);
+    }
   }
 
   /** Same as goToCourse, but for clicks from inside the hover popup — see previewCardRect above. */

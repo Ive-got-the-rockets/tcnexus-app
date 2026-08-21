@@ -5,6 +5,8 @@ export interface Course {
   title: string;
   excerpt: string;
   thumbnail: string | null;
+  /** The course's own "Course Image" (Course Builder's Media tab) — much higher-res than thumbnail, used for the featured hero banner. */
+  image: string | null;
   course_types: string[];
   lesson_count: number;
 }

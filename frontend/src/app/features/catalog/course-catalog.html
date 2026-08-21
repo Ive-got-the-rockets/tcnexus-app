@@ -70,7 +70,7 @@
               }
             </div>
             <div class="hero__actions">
-              <button type="button" class="btn btn--primary">▶ Start Watching</button>
+              <button type="button" class="btn btn--primary" (click)="playCourse(course, $event)">▶ Start Watching</button>
               <button type="button" class="btn btn--ghost">More Info</button>
             </div>
           </div>
@@ -165,6 +165,17 @@
     <div class="preview__body">
       <div class="preview__controls">
         <button type="button" class="preview__btn preview__btn--play" aria-label="Play" data-tooltip="Play Course" (click)="playCourse(course, $event)">▶</button>
+        @if (hasProgress(course.id)) {
+          <button
+            type="button"
+            class="preview__btn preview__btn--continue"
+            aria-label="Continue watching"
+            (click)="continueWatching(course, $event)"
+          >
+            <span class="preview__btn-icon" aria-hidden="true">⟳</span>
+            Continue watching
+          </button>
+        }
         <button
           type="button"
           class="preview__btn preview__btn--round preview__btn--help"

@@ -134,6 +134,22 @@
   flex-shrink: 0;
 }
 
+/* Stays in its normal spot until the page scrolls it up to the WP admin
+   bar's bottom edge, then sticks there (via JS — see course-builder.js;
+   plain position:sticky doesn't have enough room to stick in this shallow
+   flex parent). .is-stuck is toggled once it's actually pinned. */
+.tcn-header__save-btn {
+  z-index: 30;
+}
+
+.tcn-header__save-btn.is-stuck {
+  box-shadow: var(--tcn-shadow-2);
+}
+
+.tcn-header__save-btn-placeholder {
+  display: none;
+}
+
 .tcn-status-toggle {
   position: relative;
   display: inline-flex;
@@ -560,6 +576,32 @@
   color: var(--tcn-text-dim);
 }
 
+.tcn-media-picker__progress-wrap {
+  width: 80%;
+  max-width: 220px;
+  text-align: center;
+}
+
+.tcn-media-picker__progress {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(32, 31, 28, 0.12);
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.tcn-media-picker__progress-bar {
+  height: 100%;
+  background: var(--tcn-primary);
+  transition: width 0.15s ease;
+}
+
+.tcn-media-picker__progress-label {
+  font-size: 12px;
+  color: var(--tcn-text-dim);
+}
+
 .tcn-media-picker__actions {
   display: flex;
   gap: 8px;
@@ -781,10 +823,34 @@
 }
 
 .tcn-lesson-card {
+  position: relative;
   display: flex;
   gap: 20px;
   padding: 22px 32px;
   border-top: 1px solid var(--tcn-border);
+}
+
+.tcn-lesson-card__delete {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--tcn-border);
+  border-radius: 6px;
+  background: var(--tcn-bg-sunken);
+  color: var(--tcn-text-dim);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.tcn-lesson-card__delete:hover {
+  border-color: var(--tcn-error);
+  color: var(--tcn-error-text);
 }
 
 .tcn-lesson-card__media {
@@ -814,12 +880,24 @@
   gap: 12px;
 }
 
+.tcn-lesson-card__row--top {
+  align-items: flex-start;
+  /* Leaves clearance for the absolutely-positioned trash icon (top-right of
+     the whole card) so it never overlaps the Description field's label. */
+  padding-right: 44px;
+}
+
 .tcn-lesson-card__row--top .tcn-lesson-card__order {
   width: 90px;
   flex-shrink: 0;
 }
 
 .tcn-lesson-card__row--top .tcn-lesson-card__title {
+  flex: 0 0 500px;
+  min-width: 0;
+}
+
+.tcn-lesson-card__row--top .tcn-lesson-card__description {
   flex: 1;
   min-width: 0;
 }
@@ -848,8 +926,15 @@
 
 .tcn-lesson-card__footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 10px;
+}
+
+.tcn-lessons-card__footer {
+  display: flex;
+  justify-content: flex-start;
+  padding: 18px 32px;
+  border-top: 1px solid var(--tcn-border);
 }
 
 .tcn-lesson-card input {
@@ -862,6 +947,19 @@
   padding: 6px 8px;
   width: 100%;
   height: 34px;
+  box-sizing: border-box;
+}
+
+.tcn-lesson-card textarea {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 13.5px;
+  color: var(--tcn-text);
+  background: var(--tcn-bg-sunken);
+  border: 1px solid var(--tcn-border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  width: 100%;
+  resize: vertical;
   box-sizing: border-box;
 }
 

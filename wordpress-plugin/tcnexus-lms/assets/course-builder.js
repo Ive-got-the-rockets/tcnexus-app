@@ -36,6 +36,93 @@
     }
   }
 
+  // ---------- Save Course: "Pending Save" once anything changes ----------
+  // This is a real (non-AJAX) form submit, so a successful save reloads the
+  // page — which already resets the label back to "Save Course" on its own,
+  // no explicit reset needed. Listening on the whole form (not just the
+  // header fields) means edits anywhere in the Lessons table count too,
+  // since it all submits together (see the Lessons card's own comment).
+  if (root) {
+    var saveCourseBtn = document.getElementById('tcnexus-save-course');
+    var courseForm = root.closest('form');
+    if (saveCourseBtn && courseForm) {
+      var courseFormDirty = false;
+      var markCourseFormDirty = function () {
+        if (courseFormDirty) {
+          return;
+        }
+        courseFormDirty = true;
+        saveCourseBtn.textContent = 'Pending Save';
+      };
+      courseForm.addEventListener('input', markCourseFormDirty);
+      courseForm.addEventListener('change', markCourseFormDirty);
+    }
+
+    // ---------- Save Course: sticky button ----------
+    // CSS position:sticky's "room to stick" is bounded by the element's own
+    // immediate parent (.tcn-header__actions), which is only as tall as the
+    // status toggle + button themselves — nowhere near enough height for
+    // the button to visibly stay put while the rest of the (much longer)
+    // page scrolls underneath it. Simulated instead with position:fixed
+    // once it reaches the top, plus a same-size placeholder left behind so
+    // the header doesn't collapse when the button leaves the flow.
+    if (saveCourseBtn) {
+      var saveBtnPlaceholder = document.createElement('div');
+      saveBtnPlaceholder.className = 'tcn-header__save-btn-placeholder';
+      saveBtnPlaceholder.style.display = 'none';
+      saveCourseBtn.parentNode.insertBefore(saveBtnPlaceholder, saveCourseBtn);
+
+      var saveBtnStuck = false;
+
+      function saveBtnStickyTop() {
+        return window.matchMedia('(max-width: 782px)').matches ? 46 : 32;
+      }
+
+      function releaseSaveBtn() {
+        saveCourseBtn.style.position = '';
+        saveCourseBtn.style.top = '';
+        saveCourseBtn.style.left = '';
+        saveCourseBtn.style.width = '';
+        saveCourseBtn.classList.remove('is-stuck');
+        saveBtnPlaceholder.style.display = 'none';
+        saveBtnStuck = false;
+      }
+
+      function updateSaveBtnSticky() {
+        var topOffset = saveBtnStickyTop();
+
+        if (!saveBtnStuck) {
+          var rect = saveCourseBtn.getBoundingClientRect();
+          if (rect.top <= topOffset) {
+            saveBtnPlaceholder.style.width = rect.width + 'px';
+            saveBtnPlaceholder.style.height = rect.height + 'px';
+            saveBtnPlaceholder.style.display = 'block';
+            saveCourseBtn.style.position = 'fixed';
+            saveCourseBtn.style.top = topOffset + 'px';
+            saveCourseBtn.style.left = rect.left + 'px';
+            saveCourseBtn.style.width = rect.width + 'px';
+            saveCourseBtn.classList.add('is-stuck');
+            saveBtnStuck = true;
+          }
+        } else if (saveBtnPlaceholder.getBoundingClientRect().top > topOffset) {
+          // Scrolled back up far enough that the button's real slot in the
+          // flow is below the sticky line again — no longer needs forcing.
+          releaseSaveBtn();
+        }
+      }
+
+      window.addEventListener('scroll', updateSaveBtnSticky, { passive: true });
+      window.addEventListener('resize', function () {
+        // Full reset (not an incremental resize) since a resize can change
+        // the button's natural left/width — easiest to just remeasure from
+        // a clean slate rather than patch stale pixel values.
+        releaseSaveBtn();
+        updateSaveBtnSticky();
+      });
+      updateSaveBtnSticky();
+    }
+  }
+
   // ---------- Custom selects ----------
   // Native <select> popups are rendered by the OS/browser, not the page, so
   // no amount of CSS reliably restyles the open list (Chromium on Windows
@@ -82,6 +169,14 @@
     function renderOptions() {
       list.innerHTML = '';
       Array.prototype.forEach.call(select.options, function (opt) {
+        // The real <option>'s disabled state (e.g. an order number an
+        // already-saved lesson has taken — see updateLessonOrderAvailability)
+        // means it's off the list entirely, not just grayed out, since this
+        // custom list is what the user actually sees/clicks, not the hidden
+        // native <select>.
+        if (opt.disabled) {
+          return;
+        }
         var item = document.createElement('div');
         item.className = 'tcn-select-option';
         item.setAttribute('role', 'option');
@@ -178,8 +273,18 @@
       preview.innerHTML = '<span class="tcn-media-picker__empty tcn-media-picker__empty--error">' + message + '</span>';
     }
 
+    function showUploadProgress(percent) {
+      var pct = Math.max(0, Math.min(100, Math.round(percent)));
+      preview.innerHTML =
+        '<div class="tcn-media-picker__progress-wrap">' +
+          '<div class="tcn-media-picker__progress"><div class="tcn-media-picker__progress-bar" style="width:' + pct + '%"></div></div>' +
+          '<span class="tcn-media-picker__progress-label">Uploading… ' + pct + '%</span>' +
+        '</div>';
+    }
+
     function useAttachment(attachment) {
       input.value = attachment.id;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
       renderPreview(attachment.url);
     }
 
@@ -190,7 +295,7 @@
       return attachment && typeof attachment.toJSON === 'function' ? attachment.toJSON() : attachment;
     }
 
-    new wp.Uploader({
+    var uploader = new wp.Uploader({
       container: picker,
       browser: selectBtn,
       dropzone: picker,
@@ -207,6 +312,19 @@
       }
     });
 
+    // wp.Uploader wraps a raw Plupload instance at .uploader — its own
+    // success/error callbacks above only fire once the whole upload has
+    // finished, with nothing shown while it's still in flight, so the
+    // progress bar hooks the lower-level Plupload events directly instead.
+    if (uploader.uploader && typeof uploader.uploader.bind === 'function') {
+      uploader.uploader.bind('FilesAdded', function () {
+        showUploadProgress(0);
+      });
+      uploader.uploader.bind('UploadProgress', function (up, file) {
+        showUploadProgress(file.percent);
+      });
+    }
+
     ['dragenter', 'dragover'].forEach(function (eventName) {
       picker.addEventListener(eventName, function () {
         picker.classList.add('is-drag-over');
@@ -222,6 +340,7 @@
       removeBtn.addEventListener('click', function (event) {
         event.preventDefault();
         input.value = '';
+        input.dispatchEvent(new Event('change', { bubbles: true }));
         renderPreview(null);
       });
     }
@@ -357,7 +476,6 @@
   if (lessonsList) {
     var newRowIndex = 0;
     var template = document.getElementById('tcnexus-lesson-row-template');
-    var addBtn = document.getElementById('tcnexus-add-lesson');
 
     function wireLessonRow(summaryRow, expandRow) {
       var titleInput = expandRow.querySelector('.tcn-lesson-card__title input');
@@ -417,6 +535,49 @@
       }
     }
 
+    // Whatever order number an already-saved lesson has taken comes off the
+    // dropdown list entirely for every other lesson — a brand-new, not-yet-
+    // saved row's own current number doesn't reserve anything, since it
+    // isn't real until it's actually saved.
+    function updateLessonOrderAvailability() {
+      // A lesson flagged for deletion (hidden, but still in the DOM so its
+      // checkbox submits with the form — see the remove-row handler below)
+      // is excluded here: it's going away on Save, so its order number
+      // should free up for the remaining lessons right away.
+      var orderSelects = Array.prototype.slice.call(lessonsList.querySelectorAll('.tcn-lesson-card__order select')).filter(function (select) {
+        var expandRow = select.closest('.tcn-lesson-expand');
+        var flag = expandRow ? expandRow.querySelector('.tcn-lesson-delete-flag') : null;
+        return !flag || !flag.checked;
+      });
+      var savedValues = orderSelects
+        .filter(function (select) { return select.name.indexOf('[existing]') !== -1; })
+        .map(function (select) { return select.value; });
+
+      orderSelects.forEach(function (select) {
+        var ownValue = select.value;
+        Array.prototype.forEach.call(select.options, function (opt) {
+          opt.disabled = opt.value !== ownValue && savedValues.indexOf(opt.value) !== -1;
+        });
+        if (select._tcnRefresh) {
+          select._tcnRefresh();
+        }
+      });
+    }
+
+    // Lowest order number not currently held by any lesson on the page
+    // (saved or not) — used to give a freshly added row a sensible default
+    // instead of always starting everyone at 01.
+    function nextAvailableOrderValue() {
+      var usedValues = Array.prototype.slice
+        .call(lessonsList.querySelectorAll('.tcn-lesson-card__order select'))
+        .map(function (select) { return select.value; });
+      var n = 1;
+      while (usedValues.indexOf(String(n)) !== -1) {
+        n++;
+      }
+      return String(n);
+    }
+
     // Wire up the rows the server already rendered.
     Array.prototype.forEach.call(lessonsList.querySelectorAll('.tcn-lesson-row'), function (summaryRow) {
       var expandRow = summaryRow.nextElementSibling;
@@ -424,6 +585,7 @@
         wireLessonRow(summaryRow, expandRow);
       }
     });
+    updateLessonOrderAvailability();
 
     function addLessonRow() {
       var emptyRow = document.getElementById('tcnexus-lessons-empty');
@@ -439,13 +601,30 @@
       lessonsList.appendChild(summaryRow);
       lessonsList.appendChild(expandRow);
 
+      // The template always renders order=1 selected — reassign it to the
+      // next free number before wiring so a second (third, ...) new lesson
+      // doesn't default onto a number a saved lesson already owns.
+      var orderSelect = expandRow.querySelector('.tcn-lesson-card__order select');
+      if (orderSelect) {
+        orderSelect.value = nextAvailableOrderValue();
+      }
+
       wireLessonRow(summaryRow, expandRow);
+      if (orderSelect) {
+        orderSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      }
       expandRow.querySelectorAll('.tcn-media-picker').forEach(wireMediaPicker);
       expandRow.querySelectorAll('.tcn-select').forEach(enhanceSelect);
+      updateLessonOrderAvailability();
     }
 
-    if (addBtn && template) {
-      addBtn.addEventListener('click', addLessonRow);
+    // Both the header's "+ Add Lesson" and the matching one in the table's
+    // bottom footer trigger the same addLessonRow().
+    var addLessonBtns = document.querySelectorAll('.tcn-add-lesson-btn');
+    if (addLessonBtns.length && template) {
+      addLessonBtns.forEach(function (btn) {
+        btn.addEventListener('click', addLessonRow);
+      });
 
       // "Save Lesson & Add New" (see class-tcnexus-course-builder.php)
       // redirects back here with this data attribute set, so the blank row
@@ -469,6 +648,7 @@
           // actually trashes it. A brand-new, unsaved row has no flag and
           // nothing to submit, so it's just removed outright.
           flag.checked = true;
+          flag.dispatchEvent(new Event('change', { bubbles: true }));
           if (summaryRow) {
             summaryRow.style.display = 'none';
           }
@@ -481,6 +661,7 @@
             expandRow.remove();
           }
         }
+        updateLessonOrderAvailability();
         return;
       }
 
@@ -510,6 +691,9 @@
         if (videoInput) {
           videoInput.placeholder = event.target.value === 'youtube' ? 'YouTube Video ID' : 'Vimeo Video ID';
         }
+      }
+      if (event.target.matches('.tcn-lesson-card__order select')) {
+        updateLessonOrderAvailability();
       }
     });
   }

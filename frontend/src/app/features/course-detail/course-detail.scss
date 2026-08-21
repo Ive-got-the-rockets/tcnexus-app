@@ -350,7 +350,10 @@
   opacity: 0;
   transform: translateX(40px);
   transition: opacity 0.4s ease-in, transform 0.4s ease-in, border-color 0.2s ease-in;
-  cursor: pointer;
+  /* The row (and its thumbnail) stay a plain cursor — only the play and
+     restart icons below get cursor: pointer, even though the whole row is
+     still clickable via openLesson(). */
+  cursor: default;
 
   /* Green glow that fades in from the right edge on hover — z-index:0 (with
      the thumb/order/info content below explicitly bumped to z-index:1) so
@@ -477,6 +480,10 @@
 
 .lesson-row__thumb:hover .lesson-row__actions {
   opacity: 1;
+}
+
+.lesson-row__play {
+  cursor: pointer;
 }
 
 .lesson-row__play svg,

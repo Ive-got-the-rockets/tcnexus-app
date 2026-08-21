@@ -2,7 +2,7 @@
 /**
  * Plugin Name: TC Nexus LMS
  * Description: Headless course/lesson backend for the TC Nexus streaming site — tiers, gating, and the REST API the Angular front-end consumes.
- * Version: 0.1.44
+ * Version: 0.1.48
  * Author: TC Nexus
  * Text Domain: tcnexus-lms
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TCNEXUS_LMS_VERSION', '0.1.44' );
+define( 'TCNEXUS_LMS_VERSION', '0.1.48' );
 define( 'TCNEXUS_LMS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'TCNEXUS_LMS_URL', plugin_dir_url( __FILE__ ) );
 define( 'TCNEXUS_LMS_TABLE_VIEWS', 'tcnexus_lesson_views' );
