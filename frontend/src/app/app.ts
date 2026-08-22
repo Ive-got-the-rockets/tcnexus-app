@@ -3,6 +3,7 @@ import { ActivatedRoute, NavigationEnd, Router, RouterLink, RouterOutlet } from 
 import { filter } from 'rxjs';
 
 import { AuthModalService } from './core/auth-modal.service';
+import { VisitorService } from './core/visitor.service';
 import { RegisterModal } from './features/auth/register-modal';
 
 @Component({
@@ -15,6 +16,7 @@ export class App implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   protected readonly authModal = inject(AuthModalService);
+  protected readonly visitor = inject(VisitorService);
 
   protected readonly year = new Date().getFullYear();
   protected readonly headerHidden = signal(false);

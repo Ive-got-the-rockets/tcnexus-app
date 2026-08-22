@@ -24,6 +24,7 @@ export class AccessService {
       tap((result) => {
         if (result.success) {
           this.visitor.setToken(result.token);
+          this.visitor.setEmail(email);
         }
       })
     );
