@@ -191,6 +191,20 @@
   white-space: nowrap;
 }
 
+/* Same pill badge as the catalog hero's .tag — kept as its own class since
+   the two components don't share styles, but the values should stay in sync. */
+.detail__type-badge {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--amber);
+  border: 1px solid color-mix(in srgb, var(--amber) 40%, transparent);
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+  white-space: nowrap;
+}
+
 .detail__meta-dot {
   width: 5px;
   height: 5px;

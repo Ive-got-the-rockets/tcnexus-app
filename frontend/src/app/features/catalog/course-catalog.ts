@@ -227,6 +227,14 @@ export class CourseCatalog implements OnDestroy {
     return course.course_types.includes('Platform') ? 'Platform Course' : 'Trading Course';
   }
 
+  /** The featured hero's "Course Overview" button — same idea as the course-detail page's, just opens straight from the catalog's lightweight Course. */
+  protected openOverview(course: Course, event: Event): void {
+    event.stopPropagation();
+    if (course.overview_link) {
+      window.open(course.overview_link, '_blank', 'noopener');
+    }
+  }
+
   /** Stages the clicked element's rect so the detail page can grow it into place, then navigates. */
   protected goToCourse(course: Course, rowTitle: string, sourceEl: HTMLElement): void {
     this.stageAndNavigate(course, rowTitle, sourceEl.getBoundingClientRect());

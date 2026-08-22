@@ -9,6 +9,7 @@ export interface Course {
   image: string | null;
   course_types: string[];
   lesson_count: number;
+  overview_link: string | null;
 }
 
 export interface Lesson {

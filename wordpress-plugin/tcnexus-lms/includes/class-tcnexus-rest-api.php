@@ -71,13 +71,14 @@ class TCNexus_REST_API {
 			// small thumbnail across the full page width and looks pixelated.
 			$image_id = (int) get_post_meta( $course->ID, '_tcnexus_image_desktop_id', true );
 			return array(
-				'id'           => $course->ID,
-				'title'        => $course->post_title,
-				'excerpt'      => get_the_excerpt( $course ),
-				'thumbnail'    => get_the_post_thumbnail_url( $course->ID, 'medium' ),
-				'image'        => $image_id ? wp_get_attachment_image_url( $image_id, 'full' ) : null,
-				'course_types' => is_wp_error( $types ) ? array() : $types,
-				'lesson_count' => self::count_course_lessons( $course->ID ),
+				'id'            => $course->ID,
+				'title'         => $course->post_title,
+				'excerpt'       => get_the_excerpt( $course ),
+				'thumbnail'     => get_the_post_thumbnail_url( $course->ID, 'medium' ),
+				'image'         => $image_id ? wp_get_attachment_image_url( $image_id, 'full' ) : null,
+				'course_types'  => is_wp_error( $types ) ? array() : $types,
+				'lesson_count'  => self::count_course_lessons( $course->ID ),
+				'overview_link' => get_post_meta( $course->ID, '_tcnexus_overview_link', true ) ?: null,
 			);
 		}, $courses );
 

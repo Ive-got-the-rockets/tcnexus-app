@@ -42,13 +42,20 @@
 
 .hero {
   position: relative;
-  min-height: 78vh;
+  min-height: 92vh;
   display: flex;
   align-items: flex-end;
   background-color: var(--ink-raised);
   background-size: cover;
   background-position: center 30%;
   padding: 0 clamp(1.25rem, 5vw, 4rem) clamp(3rem, 8vw, 5rem);
+  /* Pulls .rows up 200px to match .hero__content's own 200px shift below,
+     without putting a negative margin on .rows/.row themselves — those have
+     container-type: inline-size on a descendant (.row__viewport), which
+     interacts badly with a negative margin landing directly on the row and
+     blows its rendered height up. Negative margin here, on the unrelated
+     .hero element, avoids that entirely while producing the same overlap. */
+  margin-bottom: -200px;
 }
 
 .hero__scrim {
@@ -62,6 +69,10 @@
 .hero__content {
   position: relative;
   max-width: 38rem;
+  /* Pushes the text/buttons up off the hero's bottom edge without changing
+     the hero's own height (min-height still governs that) — paired with
+     .rows' matching negative margin-top below. */
+  margin-bottom: 200px;
 }
 
 .hero__eyebrow {
@@ -103,6 +114,15 @@
   color: var(--paper-dim);
 }
 
+/* Same dot separator as the course-detail page's .detail__meta-dot. */
+.hero__meta-dot {
+  width: 5px;
+  height: 5px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--signal);
+}
+
 .hero__actions {
   margin-top: 2rem;
   display: flex;
@@ -115,7 +135,14 @@
   font-weight: 400;
   border: none;
   border-radius: 0.25rem;
-  padding: 0.75rem 1.5rem;
+  /* Matches the course-detail page's .detail__overview-btn rendered height
+     (~30px: 0.8125rem font + 0.35rem vertical padding + 1px border) exactly,
+     via explicit height + flex centering rather than trying to reproduce
+     that padding math at this button's own larger font-size. */
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 1.5rem;
   cursor: pointer;
   transition: background 0.2s ease, transform 0.15s ease;
 
@@ -153,11 +180,21 @@
 /* Rows */
 
 .rows {
+  /* .hero overlaps this by 200px (see its margin-bottom) — position+z-index
+     guarantees .rows paints above .hero's scrim/content there. Without an
+     explicit stacking context, .hero's positioned children (position:
+     relative/absolute, z-index:auto) get promoted to the shared root
+     painting layer for positioned descendants, which is painted AFTER
+     ordinary in-flow content like .rows regardless of DOM order — so the
+     dark scrim was rendering on top of "All Courses" instead of under it. */
+  position: relative;
+  z-index: 1;
   padding-block: clamp(1rem, 4vw, 2rem) clamp(4rem, 8vw, 6rem);
   display: flex;
   flex-direction: column;
   gap: clamp(1.75rem, 4vw, 2.5rem);
 }
+
 
 .row {
   min-width: 0;

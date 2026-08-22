@@ -64,14 +64,15 @@
             <h1 class="hero__title">{{ course.title }}</h1>
             <p class="hero__excerpt">{{ course.excerpt }}</p>
             <div class="hero__meta">
+              <span class="tag">{{ courseTypeLabel(course) }}</span>
+              <span class="hero__meta-dot" aria-hidden="true"></span>
               <span class="hero__lessons">{{ course.lesson_count }} lessons</span>
-              @for (type of course.course_types; track type) {
-                <span class="tag">{{ type }}</span>
-              }
             </div>
             <div class="hero__actions">
               <button type="button" class="btn btn--primary" (click)="playCourse(course, $event)">▶ Start Watching</button>
-              <button type="button" class="btn btn--ghost">More Info</button>
+              @if (course.overview_link) {
+                <button type="button" class="btn btn--ghost" (click)="openOverview(course, $event)">Course Overview</button>
+              }
             </div>
           </div>
         </section>

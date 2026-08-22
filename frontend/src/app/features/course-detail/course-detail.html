@@ -47,7 +47,7 @@
             </a>
             <h1 class="detail__title">{{ c.title }}</h1>
             <div class="detail__meta">
-              <span class="detail__meta-item">{{ courseTypeLabel(c) }}</span>
+              <span class="detail__type-badge">{{ courseTypeLabel(c) }}</span>
               <span class="detail__meta-dot" aria-hidden="true"></span>
               <span class="detail__meta-item">{{ c.lessons.length }} Lessons</span>
               @if (c.overview_link) {
