@@ -75,6 +75,33 @@ class TCNexus_Membership {
 		);
 	}
 
+	/**
+	 * Logs in with the email + password from the welcome email.
+	 * Returns array( 'user_id', 'token' ) on success or a WP_Error on failure.
+	 */
+	public static function login_from_email( $email, $password ) {
+		$email = sanitize_email( $email );
+		if ( ! is_email( $email ) || $password === '' ) {
+			return new WP_Error( 'invalid_credentials', 'Email or password is incorrect.' );
+		}
+
+		$user = get_user_by( 'email', $email );
+		if ( ! $user || ! wp_check_password( $password, $user->user_pass, $user->ID ) ) {
+			return new WP_Error( 'invalid_credentials', 'Email or password is incorrect.' );
+		}
+
+		$token = get_user_meta( $user->ID, 'tcnexus_api_token', true );
+		if ( ! $token ) {
+			$token = wp_generate_password( 40, false, false );
+			update_user_meta( $user->ID, 'tcnexus_api_token', $token );
+		}
+
+		return array(
+			'user_id' => $user->ID,
+			'token'   => $token,
+		);
+	}
+
 	private static function generate_username_from_email( $email ) {
 		$base     = sanitize_user( current( explode( '@', $email ) ), true );
 		$username = $base;

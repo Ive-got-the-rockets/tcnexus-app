@@ -1,0 +1,36 @@
+:host {
+  display: block;
+}
+
+.profile {
+  min-height: 70vh;
+  padding: 7rem clamp(1.25rem, 5vw, 4rem) 4rem;
+  max-width: 40rem;
+}
+
+.profile__back {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--paper-dim);
+  text-decoration: none;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: var(--signal);
+  }
+}
+
+.profile__title {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 400;
+  margin-bottom: 1rem;
+}
+
+.profile__email {
+  color: var(--paper-dim);
+  font-size: 1rem;
+}

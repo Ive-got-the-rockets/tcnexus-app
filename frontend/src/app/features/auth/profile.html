@@ -1,0 +1,9 @@
+<section class="profile">
+  <a routerLink="/" class="profile__back">Back To Home</a>
+  <h1 class="profile__title">Edit Profile</h1>
+  @if (visitor.getEmail(); as email) {
+    <p class="profile__email">{{ email }}</p>
+  } @else {
+    <p class="profile__email">You are not signed in.</p>
+  }
+</section>

@@ -43,6 +43,16 @@ class TCNexus_REST_API {
 				'email' => array( 'required' => true, 'type' => 'string' ),
 			),
 		) );
+
+		register_rest_route( self::NAMESPACE_, '/login', array(
+			'methods'             => 'POST',
+			'callback'            => array( __CLASS__, 'login' ),
+			'permission_callback' => '__return_true',
+			'args'                => array(
+				'email'    => array( 'required' => true, 'type' => 'string' ),
+				'password' => array( 'required' => true, 'type' => 'string' ),
+			),
+		) );
 	}
 
 	private static function get_visitor_id( \WP_REST_Request $request ) {
@@ -162,6 +172,21 @@ class TCNexus_REST_API {
 		}
 
 		return new WP_REST_Response( $result, 200 );
+	}
+
+	public static function login( \WP_REST_Request $request ) {
+		$email    = sanitize_email( (string) $request->get_param( 'email' ) );
+		$password = (string) $request->get_param( 'password' );
+		$result   = TCNexus_Membership::login_from_email( $email, $password );
+
+		if ( is_wp_error( $result ) ) {
+			return new WP_Error( $result->get_error_code(), $result->get_error_message(), array( 'status' => 401 ) );
+		}
+
+		return new WP_REST_Response( array(
+			'success' => true,
+			'token'   => $result['token'],
+		), 200 );
 	}
 
 	public static function register_email( \WP_REST_Request $request ) {

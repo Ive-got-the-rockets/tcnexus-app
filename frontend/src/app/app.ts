@@ -47,6 +47,25 @@ export class App implements OnInit, OnDestroy {
     });
   }
 
+  protected openCreateProfile(): void {
+    this.authModal.open('register');
+  }
+
+  protected openLogin(): void {
+    this.authModal.open('login');
+  }
+
+  protected editProfile(): void {
+    this.router.navigate(['/profile']);
+  }
+
+  protected logout(): void {
+    this.visitor.logout();
+    if (this.router.url.startsWith('/profile')) {
+      this.router.navigate(['/']);
+    }
+  }
+
   ngOnInit(): void {
     window.addEventListener('scroll', this.onScroll, { passive: true });
   }

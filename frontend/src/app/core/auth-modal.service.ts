@@ -1,11 +1,15 @@
 import { Injectable, signal } from '@angular/core';
 
-/** Lets any component (currently just the header's profile icon) open the shared register modal. */
+export type AuthModalMode = 'register' | 'login';
+
+/** Lets any component open the shared create-profile / log-in modal. */
 @Injectable({ providedIn: 'root' })
 export class AuthModalService {
   readonly isOpen = signal(false);
+  readonly mode = signal<AuthModalMode>('register');
 
-  open(): void {
+  open(mode: AuthModalMode = 'register'): void {
+    this.mode.set(mode);
     this.isOpen.set(true);
   }
 

@@ -54,28 +54,74 @@
       </div>
     } @else {
       @if (featured(); as course) {
-        <section
-          class="hero"
-          [style.background-image]="'url(' + backdropUrl(course) + ')'"
-        >
-          <div class="hero__scrim"></div>
-          <div class="hero__content">
+        <div class="catalog-featured">
+          <div class="hero-scene" aria-hidden="true">
+            <div class="hero__bg" [style.background-image]="'url(' + backdropUrl(course) + ')'"></div>
+            <div class="hero__scrim"></div>
+          </div>
+          <section
+            class="hero"
+            [class.hero--pinned]="heroPinTop() !== null"
+            [style.--hero-pin-top]="heroPinTop() !== null ? heroPinTop() + 'px' : null"
+          >
+            <div class="hero__content" #heroContent>
             <p class="hero__eyebrow">Featured Course</p>
-            <h1 class="hero__title">{{ course.title }}</h1>
-            <p class="hero__excerpt">{{ course.excerpt }}</p>
+            <h1 class="hero__title">
+              {{ course.title }}
+              <button
+                type="button"
+                class="hero__info-btn"
+                [attr.aria-expanded]="descriptionExpanded()"
+                [attr.aria-label]="descriptionLabel"
+                (click)="toggleDescription()"
+              >
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10.6" stroke="currentColor" stroke-width="0.75"/>
+                  <text
+                    x="12.15"
+                    y="17.1"
+                    text-anchor="middle"
+                    fill="currentColor"
+                    font-family="Fraunces, 'Iowan Old Style', Georgia, serif"
+                    font-style="italic"
+                    font-weight="400"
+                    font-size="14"
+                  >i</text>
+                </svg>
+              </button>
+            </h1>
+            <div class="hero__details" [class.hero__details--expanded]="descriptionExpanded()">
+              <p class="hero__description">{{ course.excerpt }}</p>
+              @if (featuredDetail()?.instructor; as instructor) {
+                <div class="hero__instructor">
+                  <p class="hero__instructor-label">Instructor</p>
+                  <div class="hero__instructor-row">
+                    <img class="hero__instructor-avatar" [src]="personPhotoUrl(instructor)" [alt]="instructor.name" />
+                    <span class="hero__instructor-name">{{ instructor.name }}</span>
+                  </div>
+                </div>
+              }
+            </div>
             <div class="hero__meta">
               <span class="tag">{{ courseTypeLabel(course) }}</span>
               <span class="hero__meta-dot" aria-hidden="true"></span>
-              <span class="hero__lessons">{{ course.lesson_count }} lessons</span>
+              <span class="tag">{{ course.lesson_count }} lessons</span>
             </div>
             <div class="hero__actions">
               <button type="button" class="btn btn--primary" (click)="playCourse(course, $event)">▶ Start Watching</button>
+              <button
+                type="button"
+                class="hero__overview-btn"
+                [attr.aria-expanded]="episodeListOpen()"
+                (click)="toggleEpisodeList(course, $event)"
+              >Episode List</button>
               @if (course.overview_link) {
-                <button type="button" class="btn btn--ghost" (click)="openOverview(course, $event)">Course Overview</button>
+                <button type="button" class="hero__overview-btn" (click)="openOverview(course, $event)">Course Overview</button>
               }
             </div>
           </div>
         </section>
+        </div>
       }
 
       <div class="rows">
@@ -151,10 +197,12 @@
 @if (previewCourse(); as course) {
   <div
     class="preview"
+    [class.preview--ready]="previewReady()"
     [style.top]="previewPosition()?.top"
     [style.left]="previewPosition()?.left"
     (mouseenter)="cancelHide()"
     (mouseleave)="scheduleHide()"
+    (animationend)="onPreviewAnimationEnd($event)"
   >
     <div class="preview__image" (click)="goToCourseFromPreview(course)">
       @if (!failedImages().has(course.id)) {
@@ -200,3 +248,74 @@
     </div>
   </div>
 }
+
+<button
+  type="button"
+  class="episode-backdrop"
+  [class.episode-backdrop--open]="episodeListOpen()"
+  aria-label="Close episode list"
+  (click)="closeEpisodeList()"
+></button>
+
+<aside class="episode-panel" [class.episode-panel--open]="episodeListOpen()" aria-label="Episode list">
+  <div class="episode-panel__header" [class.episode-panel__header--revealed]="episodeRowsRevealed()">
+    <button type="button" class="episode-panel__close" aria-label="Close episode list" (click)="closeEpisodeList()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M5 12h14M13 6l6 6-6 6"></path>
+      </svg>
+    </button>
+    <h2 class="episode-panel__title">Lessons</h2>
+  </div>
+  @if (featuredDetail(); as detail) {
+    <ol class="lesson-list" [class.lesson-list--revealed]="episodeRowsRevealed()">
+      @for (lesson of detail.lessons; track lesson.id; let i = $index) {
+        <li
+          class="lesson-row"
+          [class.lesson-row--locked]="isLessonLocked(lesson)"
+          [style.transition-delay]="lessonRowDelay(i)"
+          (click)="openEpisode(lesson)"
+        >
+          <span class="lesson-row__order">{{ lesson.order }}</span>
+          <span class="lesson-row__thumb">
+            <img [src]="lessonThumbnailUrl(lesson)" alt="" />
+            @if (isLessonLocked(lesson)) {
+              <span class="lesson-row__lock" aria-label="Locked">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="5" y="11" width="14" height="9" rx="1.6"></rect>
+                  <path d="M8 11V7.5a4 4 0 0 1 8 0V11"></path>
+                </svg>
+              </span>
+            } @else {
+              <span class="lesson-row__actions">
+                <span class="lesson-row__play" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M8 5.5v13l11-6.5z"></path></svg>
+                </span>
+                <button
+                  type="button"
+                  class="lesson-row__restart"
+                  aria-label="Restart from the beginning"
+                  (click)="restartEpisode(lesson, $event)"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12a9 9 0 1 0 3-6.7" />
+                    <path d="M3 4v5h5" />
+                    <path d="M10.3 9.6v4.8l4-2.4z" fill="currentColor" stroke="none" />
+                  </svg>
+                </button>
+              </span>
+            }
+            @if (watchedPercent(lesson) > 0) {
+              <span class="lesson-row__progress">
+                <span class="lesson-row__progress-fill" [style.width.%]="watchedPercent(lesson)"></span>
+              </span>
+            }
+          </span>
+          <div class="lesson-row__info">
+            <span class="lesson-row__title">{{ lesson.title }}</span>
+            <p class="lesson-row__excerpt">{{ lesson.excerpt }}</p>
+          </div>
+        </li>
+      }
+    </ol>
+  }
+</aside>

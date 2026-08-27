@@ -29,4 +29,15 @@ export class AccessService {
       })
     );
   }
+
+  login(email: string, password: string): Observable<RegisterResult> {
+    return this.http.post<RegisterResult>(`${this.baseUrl}/login`, { email, password }).pipe(
+      tap((result) => {
+        if (result.success) {
+          this.visitor.setToken(result.token);
+          this.visitor.setEmail(email);
+        }
+      })
+    );
+  }
 }

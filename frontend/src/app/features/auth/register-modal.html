@@ -7,40 +7,57 @@
         </svg>
       </button>
 
-      @switch (true) {
-        <!-- Checked before isRegistered() on purpose: a successful submit in
-             THIS modal session flips isRegistered() to true immediately, and
-             without this ordering that would steal priority from the success
-             message — a brand-new user would never see confirmation of their
-             own signup, only "you're already registered". -->
-        @case (status() === 'success') {
-          <h2 class="auth-modal__title">Check your email</h2>
-          <p class="auth-modal__text">We've sent your login details to <strong>{{ submittedEmail() }}</strong>.</p>
-        }
-        @case (visitor.isRegistered()) {
-          <h2 class="auth-modal__title">You're already registered</h2>
-          <p class="auth-modal__text">This browser already has a registered account linked to it.</p>
-        }
-        @default {
-          <h2 class="auth-modal__title">Create your free account</h2>
-          <p class="auth-modal__text">Register with your email to unlock registered-tier lessons and save your progress.</p>
-          <form (submit)="submit($event)">
-            <input
-              #emailInput
-              type="email"
-              required
-              placeholder="you@example.com"
-              class="auth-modal__input"
-              [disabled]="status() === 'submitting'"
-            />
-            @if (status() === 'error') {
-              <p class="auth-modal__error">{{ errorMessage() }}</p>
-            }
-            <button type="submit" class="auth-modal__submit" [disabled]="status() === 'submitting'">
-              {{ status() === 'submitting' ? 'Creating account…' : 'Create account' }}
-            </button>
-          </form>
-        }
+      @if (status() === 'success' && authModal.mode() === 'register') {
+        <h2 class="auth-modal__title">Profile created</h2>
+        <p class="auth-modal__text">An email has been sent to <strong>{{ submittedEmail() }}</strong> with your login details for future reference. You are now logged in.</p>
+      } @else if (status() === 'success' && authModal.mode() === 'login') {
+        <h2 class="auth-modal__title">You're logged in</h2>
+        <p class="auth-modal__text">Welcome back.</p>
+      } @else if (authModal.mode() === 'login') {
+        <h2 class="auth-modal__title">Log In</h2>
+        <form (submit)="submitLogin($event)">
+          <input
+            #emailInput
+            type="email"
+            required
+            placeholder="you@example.com"
+            class="auth-modal__input"
+            [disabled]="status() === 'submitting'"
+          />
+          <input
+            #passwordInput
+            type="password"
+            required
+            placeholder="Password"
+            class="auth-modal__input"
+            [disabled]="status() === 'submitting'"
+          />
+          @if (status() === 'error') {
+            <p class="auth-modal__error">{{ errorMessage() }}</p>
+          }
+          <button type="submit" class="auth-modal__submit" [disabled]="status() === 'submitting'">
+            {{ status() === 'submitting' ? 'Logging in…' : 'Log In' }}
+          </button>
+        </form>
+      } @else {
+        <h2 class="auth-modal__title">Create your Profile by Entering your email address.</h2>
+        <form (submit)="submit($event)">
+          <input
+            #emailInput
+            type="email"
+            required
+            placeholder="you@example.com"
+            class="auth-modal__input"
+            [disabled]="status() === 'submitting'"
+          />
+          <p class="auth-modal__text">A profile will automatically be created based on your email and you will be automatically logged in. An email has been sent to your email with your login details for future reference.</p>
+          @if (status() === 'error') {
+            <p class="auth-modal__error">{{ errorMessage() }}</p>
+          }
+          <button type="submit" class="auth-modal__submit" [disabled]="status() === 'submitting'">
+            {{ status() === 'submitting' ? 'Creating profile…' : 'Create Profile' }}
+          </button>
+        </form>
       }
     </div>
   </div>

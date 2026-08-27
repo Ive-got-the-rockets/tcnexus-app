@@ -22,12 +22,14 @@ export class RegisterModal {
   protected readonly submittedEmail = signal('');
 
   private readonly emailInput = viewChild<ElementRef<HTMLInputElement>>('emailInput');
+  private readonly passwordInput = viewChild<ElementRef<HTMLInputElement>>('passwordInput');
 
   protected close(): void {
     this.authModal.close();
     // Reset so reopening later starts fresh instead of showing stale success/error state.
     this.status.set('idle');
     this.errorMessage.set(null);
+    this.submittedEmail.set('');
   }
 
   protected submit(event: Event): void {
@@ -45,7 +47,28 @@ export class RegisterModal {
       },
       error: (err: HttpErrorResponse) => {
         this.status.set('error');
-        this.errorMessage.set(err.status === 409 ? 'This email is already registered.' : 'Something went wrong — try again.');
+        this.errorMessage.set(err.status === 409 ? 'This email is already registered. Use Log In instead.' : 'Something went wrong — try again.');
+      }
+    });
+  }
+
+  protected submitLogin(event: Event): void {
+    event.preventDefault();
+    const email = this.emailInput()?.nativeElement.value.trim();
+    const password = this.passwordInput()?.nativeElement.value ?? '';
+    if (!email || !password) return;
+
+    this.status.set('submitting');
+    this.errorMessage.set(null);
+
+    this.accessService.login(email, password).subscribe({
+      next: () => {
+        this.submittedEmail.set(email);
+        this.status.set('success');
+      },
+      error: (err: HttpErrorResponse) => {
+        this.status.set('error');
+        this.errorMessage.set(err.status === 401 ? 'Email or password is incorrect.' : 'Something went wrong — try again.');
       }
     });
   }

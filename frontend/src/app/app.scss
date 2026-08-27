@@ -73,7 +73,73 @@
   gap: 1.25rem;
 }
 
+.site-header__profile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 22px;
+}
+
+.site-header__menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 2;
+  min-width: 10.5rem;
+  margin-top: 0.45rem;
+  padding: 0.3rem 0;
+  background: var(--ink-raised);
+  border: 1px solid color-mix(in srgb, var(--paper) 18%, transparent);
+  border-radius: 3px;
+  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.75);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+
+  /* Bridge the gap so the menu doesn't close while moving off the icon. */
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 100%;
+    height: 0.55rem;
+  }
+}
+
+.site-header__profile:hover .site-header__menu,
+.site-header__profile:focus-within .site-header__menu {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.site-header__menu-item {
+  display: block;
+  width: 100%;
+  border: none;
+  background: none;
+  color: var(--paper);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  text-align: left;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    color: var(--signal);
+    background: color-mix(in srgb, var(--paper) 6%, transparent);
+  }
+}
+
 .site-header__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
   border: none;
   background: none;
   padding: 0;
@@ -83,6 +149,7 @@
   transition: opacity 0.2s ease;
 
   svg {
+    display: block;
     width: 22px;
     height: 22px;
   }

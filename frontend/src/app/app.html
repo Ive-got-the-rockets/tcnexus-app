@@ -17,17 +17,28 @@
           <path d="M9 8.3a3 3 0 0 1 6 0"></path>
         </svg>
       </button>
-      <button type="button" class="site-header__icon" aria-label="Profile" (click)="authModal.open()">
-        <svg viewBox="0 0 24 24" fill="none" stroke-linejoin="round">
-          <path d="M12 2.2 20.5 7v10L12 21.8 3.5 17V7z" style="stroke: var(--signal);" stroke-width="1.6"></path>
-          @if (visitor.initial(); as initial) {
-            <text x="12" y="14.6" text-anchor="middle" style="fill: var(--signal); font-family: var(--font-ui); font-size: 9px;">{{ initial }}</text>
+      <div class="site-header__profile">
+        <button type="button" class="site-header__icon" aria-label="Profile" aria-haspopup="menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke-linejoin="round">
+            <path d="M12 2.2 20.5 7v10L12 21.8 3.5 17V7z" style="stroke: var(--signal);" stroke-width="1.6"></path>
+            @if (visitor.initial(); as initial) {
+              <text x="12" y="14.6" text-anchor="middle" style="fill: var(--signal); font-family: var(--font-ui); font-size: 9px;">{{ initial }}</text>
+            } @else {
+              <circle cx="12" cy="9.6" r="2.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></circle>
+              <path d="M7 17.6c0-2.8 2.4-4.4 5-4.4s5 1.6 5 4.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+            }
+          </svg>
+        </button>
+        <div class="site-header__menu" role="menu">
+          @if (visitor.isRegistered()) {
+            <button type="button" class="site-header__menu-item" role="menuitem" (click)="editProfile()">Edit Profile</button>
+            <button type="button" class="site-header__menu-item" role="menuitem" (click)="logout()">Logout</button>
           } @else {
-            <circle cx="12" cy="9.6" r="2.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></circle>
-            <path d="M7 17.6c0-2.8 2.4-4.4 5-4.4s5 1.6 5 4.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+            <button type="button" class="site-header__menu-item" role="menuitem" (click)="openCreateProfile()">Create Profile</button>
+            <button type="button" class="site-header__menu-item" role="menuitem" (click)="openLogin()">Log In</button>
           }
-        </svg>
-      </button>
+        </div>
+      </div>
     </div>
   </header>
 }

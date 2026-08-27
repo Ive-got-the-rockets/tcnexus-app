@@ -1,9 +1,9 @@
-import { Component, Injector, OnDestroy, afterNextRender, computed, effect, inject, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, Injector, OnDestroy, afterNextRender, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { CoursesService } from '../../core/courses.service';
 import { MyListService } from '../../core/my-list.service';
-import { Course } from '../../core/models';
+import { Course, CourseDetail, Lesson, Person } from '../../core/models';
 import { MorphRect, TransitionService } from '../../core/transition.service';
 import { VisitorService } from '../../core/visitor.service';
 import { WatchProgressService } from '../../core/watch-progress.service';
@@ -47,11 +47,17 @@ export class CourseCatalog implements OnDestroy {
   private readonly transition = inject(TransitionService);
   private readonly injector = inject(Injector);
 
+  private readonly heroContent = viewChild<ElementRef<HTMLElement>>('heroContent');
+  /** Collapsed hero content offset, so expanding the description grows downward instead of lifting the title. */
+  protected readonly heroPinTop = signal<number | null>(null);
+
   private showTimer: ReturnType<typeof setTimeout> | null = null;
   private hideTimer: ReturnType<typeof setTimeout> | null = null;
 
   protected readonly previewCourse = signal<Course | null>(null);
   protected readonly previewPosition = signal<PreviewPosition | null>(null);
+  /** Pointer only after the hover-zoom animation has finished. */
+  protected readonly previewReady = signal(false);
   /**
    * The actual small grid card's rect, captured when the popup opens — NOT
    * the popup's own rect. The popup is centered on the card but clamped to
@@ -85,6 +91,26 @@ export class CourseCatalog implements OnDestroy {
   private returnAnimationStarted = false;
 
   protected readonly featured = computed<Course | null>(() => this.courses()[0] ?? null);
+
+  /** Toggle description visibility */
+  protected readonly descriptionExpanded = signal(false);  // Hidden by default
+
+  /** Featured course with lessons — needed for the landing-page episode panel. */
+  protected readonly featuredDetail = signal<CourseDetail | null>(null);
+  protected readonly episodeListOpen = signal(false);
+  protected readonly episodeRowsRevealed = signal(false);
+
+  toggleDescription(): void {
+    this.descriptionExpanded.set(!this.descriptionExpanded());
+  }
+
+  get descriptionLabel(): string {
+    return this.descriptionExpanded() ? 'Hide details' : 'Show more';
+  }
+
+  protected personPhotoUrl(person: Person): string {
+    return person.photo ?? `https://i.pravatar.cc/80?u=${person.id}`;
+  }
 
   /**
    * All Courses, then My List (registered users only, and only once they've
@@ -179,6 +205,13 @@ export class CourseCatalog implements OnDestroy {
       next: (courses) => {
         this.courses.set(courses);
         this.status.set('ready');
+        afterNextRender(() => this.pinHeroContent(), { injector: this.injector });
+        const featured = courses[0];
+        if (featured) {
+          this.coursesService.getCourse(featured.id).subscribe({
+            next: (detail) => this.featuredDetail.set(detail)
+          });
+        }
       },
       error: () => {
         this.status.set('error');
@@ -233,6 +266,96 @@ export class CourseCatalog implements OnDestroy {
     if (course.overview_link) {
       window.open(course.overview_link, '_blank', 'noopener');
     }
+  }
+
+  protected toggleEpisodeList(course: Course, event: Event): void {
+    event.stopPropagation();
+    if (this.episodeListOpen()) {
+      this.closeEpisodeList();
+      return;
+    }
+
+    this.previewCourse.set(null);
+    this.previewPosition.set(null);
+    this.episodeListOpen.set(true);
+
+    const existing = this.featuredDetail();
+    if (existing?.id === course.id) {
+      this.revealEpisodeRows();
+      return;
+    }
+
+    this.coursesService.getCourse(course.id).subscribe({
+      next: (detail) => {
+        this.featuredDetail.set(detail);
+        this.revealEpisodeRows();
+      }
+    });
+  }
+
+  protected closeEpisodeList(): void {
+    this.episodeListOpen.set(false);
+    this.episodeRowsRevealed.set(false);
+  }
+
+  private pinHeroContent(): void {
+    const el = this.heroContent()?.nativeElement;
+    if (!el || this.descriptionExpanded()) {
+      return;
+    }
+    this.heroPinTop.set(el.offsetTop);
+  }
+
+  @HostListener('window:resize')
+  protected onWindowResize(): void {
+    if (!this.descriptionExpanded()) {
+      this.heroPinTop.set(null);
+      afterNextRender(() => this.pinHeroContent(), { injector: this.injector });
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  protected onEscape(): void {
+    if (this.episodeListOpen()) {
+      this.closeEpisodeList();
+    }
+  }
+
+  private revealEpisodeRows(): void {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => this.episodeRowsRevealed.set(true));
+    });
+  }
+
+  protected openEpisode(lesson: Lesson): void {
+    const course = this.featuredDetail();
+    if (!course) return;
+    this.router.navigate(['/courses', course.id, 'lessons', lesson.id]);
+  }
+
+  protected restartEpisode(lesson: Lesson, event: Event): void {
+    event.stopPropagation();
+    const course = this.featuredDetail();
+    if (!course) return;
+    this.router.navigate(['/courses', course.id, 'lessons', lesson.id], { queryParams: { restart: '1' } });
+  }
+
+  protected isLessonLocked(lesson: Lesson): boolean {
+    if (lesson.tier === 'paid') return true;
+    if (lesson.tier === 'registered') return !this.visitor.isRegistered();
+    return false;
+  }
+
+  protected lessonThumbnailUrl(lesson: Lesson): string {
+    return lesson.thumbnail ?? `https://picsum.photos/seed/tcnexus-lesson-${lesson.id}/160/90`;
+  }
+
+  protected watchedPercent(lesson: Lesson): number {
+    return this.watchProgress.fractionFor(lesson.id) * 100;
+  }
+
+  protected lessonRowDelay(index: number): string {
+    return `${Math.min(index * 40, 600)}ms`;
   }
 
   /** Stages the clicked element's rect so the detail page can grow it into place, then navigates. */
@@ -316,8 +439,19 @@ export class CourseCatalog implements OnDestroy {
       );
 
       this.previewPosition.set({ top: `${top}px`, left: `${left}px` });
+      this.previewReady.set(false);
       this.previewCourse.set(course);
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        this.previewReady.set(true);
+      }
     }, PREVIEW_SHOW_DELAY);
+  }
+
+  protected onPreviewAnimationEnd(event: AnimationEvent): void {
+    if (event.animationName !== 'preview-in') {
+      return;
+    }
+    this.previewReady.set(true);
   }
 
   /** Used by both the card and the preview popup, so moving between the two never closes it. */
@@ -327,6 +461,7 @@ export class CourseCatalog implements OnDestroy {
     this.hideTimer = setTimeout(() => {
       this.previewCourse.set(null);
       this.previewPosition.set(null);
+      this.previewReady.set(false);
     }, PREVIEW_HIDE_DELAY);
   }
 

@@ -23,6 +23,10 @@ export class VisitorService {
     return localStorage.getItem(TOKEN_KEY);
   }
 
+  getEmail(): string | null {
+    return this.email();
+  }
+
   setToken(token: string): void {
     localStorage.setItem(TOKEN_KEY, token);
     this.registered.set(true);
@@ -31,6 +35,14 @@ export class VisitorService {
   setEmail(email: string): void {
     localStorage.setItem(EMAIL_KEY, email);
     this.email.set(email);
+  }
+
+  /** Drops the account token but keeps the anonymous visitor id (free-view tracking). */
+  logout(): void {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(EMAIL_KEY);
+    this.registered.set(false);
+    this.email.set(null);
   }
 
   /** Reads a signal internally, so calling this inside a computed() tracks it reactively. */

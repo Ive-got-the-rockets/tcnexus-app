@@ -330,6 +330,19 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (req.url === '/wp-json/tcnexus/v1/login' && req.method === 'POST') {
+      const email = (body.email || '').trim().toLowerCase();
+      const token = tokensByEmail.get(email);
+      if (!token) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ code: 'invalid_credentials', message: 'Email or password is incorrect.' }));
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, token }));
+      return;
+    }
+
     if (req.url === '/wp-json/tcnexus/v1/access/check' && req.method === 'POST') {
       handleAccessCheck(body, req.headers, res);
       return;
