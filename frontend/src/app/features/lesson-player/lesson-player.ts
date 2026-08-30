@@ -6,9 +6,12 @@ import { AccessService } from '../../core/access.service';
 import { AuthModalService } from '../../core/auth-modal.service';
 import { CoursesService } from '../../core/courses.service';
 import { AccessCheckResult, CourseDetail, Lesson } from '../../core/models';
+import { isFinalFreeLesson } from '../../core/registration-settings';
+import { VisitorService } from '../../core/visitor.service';
 import { WatchProgressService } from '../../core/watch-progress.service';
 
 type PageStatus = 'loading' | 'error' | 'blocked' | 'ready';
+type PromptPhase = 'initial' | 'final_free';
 
 /**
  * Should match whatever's baked into the scrub-forward/backward icon art
@@ -173,6 +176,7 @@ export class LessonPlayerPage implements OnDestroy {
   protected readonly authModal = inject(AuthModalService);
   private readonly watchProgress = inject(WatchProgressService);
   private readonly injector = inject(Injector);
+  private readonly visitor = inject(VisitorService);
 
   protected readonly status = signal<PageStatus>('loading');
   protected readonly course = signal<CourseDetail | null>(null);
@@ -217,6 +221,8 @@ export class LessonPlayerPage implements OnDestroy {
   private upNextTriggered = false;
   private upNextDismissed = false;
   private countdownFrame: number | null = null;
+  private readonly promptPhase = signal<PromptPhase | null>(null);
+  private readonly pendingStart = signal<{ lesson: Lesson; restart: boolean } | null>(null);
 
   constructor() {
     // Subscribed (not just read once from the snapshot): navigating from one
@@ -232,12 +238,18 @@ export class LessonPlayerPage implements OnDestroy {
       this.loadLesson(courseId, lessonId, restart);
     });
 
-    // If the visitor registers via the modal while sitting on the "blocked"
-    // screen, re-check access the moment it closes rather than making them
-    // navigate away and back — most closes are a no-op re-check (still
-    // blocked, or nothing was blocked to begin with).
     effect(() => {
-      if (!this.authModal.isOpen() && this.status() === 'blocked') {
+      if (!this.authModal.isOpen() && this.promptPhase()) {
+        const phase = this.promptPhase();
+        if (phase === 'initial' && !this.visitor.isRegistered()) {
+          this.promptPhase.set('final_free');
+          this.authModal.open('final_free');
+          return;
+        }
+        const pending = this.pendingStart();
+        this.promptPhase.set(null);
+        if (pending) this.startDeferredLesson(pending.lesson, pending.restart);
+      } else if (!this.authModal.isOpen() && this.status() === 'blocked') {
         const course = this.course();
         const lesson = this.lesson();
         if (course && lesson) this.checkAccessAndProceed(course, lesson, false);
@@ -284,7 +296,7 @@ export class LessonPlayerPage implements OnDestroy {
       next: (access) => {
         this.course.set(course);
         this.lesson.set(lesson);
-        this.accessResult.set(access.granted ? null : access);
+        this.accessResult.set(access);
 
         if (!access.granted) {
           this.status.set('blocked');
@@ -293,6 +305,15 @@ export class LessonPlayerPage implements OnDestroy {
 
         const next = course.lessons.find((l) => l.order === lesson.order + 1) ?? null;
         this.nextLesson.set(next);
+
+        if (isFinalFreeLesson(access, this.visitor.isRegistered())) {
+          this.pendingStart.set({ lesson, restart });
+          this.promptPhase.set('initial');
+          this.status.set('loading');
+          this.authModal.open('register');
+          return;
+        }
+
         this.status.set('ready');
 
         if (this.player) {
@@ -306,7 +327,17 @@ export class LessonPlayerPage implements OnDestroy {
   }
 
   protected openRegister(): void {
-    this.authModal.open();
+    this.authModal.open('register');
+  }
+
+  private startDeferredLesson(lesson: Lesson, restart: boolean): void {
+    this.pendingStart.set(null);
+    this.status.set('ready');
+    if (this.player) {
+      this.swapSource(lesson, restart);
+    } else {
+      afterNextRender(() => this.initPlayer(lesson, restart), { injector: this.injector });
+    }
   }
 
   private initPlayer(lesson: Lesson, restart: boolean): void {

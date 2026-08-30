@@ -44,6 +44,12 @@ class TCNexus_REST_API {
 			),
 		) );
 
+		register_rest_route( self::NAMESPACE_, '/registration-settings', array(
+			'methods'             => 'GET',
+			'callback'            => array( __CLASS__, 'get_registration_settings' ),
+			'permission_callback' => '__return_true',
+		) );
+
 		register_rest_route( self::NAMESPACE_, '/login', array(
 			'methods'             => 'POST',
 			'callback'            => array( __CLASS__, 'login' ),
@@ -205,6 +211,10 @@ class TCNexus_REST_API {
 			'success' => true,
 			'token'   => $result['token'],
 		), 201 );
+	}
+
+	public static function get_registration_settings() {
+		return new WP_REST_Response( TCNexus_Registration_Settings::get_public_settings(), 200 );
 	}
 
 	private static function count_course_lessons( $course_id ) {
