@@ -7,7 +7,7 @@
         </svg>
       </button>
 
-      @if (status() === 'success' && authModal.mode() === 'register') {
+      @if (status() === 'success' && (authModal.mode() === 'register' || authModal.mode() === 'final_free')) {
         <h2 class="auth-modal__title">Profile created</h2>
         <p class="auth-modal__text">An email has been sent to <strong>{{ submittedEmail() }}</strong> with your login details for future reference. You are now logged in.</p>
       } @else if (status() === 'success' && authModal.mode() === 'login') {
@@ -40,7 +40,13 @@
           </button>
         </form>
       } @else {
-        <h2 class="auth-modal__title">Create your Profile by Entering your email address.</h2>
+        @let copy = authModal.mode() === 'final_free' ? settings().final_free : settings().registration;
+        @if (settings().media.type === 'image' && settings().media.url) {
+          <img class="auth-modal__media" [src]="settings().media.url" [alt]="settings().media.alt" />
+        } @else if (settings().media.type === 'video' && settings().media.url) {
+          <video class="auth-modal__media" [src]="settings().media.url" autoplay muted loop playsinline></video>
+        }
+        <h2 class="auth-modal__title">{{ copy.heading }}</h2>
         <form (submit)="submit($event)">
           <input
             #emailInput
@@ -50,12 +56,12 @@
             class="auth-modal__input"
             [disabled]="status() === 'submitting'"
           />
-          <p class="auth-modal__text">A profile will automatically be created based on your email and you will be automatically logged in. An email has been sent to your email with your login details for future reference.</p>
+          <p class="auth-modal__text">{{ copy.message }}</p>
           @if (status() === 'error') {
             <p class="auth-modal__error">{{ errorMessage() }}</p>
           }
           <button type="submit" class="auth-modal__submit" [disabled]="status() === 'submitting'">
-            {{ status() === 'submitting' ? 'Creating profile…' : 'Create Profile' }}
+            {{ status() === 'submitting' ? 'Creating profile…' : copy.button_label }}
           </button>
         </form>
       }

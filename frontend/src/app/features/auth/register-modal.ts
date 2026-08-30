@@ -4,6 +4,8 @@ import { Component, ElementRef, inject, signal, viewChild } from '@angular/core'
 import { AccessService } from '../../core/access.service';
 import { AuthModalService } from '../../core/auth-modal.service';
 import { VisitorService } from '../../core/visitor.service';
+import { DEFAULT_REGISTRATION_SETTINGS } from '../../core/registration-settings';
+import { RegistrationSettings } from '../../core/models';
 
 type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error';
 
@@ -17,12 +19,18 @@ export class RegisterModal {
   protected readonly visitor = inject(VisitorService);
   private readonly accessService = inject(AccessService);
 
+  protected readonly settings = signal<RegistrationSettings>(DEFAULT_REGISTRATION_SETTINGS);
+
   protected readonly status = signal<SubmitStatus>('idle');
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly submittedEmail = signal('');
 
   private readonly emailInput = viewChild<ElementRef<HTMLInputElement>>('emailInput');
   private readonly passwordInput = viewChild<ElementRef<HTMLInputElement>>('passwordInput');
+
+  constructor() {
+    this.accessService.registrationSettings$.subscribe((settings) => this.settings.set(settings));
+  }
 
   protected close(): void {
     this.authModal.close();

@@ -185,6 +185,19 @@ function readJsonBody(req) {
 // closely enough to exercise the frontend end-to-end, without a real
 // WordPress instance. All in-memory — resets whenever this process restarts.
 const FREE_VIEW_LIMIT = 5;
+const registrationSettings = {
+  registration: {
+    heading: 'Register to continue watching.',
+    message: 'Create a free profile with your email to keep watching. We’ll send your login details by email.',
+    button_label: 'Create Profile',
+  },
+  final_free: {
+    heading: 'This will be your last free lesson.',
+    message: 'Register your email to keep watching free lessons.',
+    button_label: 'Create Profile',
+  },
+  media: { type: 'none', url: '', alt: '' },
+};
 const tokensByEmail = new Map(); // email -> token
 const tiersByToken = new Map(); // token -> 'registered' | 'paid'
 const freeViewsByVisitor = new Map(); // visitorId -> Set<lessonId>
@@ -327,6 +340,12 @@ const server = http.createServer(async (req, res) => {
 
     if (req.url === '/wp-json/tcnexus/v1/register' && req.method === 'POST') {
       handleRegister(body, res);
+      return;
+    }
+
+    if (req.url === '/wp-json/tcnexus/v1/registration-settings' && req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(registrationSettings));
       return;
     }
 

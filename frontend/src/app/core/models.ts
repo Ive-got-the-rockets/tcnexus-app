@@ -59,6 +59,24 @@ export interface AccessCheckResult {
   all_registered_seen?: boolean;
 }
 
+export interface RegistrationCopy {
+  heading: string;
+  message: string;
+  button_label: string;
+}
+
+export interface RegistrationMedia {
+  type: 'none' | 'image' | 'video';
+  url: string;
+  alt: string;
+}
+
+export interface RegistrationSettings {
+  registration: RegistrationCopy;
+  final_free: RegistrationCopy;
+  media: RegistrationMedia;
+}
+
 export interface RegisterResult {
   success: boolean;
   token: string;
