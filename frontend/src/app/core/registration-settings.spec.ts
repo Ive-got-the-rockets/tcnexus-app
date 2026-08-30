@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { isFinalFreeLesson } from './registration-settings';
+import { AccessCheckResult } from './models';
 
 describe('isFinalFreeLesson', () => {
   it('identifies an anonymous response at the final free lesson', () => {
@@ -32,7 +33,7 @@ describe('isFinalFreeLesson', () => {
   it('does not warn when access is not granted', () => {
     expect(
       isFinalFreeLesson(
-        { granted: false, reason: 'limit_reached', tier: 'free', free_limit: 2, free_views_used: 2 },
+        { granted: false, reason: 'requires_registration', tier: 'free', free_limit: 2, free_views_used: 2 },
         false,
       ),
     ).toBe(false);
@@ -41,7 +42,7 @@ describe('isFinalFreeLesson', () => {
   it('does not warn for non-free tiers', () => {
     expect(
       isFinalFreeLesson(
-        { granted: true, reason: 'ok', tier: 'premium', free_limit: 2, free_views_used: 2 },
+        { granted: true, reason: 'ok', tier: 'paid', free_limit: 2, free_views_used: 2 },
         false,
       ),
     ).toBe(false);
@@ -51,13 +52,13 @@ describe('isFinalFreeLesson', () => {
     expect(isFinalFreeLesson({ granted: true, reason: 'ok', tier: 'free' }, false)).toBe(false);
     expect(
       isFinalFreeLesson(
-        { granted: true, reason: 'ok', tier: 'free', free_limit: '2', free_views_used: 2 },
+        { granted: true, reason: 'ok', tier: 'free', free_limit: '2', free_views_used: 2 } as unknown as AccessCheckResult,
         false,
       ),
     ).toBe(false);
     expect(
       isFinalFreeLesson(
-        { granted: true, reason: 'ok', tier: 'free', free_limit: 2, free_views_used: '2' },
+        { granted: true, reason: 'ok', tier: 'free', free_limit: 2, free_views_used: '2' } as unknown as AccessCheckResult,
         false,
       ),
     ).toBe(false);
