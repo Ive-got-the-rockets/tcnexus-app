@@ -29,7 +29,7 @@ The screen will also contain one media section shared by both registration state
 - Media URL: a URL selected through the WordPress media picker or entered as a video URL.
 - Image alt text when media type is Image.
 
-For video, the frontend will render a native HTML5 video element with controls and a constrained height so the modal remains usable on mobile. Unsupported or empty media settings fall back to no media without breaking registration. Settings are stored as one sanitized option array under `tcnexus_registration_settings` and saved with a WordPress nonce and capability check.
+For video, the frontend will render a muted, autoplaying, looping native HTML5 video element without controls. It will use a constrained height so the modal remains usable on mobile. Unsupported or empty media settings fall back to no media without breaking registration. Settings are stored as one sanitized option array under `tcnexus_registration_settings` and saved with a WordPress nonce and capability check.
 
 ## API and frontend data flow
 
