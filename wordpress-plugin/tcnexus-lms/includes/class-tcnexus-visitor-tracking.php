@@ -131,7 +131,16 @@ class TCNexus_Visitor_Tracking {
 		global $wpdb;
 		$visitor_id = sanitize_text_field( wp_unslash( $_POST['visitor_id'] ?? '' ) );
 		$ip_address = sanitize_text_field( wp_unslash( $_POST['ip_address'] ?? '' ) );
-		$wpdb->query( $wpdb->prepare( 'DELETE FROM ' . self::table() . ' WHERE user_id = 0 AND (visitor_id = %s OR ip_address = %s)', $visitor_id, $ip_address ) );
+		if ( '' === $visitor_id && '' === $ip_address ) {
+			wp_die( 'A visitor identifier is required.' );
+		}
+		if ( $visitor_id && $ip_address ) {
+			$wpdb->query( $wpdb->prepare( 'DELETE FROM ' . self::table() . ' WHERE user_id = 0 AND visitor_id = %s AND ip_address = %s', $visitor_id, $ip_address ) );
+		} elseif ( $visitor_id ) {
+			$wpdb->query( $wpdb->prepare( 'DELETE FROM ' . self::table() . ' WHERE user_id = 0 AND visitor_id = %s', $visitor_id ) );
+		} else {
+			$wpdb->query( $wpdb->prepare( 'DELETE FROM ' . self::table() . ' WHERE user_id = 0 AND ip_address = %s', $ip_address ) );
+		}
 		wp_safe_redirect( admin_url( 'admin.php?page=tcnexus-visitor-tracking&cleared=1' ) );
 		exit;
 	}
