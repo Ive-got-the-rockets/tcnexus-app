@@ -66,12 +66,16 @@
           >
             <div class="hero__content" #heroContent>
             <p class="hero__eyebrow">Featured Course</p>
-            <h1 class="hero__title">
+            <h1
+              class="hero__title"
+              (mouseenter)="openDescriptionOnHover()"
+              (mouseleave)="closeDescriptionOnHover()"
+            >
               {{ course.title }}
               <button
                 type="button"
                 class="hero__info-btn"
-                [attr.aria-expanded]="descriptionExpanded()"
+                [attr.aria-expanded]="descriptionVisible()"
                 [attr.aria-label]="descriptionLabel"
                 (click)="toggleDescription()"
               >
@@ -90,7 +94,7 @@
                 </svg>
               </button>
             </h1>
-            <div class="hero__details" [class.hero__details--expanded]="descriptionExpanded()">
+            <div class="hero__details" [class.hero__details--expanded]="descriptionVisible()">
               <p class="hero__description">{{ course.excerpt }}</p>
               @if (featuredDetail()?.instructor; as instructor) {
                 <div class="hero__instructor">
@@ -114,7 +118,7 @@
                 class="hero__overview-btn"
                 [attr.aria-expanded]="episodeListOpen()"
                 (click)="toggleEpisodeList(course, $event)"
-              >Episode List</button>
+              >Lessons List</button>
               @if (course.overview_link) {
                 <button type="button" class="hero__overview-btn" (click)="openOverview(course, $event)">Course Overview</button>
               }
@@ -253,15 +257,15 @@
   type="button"
   class="episode-backdrop"
   [class.episode-backdrop--open]="episodeListOpen()"
-  aria-label="Close episode list"
+  aria-label="Close lessons list"
   (click)="closeEpisodeList()"
 ></button>
 
-<aside class="episode-panel" [class.episode-panel--open]="episodeListOpen()" aria-label="Episode list">
+<aside class="episode-panel" [class.episode-panel--open]="episodeListOpen()" aria-label="Lessons list">
   <div class="episode-panel__header" [class.episode-panel__header--revealed]="episodeRowsRevealed()">
-    <button type="button" class="episode-panel__close" aria-label="Close episode list" (click)="closeEpisodeList()">
+    <button type="button" class="episode-panel__close" aria-label="Close lessons list" (click)="closeEpisodeList()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M5 12h14M13 6l6 6-6 6"></path>
+        <path d="M6 6l12 12M18 6 6 18"></path>
       </svg>
     </button>
     <h2 class="episode-panel__title">Lessons</h2>

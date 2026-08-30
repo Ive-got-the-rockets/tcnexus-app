@@ -6,7 +6,9 @@ import { CourseDetailPage } from './features/course-detail/course-detail';
 import { LessonPlayerPage } from './features/lesson-player/lesson-player';
 
 export const routes: Routes = [
-  { path: '', component: CourseCatalog },
+  { path: '', component: CourseCatalog, data: { catalogMode: 'home' } },
+  { path: 'trading-courses', component: CourseCatalog, data: { catalogMode: 'trading' } },
+  { path: 'platform-courses', component: CourseCatalog, data: { catalogMode: 'platform' } },
   { path: 'profile', component: ProfilePage },
   { path: 'courses/:id', component: CourseDetailPage },
   { path: 'courses/:id/lessons/:lessonId', component: LessonPlayerPage, data: { hideChrome: true } },

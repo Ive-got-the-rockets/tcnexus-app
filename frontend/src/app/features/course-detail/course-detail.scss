@@ -219,7 +219,7 @@
   color: var(--paper);
   background: transparent;
   border: 1px solid color-mix(in srgb, var(--paper) 35%, transparent);
-  border-radius: 3px;
+  border-radius: var(--button-radius);
   padding: 0.35rem 0.9rem;
   cursor: pointer;
   transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
@@ -507,7 +507,7 @@
   width: 34px;
   height: 34px;
   padding: 0.4rem;
-  border-radius: 0.25rem;
+  border-radius: var(--button-radius);
   background: rgba(0, 0, 0, 0.55);
   border: 1.5px solid var(--signal);
   color: var(--signal);
@@ -602,4 +602,3 @@
     background: var(--signal-dim);
   }
 }
-

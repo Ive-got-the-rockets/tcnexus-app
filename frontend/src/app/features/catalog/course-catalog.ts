@@ -1,5 +1,5 @@
 import { Component, ElementRef, HostListener, Injector, OnDestroy, afterNextRender, computed, effect, inject, signal, viewChild } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { CoursesService } from '../../core/courses.service';
 import { MyListService } from '../../core/my-list.service';
@@ -10,6 +10,7 @@ import { WatchProgressService } from '../../core/watch-progress.service';
 import { RowScrollDirective, ScrollEdges } from './row-scroll.directive';
 
 type CatalogStatus = 'loading' | 'error' | 'ready';
+type CatalogMode = 'home' | 'trading' | 'platform';
 
 interface CourseRow {
   title: string;
@@ -43,6 +44,7 @@ export class CourseCatalog implements OnDestroy {
   private readonly visitor = inject(VisitorService);
   private readonly myList = inject(MyListService);
   private readonly watchProgress = inject(WatchProgressService);
+  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly transition = inject(TransitionService);
   private readonly injector = inject(Injector);
@@ -90,10 +92,25 @@ export class CourseCatalog implements OnDestroy {
   protected readonly returnSettled = signal(false);
   private returnAnimationStarted = false;
 
-  protected readonly featured = computed<Course | null>(() => this.courses()[0] ?? null);
+  protected readonly catalogMode = signal<CatalogMode>('home');
+  protected readonly categoryCourses = computed(() => {
+    const courses = this.courses();
+    if (this.catalogMode() === 'platform') {
+      return courses.filter((course) => course.course_types.includes('Platform'));
+    }
+    if (this.catalogMode() === 'trading') {
+      return courses.filter((course) => !course.course_types.includes('Platform'));
+    }
+    return courses;
+  });
+  protected readonly featured = computed<Course | null>(() => this.categoryCourses()[0] ?? null);
 
   /** Toggle description visibility */
   protected readonly descriptionExpanded = signal(false);  // Hidden by default
+  protected readonly descriptionHovered = signal(false);
+  protected readonly descriptionVisible = computed(
+    () => this.descriptionExpanded() || this.descriptionHovered()
+  );
 
   /** Featured course with lessons — needed for the landing-page episode panel. */
   protected readonly featuredDetail = signal<CourseDetail | null>(null);
@@ -101,11 +118,21 @@ export class CourseCatalog implements OnDestroy {
   protected readonly episodeRowsRevealed = signal(false);
 
   toggleDescription(): void {
+    // A click turns the temporary hover reveal into an explicit toggle.
+    this.descriptionHovered.set(false);
     this.descriptionExpanded.set(!this.descriptionExpanded());
   }
 
+  openDescriptionOnHover(): void {
+    this.descriptionHovered.set(true);
+  }
+
+  closeDescriptionOnHover(): void {
+    this.descriptionHovered.set(false);
+  }
+
   get descriptionLabel(): string {
-    return this.descriptionExpanded() ? 'Hide details' : 'Show more';
+    return this.descriptionVisible() ? 'Hide details' : 'Show more';
   }
 
   protected personPhotoUrl(person: Person): string {
@@ -125,6 +152,11 @@ export class CourseCatalog implements OnDestroy {
     }
 
     const isPlatform = (course: Course) => course.course_types.includes('Platform');
+    const mode = this.catalogMode();
+    if (mode === 'trading' || mode === 'platform') {
+      return [{ title: mode === 'platform' ? 'Platform Courses' : 'Trading Courses', courses: this.categoryCourses() }];
+    }
+
     const rows: CourseRow[] = [{ title: 'All Courses', courses }];
 
     if (this.visitor.isRegistered()) {
@@ -142,6 +174,14 @@ export class CourseCatalog implements OnDestroy {
   });
 
   constructor() {
+    this.route.data.subscribe((data) => {
+      const mode = data['catalogMode'];
+      this.catalogMode.set(mode === 'trading' || mode === 'platform' ? mode : 'home');
+      this.episodeListOpen.set(false);
+      this.episodeRowsRevealed.set(false);
+      this.loadFeaturedDetail();
+    });
+
     this.load();
 
     const returning = this.transition.consumeReturn();
@@ -206,15 +246,24 @@ export class CourseCatalog implements OnDestroy {
         this.courses.set(courses);
         this.status.set('ready');
         afterNextRender(() => this.pinHeroContent(), { injector: this.injector });
-        const featured = courses[0];
-        if (featured) {
-          this.coursesService.getCourse(featured.id).subscribe({
-            next: (detail) => this.featuredDetail.set(detail)
-          });
-        }
+        this.loadFeaturedDetail();
       },
       error: () => {
         this.status.set('error');
+      }
+    });
+  }
+
+  private loadFeaturedDetail(): void {
+    const featured = this.featured();
+    this.featuredDetail.set(null);
+    if (!featured) return;
+
+    this.coursesService.getCourse(featured.id).subscribe({
+      next: (detail) => {
+        if (this.featured()?.id === detail.id) {
+          this.featuredDetail.set(detail);
+        }
       }
     });
   }

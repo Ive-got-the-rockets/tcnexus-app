@@ -10,6 +10,7 @@
   --signal-dim: #8fbf3f;
   --amber: #f0a83c;
   --rule: rgba(244, 241, 233, 0.1);
+  --button-radius: 4.8px;
 
   --font-display: 'Fraunces', 'Iowan Old Style', serif;
   --font-body: 'Hanken Grotesk', -apple-system, sans-serif;
@@ -309,7 +310,7 @@ button {
 
 .player-wrap .tcn-progress {
   position: absolute;
-  bottom: 79px;
+  bottom: 35px;
   left: 20px;
   right: 20px;
   transform: translateY(0);
@@ -328,7 +329,7 @@ button {
 
 .player-wrap .tcn-time {
   position: absolute;
-  bottom: 46px;
+  bottom: 5px;
   left: 20px;
   display: flex;
   align-items: center;
@@ -345,7 +346,7 @@ button {
    text label standing in for what the reference shows as a 110x14 wordmark icon. */
 .player-wrap .tcn-ctrl-xray {
   position: absolute;
-  bottom: 46px;
+  bottom: 7px;
   right: 20px;
   background: none;
   border: none;
@@ -420,12 +421,57 @@ button {
     height 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
+/* When X-Ray is open, Plyr's default centered flex alignment can create a
+   black band above the embedded 16:9 video at certain viewport sizes. Keep
+   the actual video content pinned to the same top edge as its shell so any
+   spare height remains below it. */
+.player-wrap.tcn-xray-open .plyr {
+  position: absolute;
+  inset: 0;
+  align-items: flex-start;
+}
+
+.player-wrap.tcn-xray-open .plyr__video-embed {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  align-self: flex-start;
+}
+
+.player-wrap.tcn-xray-open .plyr__video-wrapper {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Native theater/fullscreen keeps .plyr at the viewport size. In that state
+   the video column itself must be explicitly constrained; otherwise Plyr's
+   fullscreen styles let the wrapper expand behind the X-Ray panel. */
+.player-wrap.tcn-xray-open .plyr:fullscreen .plyr__video-wrapper,
+.player-wrap.tcn-xray-open .plyr.plyr--fullscreen-fallback .plyr__video-wrapper {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: calc(100vw - 440px) !important;
+  height: calc((100vw - 440px) * 0.5625) !important;
+  margin: 0 !important;
+}
+
+/* Resizing should update the theater geometry immediately. If this shell
+   transition runs during every resize event, the repeated animations make
+   the player appear to drift toward the center instead of staying pinned to
+   the top-left edge. */
+.player-wrap.tcn-xray-open {
+  transition: none;
+}
+
 .tcn-xray-panel {
   position: fixed;
   top: 0;
   right: 0;
   bottom: 0;
-  width: 400px;
+  width: 440px;
   background: #0b0b0b;
   border-left: 1px solid rgba(255, 255, 255, 0.1);
   transform: translateX(100%);
@@ -476,14 +522,13 @@ button {
   left: 0;
   right: 0;
   bottom: 0;
-  height: 120px;
+  height: 0;
   background: #0b0b0b;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   transform: translateY(100%);
-  /* right is also set inline by placeXray() once open, since the exact
-     panel width (and so how far the bar needs to fall short of the panel)
-     depends on whether the video ended up width- or height-bound — this
-     transition just makes that inline change animate too. */
+  /* Width and height are set inline by placeXray() so the bar fills the
+     exact space below the 16:9 player and beside the fixed phone-width
+     panel as the window is resized. */
   transition:
     transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
     right 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);

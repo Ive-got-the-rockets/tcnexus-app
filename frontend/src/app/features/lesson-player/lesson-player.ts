@@ -28,8 +28,8 @@ const UP_NEXT_COUNTDOWN_SECONDS = 10;
 // just getting squeezed narrower. The reference itself leaves the panel/bar
 // content undecided ("still being decided") — the panel just lazy-loads
 // XRAY_PANEL_URL in an iframe, and the bottom bar is an empty placeholder.
-const XRAY_PANEL_WIDTH = 400;
-const XRAY_BOTTOMBAR_HEIGHT = 120;
+// iPhone 16 Pro Max CSS viewport width.
+const XRAY_PANEL_WIDTH = 440;
 const XRAY_PANEL_URL = 'https://app.tradecheetah.com';
 
 interface FillRect {
@@ -39,10 +39,10 @@ interface FillRect {
   height: number;
 }
 
-function computeFillRect(reserveRight: number, reserveBottom: number): FillRect {
+function computeFillRect(reserveRight: number, reserveBottom: number, constrainHeight = true): FillRect {
   const vw = window.innerWidth - reserveRight;
   const vh = window.innerHeight - reserveBottom;
-  const width = Math.min(vw, (vh * 16) / 9);
+  const width = Math.max(0, constrainHeight ? Math.min(vw, (vh * 16) / 9) : vw);
   const height = (width * 9) / 16;
   return { left: (vw - width) / 2, top: (vh - height) / 2, width, height };
 }
@@ -187,7 +187,10 @@ export class LessonPlayerPage implements OnDestroy {
   private xrayFrame: HTMLIFrameElement | null = null;
   private xrayBottomBar: HTMLElement | null = null;
   private readonly onResize = (): void => {
-    if (this.xrayOpen()) this.placeXray();
+    if (this.xrayOpen()) {
+      this.placeXray();
+      this.scheduleXrayPlacement();
+    }
   };
 
   protected readonly upNextVisible = signal(false);
@@ -372,8 +375,8 @@ export class LessonPlayerPage implements OnDestroy {
     // Native fullscreen re-parents rendering to .plyr itself, so the fill
     // rect (and which element it applies to) has to be recomputed on every
     // transition in or out of it — see placeXray().
-    this.player.on('enterfullscreen', () => this.placeXray());
-    this.player.on('exitfullscreen', () => this.placeXray());
+    this.player.on('enterfullscreen', () => this.scheduleXrayPlacement());
+    this.player.on('exitfullscreen', () => this.scheduleXrayPlacement());
 
     // No initial setSource() call here — the div's data-plyr-embed-id/-hash
     // attributes (bound to embedId()/embedHash() in the template) already
@@ -614,7 +617,10 @@ export class LessonPlayerPage implements OnDestroy {
     // (that already has its own buttons), toggle for everything else.
     root.addEventListener('click', (event) => {
       const target = event.target as HTMLElement;
-      if (target.closest('.plyr__controls')) return;
+      // X-Ray controls live inside .plyr, but their clicks must not be
+      // mistaken for video clicks. In particular, closing the panel would
+      // otherwise bubble here and start playback again.
+      if (target.closest('.plyr__controls, .tcn-xray-panel, .tcn-xray-bottombar')) return;
       this.player?.togglePlay();
     });
   }
@@ -645,20 +651,24 @@ export class LessonPlayerPage implements OnDestroy {
     if (!wrap) return;
 
     const open = this.xrayOpen();
-    const isFullscreen = !!this.player?.fullscreen?.active;
-    const rect = computeFillRect(open ? XRAY_PANEL_WIDTH : 0, open ? XRAY_BOTTOMBAR_HEIGHT : 0);
+    const plyrElement = wrap.querySelector<HTMLElement>('.plyr');
+    const isFullscreen =
+      !!this.player?.fullscreen?.active ||
+      !!plyrElement?.classList.contains('plyr--fullscreen-active') ||
+      document.fullscreenElement === plyrElement;
+    const rect = computeFillRect(open ? XRAY_PANEL_WIDTH : 0, 0, !open);
 
     if (open) {
-      // The video is usually height-bound once the panel/bar shrink its box
-      // (the box ends up wider than 16:9), so centering it in the
-      // reserved-width budget would leave a gap between the video's right
-      // edge and the panel. Pin it flush left instead and let the panel/bar
-      // grow to absorb exactly that leftover width, so they always meet the
-      // video edge-to-edge.
+      // X-Ray keeps the player flush with the viewport's top-left corner.
+      // Its width uses all space beside the fixed-width phone panel, while
+      // the height is derived from that width to preserve a true 16:9 ratio.
       rect.left = 0;
+      rect.top = 0;
     }
 
+    const videoWrapper = wrap.querySelector<HTMLElement>('.plyr__video-wrapper');
     const videoEmbed = wrap.querySelector<HTMLElement>('.plyr__video-embed');
+    const controlsRoot = wrap.querySelector<HTMLElement>('.plyr__controls');
 
     if (isFullscreen) {
       wrap.style.position = '';
@@ -666,20 +676,69 @@ export class LessonPlayerPage implements OnDestroy {
       wrap.style.top = '';
       wrap.style.width = '';
       wrap.style.height = '';
-      if (videoEmbed) {
-        videoEmbed.style.position = 'absolute';
-        videoEmbed.style.left = `${rect.left}px`;
-        videoEmbed.style.top = `${rect.top}px`;
-        videoEmbed.style.width = `${rect.width}px`;
-        videoEmbed.style.height = `${rect.height}px`;
+
+      if (open && videoWrapper) {
+        // Native fullscreen keeps .plyr at the viewport size. Resize its
+        // video wrapper instead so the X-Ray panel occupies the right side
+        // rather than sitting on top of the video.
+        videoWrapper.style.position = 'absolute';
+        videoWrapper.style.left = '0';
+        videoWrapper.style.top = '0';
+        videoWrapper.style.width = `${rect.width}px`;
+        videoWrapper.style.height = `${rect.height}px`;
+      } else if (videoWrapper) {
+        videoWrapper.style.position = '';
+        videoWrapper.style.left = '';
+        videoWrapper.style.top = '';
+        videoWrapper.style.width = '';
+        videoWrapper.style.height = '';
       }
-    } else {
+
+      if (open && controlsRoot) {
+        // The custom controls are a full-area overlay. Keep that overlay
+        // aligned with the shrunken video column instead of the full native
+        // fullscreen shell, so center/top/bottom controls stay on the video.
+        controlsRoot.style.inset = '0 auto auto 0';
+        controlsRoot.style.width = `${rect.width}px`;
+        controlsRoot.style.height = `${rect.height}px`;
+      } else if (controlsRoot) {
+        controlsRoot.style.inset = '';
+        controlsRoot.style.width = '';
+        controlsRoot.style.height = '';
+      }
+
+      // The wrapper now owns the rectangle. Remove stale child sizing left by
+      // a previous non-fullscreen placement and let the fill CSS apply.
       if (videoEmbed) {
         videoEmbed.style.position = '';
         videoEmbed.style.left = '';
         videoEmbed.style.top = '';
         videoEmbed.style.width = '';
         videoEmbed.style.height = '';
+      }
+    } else {
+      if (controlsRoot) {
+        controlsRoot.style.inset = '';
+        controlsRoot.style.width = '';
+        controlsRoot.style.height = '';
+      }
+      if (videoEmbed) {
+        if (open) {
+          // Explicitly size the embed too. Plyr/Vimeo can otherwise retain
+          // its own centered aspect-ratio box while the outer shell is
+          // resizing, which creates the apparent top gap.
+          videoEmbed.style.position = 'absolute';
+          videoEmbed.style.left = '0';
+          videoEmbed.style.top = '0';
+          videoEmbed.style.width = `${rect.width}px`;
+          videoEmbed.style.height = `${rect.height}px`;
+        } else {
+          videoEmbed.style.position = '';
+          videoEmbed.style.left = '';
+          videoEmbed.style.top = '';
+          videoEmbed.style.width = '';
+          videoEmbed.style.height = '';
+        }
       }
       if (open) {
         wrap.style.position = 'fixed';
@@ -697,13 +756,24 @@ export class LessonPlayerPage implements OnDestroy {
     }
 
     if (open) {
-      const panelWidth = window.innerWidth - rect.width;
+      const panelWidth = Math.min(XRAY_PANEL_WIDTH, window.innerWidth);
       if (this.xrayPanel) this.xrayPanel.style.width = `${panelWidth}px`;
       if (this.xrayBottomBar) this.xrayBottomBar.style.right = `${panelWidth}px`;
+      if (this.xrayBottomBar) {
+        this.xrayBottomBar.style.height = `${Math.max(0, window.innerHeight - rect.height)}px`;
+      }
     } else {
       if (this.xrayPanel) this.xrayPanel.style.width = '';
       if (this.xrayBottomBar) this.xrayBottomBar.style.right = '';
+      if (this.xrayBottomBar) this.xrayBottomBar.style.height = '';
     }
+  }
+
+  /** Fullscreen state settles after Plyr emits its transition event. */
+  private scheduleXrayPlacement(): void {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => this.placeXray());
+    });
   }
 
   private handleTimeUpdate(): void {
