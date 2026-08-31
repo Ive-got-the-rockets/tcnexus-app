@@ -40,6 +40,12 @@ export class RegisterModal {
     this.submittedEmail.set('');
   }
 
+  protected openRegister(): void {
+    this.status.set('idle');
+    this.errorMessage.set(null);
+    this.authModal.open('register');
+  }
+
   protected submit(event: Event): void {
     event.preventDefault();
     const email = this.emailInput()?.nativeElement.value.trim();

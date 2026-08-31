@@ -29,6 +29,64 @@
   box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.85);
 }
 
+.auth-modal--choice {
+  width: min(64rem, calc(100% - 2.5rem));
+  max-width: none;
+  padding: 2rem;
+}
+
+.auth-modal__choice {
+  display: flex;
+  align-items: stretch;
+  gap: 1.25rem;
+}
+
+.auth-modal__choice-card {
+  min-width: 0;
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--ink) 46%, var(--ink-raised));
+  border: 1px solid color-mix(in srgb, var(--paper) 13%, transparent);
+  border-radius: 0.35rem;
+  overflow: hidden;
+}
+
+.auth-modal__choice-card .auth-modal__media {
+  flex: none;
+  width: 100%;
+  margin: 0;
+  border-radius: 0;
+}
+
+.auth-modal__choice-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.auth-modal__choice-body .auth-modal__title {
+  margin-top: 0;
+}
+
+.auth-modal__choice-body form {
+  margin-top: 1rem;
+}
+
+.auth-modal__choice-body > .auth-modal__submit {
+  margin-top: 1.25rem;
+}
+
+.auth-modal__choice-or {
+  align-self: center;
+  flex: 0 0 auto;
+  color: var(--paper-dim);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+}
+
 .auth-modal__close {
   position: absolute;
   top: 0.85rem;
@@ -39,7 +97,7 @@
   width: 1.75rem;
   height: 1.75rem;
   border: none;
-  border-radius: 999px;
+  border-radius: 4.8px;
   background: none;
   color: var(--paper-dim);
   cursor: pointer;
@@ -130,5 +188,20 @@ form {
   &:disabled {
     opacity: 0.6;
     cursor: default;
+  }
+}
+
+@media (max-width: 760px) {
+  .auth-modal--choice {
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
+
+  .auth-modal__choice {
+    flex-direction: column;
+  }
+
+  .auth-modal__choice-or {
+    padding: 0.1rem 0;
   }
 }

@@ -14,8 +14,13 @@ class TCNexus_Admin_Theme {
 	public static function enqueue_assets( $hook ) {
 		$is_taxonomy_screen = in_array( $hook, array( 'edit-tags.php', 'term.php' ), true )
 			&& isset( $_GET['taxonomy'] ) && 'course_type' === $_GET['taxonomy'];
+		// WordPress normally generates this exact suffix for a submenu page,
+		// but matching the page slug keeps the styling working across local
+		// installs that normalize the parent menu slug differently.
+		$is_membership_screen = false !== strpos( $hook, '_page_tcnexus-visitor-tracking' );
+		$is_popup_details_screen = false !== strpos( $hook, '_page_tcnexus-registration-settings' );
 
-		if ( ! $is_taxonomy_screen ) {
+		if ( ! $is_taxonomy_screen && ! $is_membership_screen && ! $is_popup_details_screen ) {
 			return;
 		}
 
@@ -26,11 +31,47 @@ class TCNexus_Admin_Theme {
 			null
 		);
 
-		wp_enqueue_style(
-			'tcnexus-admin-taxonomy',
-			TCNEXUS_LMS_URL . 'assets/admin-taxonomy.css',
-			array(),
-			TCNEXUS_LMS_VERSION
-		);
+		if ( $is_taxonomy_screen ) {
+			wp_enqueue_style(
+				'tcnexus-admin-taxonomy',
+				TCNEXUS_LMS_URL . 'assets/admin-taxonomy.css',
+				array(),
+				TCNEXUS_LMS_VERSION
+			);
+		}
+
+		if ( $is_membership_screen || $is_popup_details_screen ) {
+			wp_enqueue_style(
+				'tcnexus-admin-membership',
+				TCNEXUS_LMS_URL . 'assets/admin-membership.css',
+				array(),
+				TCNEXUS_LMS_VERSION
+			);
+		}
+
+		if ( $is_popup_details_screen ) {
+			wp_enqueue_style(
+				'tcnexus-course-builder',
+				TCNEXUS_LMS_URL . 'assets/course-builder.css',
+				array(),
+				TCNEXUS_LMS_VERSION
+			);
+			wp_enqueue_media();
+			wp_enqueue_script(
+				'tcnexus-popup-details',
+				TCNEXUS_LMS_URL . 'assets/admin-popup-details.js',
+				array(),
+				TCNEXUS_LMS_VERSION,
+				true
+			);
+			wp_enqueue_script(
+				'tcnexus-course-builder',
+				TCNEXUS_LMS_URL . 'assets/course-builder.js',
+				array(),
+				TCNEXUS_LMS_VERSION,
+				true
+			);
+			TCNexus_Media::localize( 'tcnexus-course-builder' );
+		}
 	}
 }

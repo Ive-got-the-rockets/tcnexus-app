@@ -36,8 +36,9 @@ class TCNexus_Media {
 	 * upload size in the empty-state placeholder and set the target aspect
 	 * ratio the cropper (in course-builder.js) constrains selection to.
 	 */
-	public static function render_picker( $label, $field_key, $attachment_id, $title, $crop_width = 0, $crop_height = 0 ) {
+	public static function render_picker( $label, $field_key, $attachment_id, $title, $crop_width = 0, $crop_height = 0, $input_name = null ) {
 		$input_id = 'tcn-media-' . $field_key;
+		$input_name = $input_name ? $input_name : $field_key;
 		$url      = $attachment_id ? wp_get_attachment_image_url( $attachment_id, 'medium' ) : '';
 		$has_crop = $crop_width && $crop_height;
 		?>
@@ -63,7 +64,7 @@ class TCNexus_Media {
 					</span>
 				<?php endif; ?>
 			</div>
-			<input type="hidden" id="<?php echo esc_attr( $input_id ); ?>" name="<?php echo esc_attr( $field_key ); ?>" value="<?php echo esc_attr( $attachment_id ); ?>" />
+		<input type="hidden" id="<?php echo esc_attr( $input_id ); ?>" name="<?php echo esc_attr( $input_name ); ?>" value="<?php echo esc_attr( $attachment_id ); ?>" />
 			<div class="tcn-media-picker__actions">
 				<button type="button" class="tcn-btn-ghost tcn-media-select"><?php echo esc_html( $label ); ?></button>
 				<button type="button" class="tcn-btn-ghost tcn-btn-ghost--danger tcn-media-remove">Remove</button>

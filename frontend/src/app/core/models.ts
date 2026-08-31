@@ -75,6 +75,7 @@ export interface RegistrationMedia {
 export interface RegistrationSettings {
   registration: RegistrationCopy;
   final_free: RegistrationCopy;
+  paid_member: RegistrationCopy;
 }
 
 export interface RegisterResult {

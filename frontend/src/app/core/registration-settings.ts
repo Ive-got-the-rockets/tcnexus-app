@@ -13,6 +13,12 @@ export const DEFAULT_REGISTRATION_SETTINGS: RegistrationSettings = {
     button_label: 'Create Profile',
     media: { type: 'none', url: '', alt: '' },
   },
+  paid_member: {
+    heading: 'Become a paid member',
+    message: 'Become a paid member to access locked content and more.',
+    button_label: 'Become a Paid Member',
+    media: { type: 'none', url: '', alt: '' },
+  },
 };
 
 export function normalizeRegistrationSettings(value: Partial<RegistrationSettings> | null | undefined): RegistrationSettings {
@@ -20,6 +26,7 @@ export function normalizeRegistrationSettings(value: Partial<RegistrationSetting
     media?: RegistrationMedia;
     registration?: Partial<RegistrationCopy>;
     final_free?: Partial<RegistrationCopy>;
+    paid_member?: Partial<RegistrationCopy>;
   };
   const legacyMedia = normalizeMedia(source.media);
   const normalizeCopy = (copy: Partial<RegistrationCopy> | undefined, fallback: RegistrationCopy): RegistrationCopy => ({
@@ -30,6 +37,7 @@ export function normalizeRegistrationSettings(value: Partial<RegistrationSetting
   return {
     registration: normalizeCopy(source.registration, DEFAULT_REGISTRATION_SETTINGS.registration),
     final_free: normalizeCopy(source.final_free, DEFAULT_REGISTRATION_SETTINGS.final_free),
+    paid_member: normalizeCopy(source.paid_member, DEFAULT_REGISTRATION_SETTINGS.paid_member),
   };
 }
 
@@ -48,4 +56,8 @@ export function isFinalFreeLesson(access: AccessCheckResult, registered: boolean
     typeof access.free_limit === 'number' &&
     access.free_views_used === access.free_limit
   );
+}
+
+export function isAnonymousFreeLimitReached(access: AccessCheckResult, registered: boolean): boolean {
+  return registered === false && access.granted === false && access.reason === 'requires_registration' && access.tier === 'free';
 }

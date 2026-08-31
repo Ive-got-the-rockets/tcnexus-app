@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isFinalFreeLesson, normalizeRegistrationSettings } from './registration-settings';
+import { isFinalFreeLesson, isAnonymousFreeLimitReached, normalizeRegistrationSettings } from './registration-settings';
 import { AccessCheckResult } from './models';
 
 describe('isFinalFreeLesson', () => {
@@ -91,6 +91,21 @@ describe('isFinalFreeLesson', () => {
 });
 
 describe('normalizeRegistrationSettings', () => {
+  it('provides independent paid-member popup defaults and preserves paid-member copy', () => {
+    const settings = normalizeRegistrationSettings({
+      paid_member: {
+        heading: 'Become a paid member',
+        message: 'Unlock every lesson.',
+        button_label: 'Join now',
+      },
+    } as never);
+
+    expect(settings.paid_member.heading).toBe('Become a paid member');
+    expect(settings.paid_member.message).toBe('Unlock every lesson.');
+    expect(settings.paid_member.button_label).toBe('Join now');
+    expect(settings.paid_member.media).toEqual({ type: 'none', url: '', alt: '' });
+  });
+
   it('keeps media settings independent for each popup', () => {
     const settings = normalizeRegistrationSettings({
       registration: { media: { type: 'image', url: 'register.jpg', alt: 'Register' } },
@@ -108,5 +123,31 @@ describe('normalizeRegistrationSettings', () => {
 
     expect(settings.registration.media).toEqual({ type: 'image', url: 'legacy.jpg', alt: 'Legacy' });
     expect(settings.final_free.media).toEqual({ type: 'image', url: 'legacy.jpg', alt: 'Legacy' });
+  });
+});
+
+describe('isAnonymousFreeLimitReached', () => {
+  it('identifies an anonymous free-tier lesson blocked after the free allowance', () => {
+    expect(
+      isAnonymousFreeLimitReached(
+        { granted: false, reason: 'requires_registration', tier: 'free', free_limit: 2 },
+        false,
+      ),
+    ).toBe(true);
+  });
+
+  it('does not identify registered viewers or other registration blocks', () => {
+    expect(
+      isAnonymousFreeLimitReached(
+        { granted: false, reason: 'requires_registration', tier: 'free' },
+        true,
+      ),
+    ).toBe(false);
+    expect(
+      isAnonymousFreeLimitReached(
+        { granted: false, reason: 'requires_registration', tier: 'registered' },
+        false,
+      ),
+    ).toBe(false);
   });
 });

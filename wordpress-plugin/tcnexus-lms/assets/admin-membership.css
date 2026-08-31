@@ -1,0 +1,213 @@
+/* Membership admin screens share the Course Builder visual language. */
+
+.tcn-membership-wrap {
+  --tcn-bg: #fffdf9;
+  --tcn-bg-sunken: #f1efe7;
+  --tcn-border: #e5e2d9;
+  --tcn-text: #201f1c;
+  --tcn-text-dim: #8b887d;
+  --tcn-primary: #8fd8c2;
+  --tcn-primary-strong: #5fc7a8;
+  --tcn-primary-text: #12352c;
+  --tcn-warning: #f0cb7e;
+  --tcn-warning-text: #6b4e14;
+  --tcn-radius-sm: 10px;
+  --tcn-radius-md: 16px;
+  --tcn-radius-pill: 999px;
+  --tcn-shadow-1: 0 1px 2px rgba(32, 31, 28, 0.05);
+  --tcn-shadow-2: 0 4px 12px rgba(32, 31, 28, 0.07);
+  max-width: 1240px;
+  margin: 20px 20px 40px 0;
+  color: var(--tcn-text);
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+}
+
+.tcn-membership-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 28px 32px 22px;
+  background: var(--tcn-bg);
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-md);
+  box-shadow: var(--tcn-shadow-2);
+}
+
+.tcn-membership-eyebrow {
+  margin: 0 0 7px;
+  color: var(--tcn-primary-text);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.tcn-membership-header h1 {
+  margin: 0;
+  color: var(--tcn-text);
+  font-family: 'Fraunces', 'Iowan Old Style', serif;
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 1.15;
+}
+
+.tcn-membership-subtitle,
+.tcn-membership-summary p {
+  color: var(--tcn-text-dim);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.tcn-membership-subtitle {
+  max-width: 680px;
+  margin: 9px 0 0;
+}
+
+.tcn-membership-header__action { margin: 0; }
+
+.tcn-membership-button,
+.tcn-membership-table .button {
+  min-height: 36px;
+  padding: 8px 16px;
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-pill);
+  background: var(--tcn-bg);
+  color: var(--tcn-text);
+  box-shadow: none;
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tcn-membership-button {
+  border-color: var(--tcn-primary);
+  background: var(--tcn-primary);
+  color: var(--tcn-primary-text);
+}
+
+.tcn-membership-button:hover,
+.tcn-membership-button:focus {
+  border-color: var(--tcn-primary-strong);
+  background: var(--tcn-primary-strong);
+  color: var(--tcn-primary-text);
+}
+
+.tcn-membership-button:disabled { opacity: .55; }
+
+.tcn-membership-summary {
+  padding: 18px 4px 14px;
+}
+
+.tcn-membership-summary p { margin: 0 0 10px; }
+
+.tcn-membership-summary__counts {
+  color: var(--tcn-text-dim);
+  font-size: 12px;
+}
+
+.tcn-membership-summary__counts strong { color: var(--tcn-text); font-size: 15px; }
+.tcn-membership-summary__counts span { padding: 0 8px; }
+
+.tcn-membership-table-card {
+  overflow: hidden;
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-md);
+  background: var(--tcn-bg);
+  box-shadow: var(--tcn-shadow-2);
+}
+
+.tcn-membership-table {
+  border: 0;
+  background: var(--tcn-bg);
+  color: var(--tcn-text);
+  font-size: 13px;
+}
+
+.tcn-membership-table thead th {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--tcn-border);
+  background: var(--tcn-bg-sunken);
+  color: var(--tcn-text-dim);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.tcn-membership-table td {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--tcn-border);
+  color: var(--tcn-text);
+  vertical-align: middle;
+}
+
+.tcn-membership-table tbody tr:last-child td { border-bottom: 0; }
+.tcn-membership-table tbody tr:hover { background: var(--tcn-bg-sunken); }
+.tcn-membership-table td strong { font-weight: 700; }
+.tcn-membership-table td span { color: var(--tcn-text-dim); font-size: 12px; }
+.tcn-membership-table code { color: var(--tcn-text); font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 11px; }
+.tcn-membership-table small { color: var(--tcn-text-dim); }
+.tcn-membership-table .button:hover { border-color: var(--tcn-primary-strong); color: var(--tcn-primary-text); }
+
+.tcnexus-status-anonymous,
+.tcnexus-status-registered,
+.tcnexus-status-member {
+  display: inline-flex;
+  padding: 5px 10px;
+  border-radius: var(--tcn-radius-pill);
+  font-size: 11px !important;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tcnexus-status-anonymous { background: #f1efe7; color: #6f6a5e !important; }
+.tcnexus-status-registered { background: #e6f4ef; color: #286d59 !important; }
+.tcnexus-status-member { background: #f8edcf; color: var(--tcn-warning-text) !important; }
+
+.tcn-membership-wrap .notice {
+  margin: 16px 0 0;
+  border: 1px solid var(--tcn-border);
+  border-left: 4px solid var(--tcn-primary-strong);
+  border-radius: var(--tcn-radius-sm);
+  background: var(--tcn-bg);
+  box-shadow: var(--tcn-shadow-1);
+  color: var(--tcn-text);
+}
+
+@media (max-width: 900px) {
+  .tcn-membership-header { align-items: flex-start; flex-direction: column; }
+  .tcn-membership-table-card { overflow-x: auto; }
+  .tcn-membership-table { min-width: 760px; }
+}
+
+.tcn-popup-details-wrap .tcn-membership-header { margin-bottom: 20px; }
+.tcn-popup-details-wrap form { margin: 0; }
+.tcn-popup-card { margin-bottom: 20px; border: 1px solid var(--tcn-border); border-radius: var(--tcn-radius-md); background: var(--tcn-bg); box-shadow: var(--tcn-shadow-2); overflow: hidden; }
+.tcn-popup-card__header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 19px 25px; border-bottom: 1px solid var(--tcn-border); background: var(--tcn-bg-sunken); }
+.tcn-popup-card__header h2 { margin: 0; color: var(--tcn-text); font-family: 'Fraunces', 'Iowan Old Style', serif; font-size: 23px; font-weight: 500; }
+.tcn-popup-card__header span { color: var(--tcn-text-dim); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.tcn-popup-card__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, .8fr); gap: 26px; padding: 23px 25px 25px; }
+.tcn-popup-card__fields, .tcn-popup-card__media { min-width: 0; }
+.tcn-popup-field { margin: 0 0 17px; }
+.tcn-popup-field label, .tcn-popup-card__media > label { display: block; margin-bottom: 8px; color: var(--tcn-text-dim); font-size: 12px; font-weight: 400; letter-spacing: .03em; text-transform: uppercase; }
+.tcn-popup-field input, .tcn-popup-field textarea, .tcn-popup-card__media input, .tcn-popup-card__media select { width: 100%; border: 1px solid var(--tcn-border); border-radius: var(--tcn-radius-sm); background: var(--tcn-bg-sunken); color: var(--tcn-text); font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; font-size: 13px; box-shadow: none; }
+.tcn-popup-field input, .tcn-popup-card__media input, .tcn-popup-card__media select { min-height: 40px; padding: 8px 11px; }
+.tcn-popup-field textarea { padding: 10px 11px; line-height: 1.5; resize: vertical; }
+.tcn-popup-field input:focus, .tcn-popup-field textarea:focus, .tcn-popup-card__media input:focus, .tcn-popup-card__media select:focus { border-color: var(--tcn-primary-strong); box-shadow: 0 0 0 1.5px var(--tcn-primary-strong); outline: none; }
+.tcn-popup-card__media > select { margin-bottom: 13px; }
+.tcn-popup-media-image .tcn-media-picker,
+.tcn-popup-media-video { margin-top: 40px; }
+.tcn-popup-card__media .tcn-media-picker { margin-bottom: 17px; }
+.tcn-popup-card__media .tcn-media-picker__preview { min-height: 145px; aspect-ratio: 16 / 9; border-radius: var(--tcn-radius-sm); }
+.tcn-popup-card__media .tcn-media-picker__preview img { width: 100%; height: 100%; object-fit: cover; }
+.tcn-popup-card__media .tcn-media-picker__actions { gap: 8px; }
+.tcn-popup-card__media .description { margin: 7px 0 0; color: var(--tcn-text-dim); font-size: 11px; line-height: 1.45; }
+.tcn-popup-card__media > .tcn-popup-field:last-child { margin-top: 18px; }
+.tcn-popup-details__actions { display: flex; justify-content: flex-end; padding: 2px 0 8px; }
+.tcn-popup-details__actions .tcn-btn-ghost { min-height: 0; padding: 7px 14px; border-color: var(--tcn-border); background: var(--tcn-bg); color: var(--tcn-text); font-size: 12.5px; font-weight: 400; box-shadow: none; }
+
+@media (max-width: 800px) {
+  .tcn-popup-card__grid { grid-template-columns: 1fr; }
+  .tcn-popup-card__media { order: -1; }
+}

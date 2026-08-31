@@ -6,7 +6,7 @@ import { AccessService } from '../../core/access.service';
 import { AuthModalService } from '../../core/auth-modal.service';
 import { CoursesService } from '../../core/courses.service';
 import { AccessCheckResult, CourseDetail, Lesson } from '../../core/models';
-import { isFinalFreeLesson } from '../../core/registration-settings';
+import { isAnonymousFreeLimitReached, isFinalFreeLesson } from '../../core/registration-settings';
 import { VisitorService } from '../../core/visitor.service';
 import { WatchProgressService } from '../../core/watch-progress.service';
 
@@ -250,6 +250,9 @@ export class LessonPlayerPage implements OnDestroy {
         this.promptPhase.set(null);
         if (pending) this.startDeferredLesson(pending.lesson, pending.restart);
       } else if (!this.authModal.isOpen() && this.status() === 'blocked') {
+        // A dismissed choice modal should leave the viewer on the blocked state
+        // instead of immediately reopening the same modal in a loop.
+        if (this.authModal.mode() === 'choice') return;
         const course = this.course();
         const lesson = this.lesson();
         if (course && lesson) this.checkAccessAndProceed(course, lesson, false);
@@ -300,6 +303,9 @@ export class LessonPlayerPage implements OnDestroy {
 
         if (!access.granted) {
           this.status.set('blocked');
+          if (isAnonymousFreeLimitReached(access, this.visitor.isRegistered())) {
+            this.authModal.open('choice');
+          }
           return;
         }
 

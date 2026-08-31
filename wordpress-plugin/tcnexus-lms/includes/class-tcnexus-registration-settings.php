@@ -9,13 +9,12 @@ class TCNexus_Registration_Settings {
 	public static function register() {
 		add_submenu_page(
 			'tcnexus-membership',
-			'Registration Settings',
-			'Registration Settings',
+			'Popup Details',
+			'Popup Details',
 			'list_users',
 			'tcnexus-registration-settings',
 			array( __CLASS__, 'render_page' )
 		);
-		add_action( 'admin_post_tcnexus_save_registration_settings', array( __CLASS__, 'handle_save' ) );
 	}
 
 	public static function get_defaults() {
@@ -24,16 +23,19 @@ class TCNexus_Registration_Settings {
 				'heading'      => 'Register to continue watching.',
 				'message'      => 'Create a free profile with your email to keep watching. We’ll send your login details by email.',
 				'button_label' => 'Create Profile',
+				'media'        => array( 'type' => 'none', 'url' => '', 'alt' => '', 'attachment_id' => 0 ),
 			),
 			'final_free'   => array(
 				'heading'      => 'This will be your last free lesson.',
 				'message'      => 'Register your email to keep watching free lessons.',
 				'button_label' => 'Create Profile',
+				'media'        => array( 'type' => 'none', 'url' => '', 'alt' => '', 'attachment_id' => 0 ),
 			),
-			'media'        => array(
-				'type' => 'none',
-				'url'  => '',
-				'alt'  => '',
+			'paid_member'  => array(
+				'heading'      => 'Become a paid member',
+				'message'      => 'Become a paid member to access locked content and more.',
+				'button_label' => 'Become a Paid Member',
+				'media'        => array( 'type' => 'none', 'url' => '', 'alt' => '', 'attachment_id' => 0 ),
 			),
 		);
 	}
@@ -51,36 +53,47 @@ class TCNexus_Registration_Settings {
 		$defaults = self::get_defaults();
 		$settings = $defaults;
 
-		foreach ( array( 'registration', 'final_free' ) as $section ) {
-			if ( isset( $input[ $section ] ) && is_array( $input[ $section ] ) ) {
+		$legacy_media = isset( $input['media'] ) && is_array( $input['media'] ) ? $input['media'] : array();
+		foreach ( array( 'registration', 'final_free', 'paid_member' ) as $section ) {
+			$section_input = isset( $input[ $section ] ) && is_array( $input[ $section ] ) ? $input[ $section ] : array();
+			if ( ! empty( $section_input ) ) {
 				foreach ( array( 'heading', 'message', 'button_label' ) as $field ) {
-					if ( isset( $input[ $section ][ $field ] ) ) {
-						$value = 'message' === $field ? sanitize_textarea_field( $input[ $section ][ $field ] ) : sanitize_text_field( $input[ $section ][ $field ] );
+					if ( isset( $section_input[ $field ] ) ) {
+						$value = 'message' === $field ? sanitize_textarea_field( $section_input[ $field ] ) : sanitize_text_field( $section_input[ $field ] );
 						if ( '' !== $value ) {
 							$settings[ $section ][ $field ] = $value;
 						}
 					}
 				}
 			}
-		}
-
-		if ( isset( $input['media'] ) && is_array( $input['media'] ) ) {
-			$type = isset( $input['media']['type'] ) ? sanitize_key( $input['media']['type'] ) : 'none';
-			$url  = isset( $input['media']['url'] ) ? esc_url_raw( $input['media']['url'] ) : '';
-			$alt  = isset( $input['media']['alt'] ) ? sanitize_text_field( $input['media']['alt'] ) : '';
-			if ( in_array( $type, array( 'none', 'image', 'video' ), true ) ) {
-				$settings['media']['type'] = $type;
-			}
-			$settings['media']['url'] = $url;
-			$settings['media']['alt'] = $alt;
-		}
-
-		if ( 'none' === $settings['media']['type'] || '' === $settings['media']['url'] ) {
-			$settings['media']['type'] = 'none';
-			$settings['media']['url']  = '';
+			$media_input = isset( $section_input['media'] ) && is_array( $section_input['media'] ) ? $section_input['media'] : $legacy_media;
+			$settings[ $section ]['media'] = self::normalize_media( $media_input );
 		}
 
 		return $settings;
+	}
+
+	private static function normalize_media( $input ) {
+		$defaults = array( 'type' => 'none', 'url' => '', 'alt' => '', 'attachment_id' => 0 );
+		if ( ! is_array( $input ) ) {
+			return $defaults;
+		}
+		$type = isset( $input['type'] ) ? sanitize_key( $input['type'] ) : 'none';
+		$type = in_array( $type, array( 'none', 'image', 'video' ), true ) ? $type : 'none';
+		$attachment_id = isset( $input['attachment_id'] ) ? absint( $input['attachment_id'] ) : 0;
+		$url = isset( $input['url'] ) ? esc_url_raw( $input['url'] ) : '';
+		if ( 'image' === $type && $attachment_id ) {
+			$url = wp_get_attachment_image_url( $attachment_id, 'large' );
+		}
+		if ( 'none' === $type || '' === $url ) {
+			return $defaults;
+		}
+		return array(
+			'type'          => $type,
+			'url'           => $url,
+			'alt'           => isset( $input['alt'] ) ? sanitize_text_field( $input['alt'] ) : '',
+			'attachment_id' => $attachment_id,
+		);
 	}
 
 	public static function render_page() {
@@ -89,36 +102,52 @@ class TCNexus_Registration_Settings {
 		}
 		$settings = self::get_settings();
 		?>
-		<div class="wrap">
-			<h1>Registration Settings</h1>
+		<div class="wrap tcn-membership-wrap tcn-popup-details-wrap">
+			<div class="tcn-membership-header">
+				<div>
+					<p class="tcn-membership-eyebrow">Membership</p>
+					<h1>Popup Details</h1>
+				<p class="tcn-membership-subtitle">Manage the copy and media for each access popup. All popups use the same 16:9 media frame.</p>
+				</div>
+			</div>
 			<?php if ( isset( $_GET['saved'] ) ) : ?>
 				<div class="notice notice-success is-dismissible"><p>Registration settings saved.</p></div>
 			<?php endif; ?>
-			<p>Control the copy and optional media shown in the registration prompts.</p>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="tcnexus_save_registration_settings" />
 				<?php wp_nonce_field( 'tcnexus_save_registration_settings' ); ?>
-				<h2>Registration Popup</h2>
-				<table class="form-table" role="presentation">
-					<tr><th><label for="tcnexus-registration-heading">Header text</label></th><td><input class="regular-text" id="tcnexus-registration-heading" name="registration[heading]" value="<?php echo esc_attr( $settings['registration']['heading'] ); ?>" /></td></tr>
-					<tr><th><label for="tcnexus-registration-message">Message text</label></th><td><textarea class="large-text" rows="3" id="tcnexus-registration-message" name="registration[message]"><?php echo esc_textarea( $settings['registration']['message'] ); ?></textarea></td></tr>
-					<tr><th><label for="tcnexus-registration-button">Button text</label></th><td><input class="regular-text" id="tcnexus-registration-button" name="registration[button_label]" value="<?php echo esc_attr( $settings['registration']['button_label'] ); ?>" /></td></tr>
-				</table>
-				<h2>Final Free Lesson Popup</h2>
-				<table class="form-table" role="presentation">
-					<tr><th><label for="tcnexus-final-heading">Header text</label></th><td><input class="regular-text" id="tcnexus-final-heading" name="final_free[heading]" value="<?php echo esc_attr( $settings['final_free']['heading'] ); ?>" /></td></tr>
-					<tr><th><label for="tcnexus-final-message">Message text</label></th><td><textarea class="large-text" rows="3" id="tcnexus-final-message" name="final_free[message]"><?php echo esc_textarea( $settings['final_free']['message'] ); ?></textarea></td></tr>
-					<tr><th><label for="tcnexus-final-button">Button text</label></th><td><input class="regular-text" id="tcnexus-final-button" name="final_free[button_label]" value="<?php echo esc_attr( $settings['final_free']['button_label'] ); ?>" /></td></tr>
-				</table>
-				<h2>Popup Media</h2>
-				<table class="form-table" role="presentation">
-					<tr><th><label for="tcnexus-media-type">Media type</label></th><td><select id="tcnexus-media-type" name="media[type]"><option value="none" <?php selected( $settings['media']['type'], 'none' ); ?>>None</option><option value="image" <?php selected( $settings['media']['type'], 'image' ); ?>>Image</option><option value="video" <?php selected( $settings['media']['type'], 'video' ); ?>>Video</option></select></td></tr>
-					<tr><th><label for="tcnexus-media-url">Media URL</label></th><td><input class="large-text" type="url" id="tcnexus-media-url" name="media[url]" value="<?php echo esc_attr( $settings['media']['url'] ); ?>" /><p class="description">Paste a public image or video URL.</p></td></tr>
-					<tr><th><label for="tcnexus-media-alt">Image alt text</label></th><td><input class="regular-text" id="tcnexus-media-alt" name="media[alt]" value="<?php echo esc_attr( $settings['media']['alt'] ); ?>" /></td></tr>
-				</table>
-				<?php submit_button( 'Save Registration Settings' ); ?>
+				<?php self::render_popup_section( 'registration', 'Registration Popup', $settings['registration'] ); ?>
+				<?php self::render_popup_section( 'final_free', 'Final Free Lesson Popup', $settings['final_free'] ); ?>
+				<?php self::render_popup_section( 'paid_member', 'Become a Paid Member Popup', $settings['paid_member'] ); ?>
+				<div class="tcn-popup-details__actions"><button type="submit" class="tcn-btn-ghost">Save Popup Details</button></div>
 			</form>
 		</div>
+		<?php
+	}
+
+	private static function render_popup_section( $key, $title, $section ) {
+		$media = $section['media'];
+		$has_image = 'image' === $media['type'] && $media['attachment_id'];
+		?>
+		<section class="tcn-popup-card">
+			<div class="tcn-popup-card__header"><h2><?php echo esc_html( $title ); ?></h2><span>16:9 media frame</span></div>
+			<div class="tcn-popup-card__grid">
+				<div class="tcn-popup-card__fields">
+					<p class="tcn-popup-field"><label for="tcnexus-<?php echo esc_attr( $key ); ?>-heading">Header text</label><input id="tcnexus-<?php echo esc_attr( $key ); ?>-heading" name="<?php echo esc_attr( $key ); ?>[heading]" value="<?php echo esc_attr( $section['heading'] ); ?>" /></p>
+					<p class="tcn-popup-field"><label for="tcnexus-<?php echo esc_attr( $key ); ?>-message">Message text</label><textarea rows="4" id="tcnexus-<?php echo esc_attr( $key ); ?>-message" name="<?php echo esc_attr( $key ); ?>[message]"><?php echo esc_textarea( $section['message'] ); ?></textarea></p>
+					<p class="tcn-popup-field"><label for="tcnexus-<?php echo esc_attr( $key ); ?>-button"><?php echo esc_html( 'paid_member' === $key ? 'Paid member button text' : 'Register button text' ); ?></label><input id="tcnexus-<?php echo esc_attr( $key ); ?>-button" name="<?php echo esc_attr( $key ); ?>[button_label]" value="<?php echo esc_attr( $section['button_label'] ); ?>" /></p>
+				</div>
+				<div class="tcn-popup-card__media">
+					<label>Popup media</label>
+					<select name="<?php echo esc_attr( $key ); ?>[media][type]" class="tcn-select tcn-popup-media-type"><option value="none" <?php selected( $media['type'], 'none' ); ?>>None</option><option value="image" <?php selected( $media['type'], 'image' ); ?>>Image</option><option value="video" <?php selected( $media['type'], 'video' ); ?>>Video</option></select>
+					<div class="tcn-popup-media-image" <?php if ( 'image' !== $media['type'] ) : ?>style="display:none"<?php endif; ?>>
+						<?php TCNexus_Media::render_picker( 'Select Image', $key . '_media_attachment_id', $has_image ? $media['attachment_id'] : 0, 'Select popup image', 1280, 720, $key . '[media][attachment_id]' ); ?>
+					</div>
+					<div class="tcn-popup-media-video" <?php if ( 'video' !== $media['type'] ) : ?>style="display:none"<?php endif; ?>><input type="url" name="<?php echo esc_attr( $key ); ?>[media][url]" value="<?php echo esc_attr( 'video' === $media['type'] ? $media['url'] : '' ); ?>" placeholder="https://example.com/popup-video.mp4" /><p class="description">Muted autoplay video, without controls, displayed at 16:9.</p></div>
+					<p class="tcn-popup-field"><label for="tcnexus-<?php echo esc_attr( $key ); ?>-alt">Image alt text</label><input id="tcnexus-<?php echo esc_attr( $key ); ?>-alt" name="<?php echo esc_attr( $key ); ?>[media][alt]" value="<?php echo esc_attr( $media['alt'] ); ?>" /></p>
+				</div>
+			</div>
+		</section>
 		<?php
 	}
 

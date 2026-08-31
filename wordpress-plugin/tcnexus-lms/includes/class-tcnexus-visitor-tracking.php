@@ -14,8 +14,6 @@ class TCNexus_Visitor_Tracking {
 			'tcnexus-visitor-tracking',
 			array( __CLASS__, 'render_page' )
 		);
-		add_action( 'admin_post_tcnexus_clear_visitor_tracker', array( __CLASS__, 'handle_clear' ) );
-		add_action( 'admin_post_tcnexus_clear_anonymous_trackers', array( __CLASS__, 'handle_clear_all' ) );
 	}
 
 	private static function table() {
@@ -75,22 +73,31 @@ class TCNexus_Visitor_Tracking {
 		$rows = self::get_rows();
 		$anonymous_count = count( array_filter( $rows, function ( $row ) { return $row['clearable']; } ) );
 		?>
-		<div class="wrap">
-			<h1>Visitor &amp; Member Tracking</h1>
+		<div class="wrap tcn-membership-wrap">
+			<div class="tcn-membership-header">
+				<div>
+					<p class="tcn-membership-eyebrow">Membership</p>
+					<h1>Visitor &amp; Member Tracking</h1>
+					<p class="tcn-membership-subtitle">See who is watching, how they are registered, and clear anonymous viewing history when needed.</p>
+				</div>
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="tcn-membership-header__action">
+					<input type="hidden" name="action" value="tcnexus_clear_anonymous_trackers" />
+					<?php wp_nonce_field( 'tcnexus_clear_anonymous_trackers' ); ?>
+					<button type="submit" class="button tcn-membership-button" <?php disabled( 0 === $anonymous_count ); ?>>Clear All Anonymous Trackers</button>
+				</form>
+			</div>
 			<?php if ( isset( $_GET['cleared'] ) ) : ?>
 				<div class="notice notice-success is-dismissible"><p>Anonymous tracker cleared.</p></div>
 			<?php endif; ?>
 			<?php if ( isset( $_GET['cleared_all'] ) ) : ?>
 				<div class="notice notice-success is-dismissible"><p>All anonymous trackers cleared.</p></div>
 			<?php endif; ?>
-			<p>Registered users are identified by their email. Names appear when users add them to their profile. Clearing trackers affects anonymous viewing history only.</p>
-			<p><strong><?php echo esc_html( count( $rows ) ); ?></strong> tracked visitors &middot; <strong><?php echo esc_html( $anonymous_count ); ?></strong> anonymous trackers available to clear</p>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="margin:1em 0;">
-				<input type="hidden" name="action" value="tcnexus_clear_anonymous_trackers" />
-				<?php wp_nonce_field( 'tcnexus_clear_anonymous_trackers' ); ?>
-				<button type="submit" class="button" <?php disabled( 0 === $anonymous_count ); ?>>Clear All Anonymous Trackers</button>
-			</form>
-			<table class="widefat striped">
+			<div class="tcn-membership-summary">
+				<p>Registered users are identified by their email. Names appear when users add them to their profile. Clearing trackers affects anonymous viewing history only.</p>
+				<div class="tcn-membership-summary__counts"><strong><?php echo esc_html( count( $rows ) ); ?></strong> tracked visitors <span aria-hidden="true">·</span> <strong><?php echo esc_html( $anonymous_count ); ?></strong> anonymous trackers available to clear</div>
+			</div>
+			<div class="tcn-membership-table-card">
+			<table class="widefat striped tcn-membership-table">
 				<thead><tr><th>Visitor / IP</th><th>Last seen</th><th>Free lessons</th><th>Registration</th><th>Action</th></tr></thead>
 				<tbody>
 				<?php if ( empty( $rows ) ) : ?><tr><td colspan="5">No visitors have been tracked yet.</td></tr><?php endif; ?>
@@ -120,6 +127,7 @@ class TCNexus_Visitor_Tracking {
 				<?php endforeach; ?>
 				</tbody>
 			</table>
+			</div>
 		</div>
 		<?php
 	}

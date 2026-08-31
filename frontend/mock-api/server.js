@@ -196,6 +196,11 @@ const registrationSettings = {
     message: 'Register your email to keep watching free lessons.',
     button_label: 'Create Profile',
   },
+  paid_member: {
+    heading: 'Become a paid member',
+    message: 'Become a paid member to access locked content and more.',
+    button_label: 'Become a Paid Member',
+  },
   media: { type: 'none', url: '', alt: '' },
 };
 const tokensByEmail = new Map(); // email -> token
