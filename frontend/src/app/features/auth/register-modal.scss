@@ -213,6 +213,26 @@ form {
   }
 }
 
+.auth-modal__submit--success {
+  opacity: 1;
+}
+
+.auth-modal__spinner {
+  display: inline-block;
+  width: 0.85rem;
+  height: 0.85rem;
+  margin-right: 0.5rem;
+  vertical-align: -0.12rem;
+  border: 2px solid color-mix(in srgb, var(--ink) 30%, transparent);
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  animation: auth-spinner 0.7s linear infinite;
+}
+
+@keyframes auth-spinner {
+  to { transform: rotate(360deg); }
+}
+
 @media (max-width: 760px) {
   .auth-modal--choice {
     max-height: calc(100vh - 2rem);

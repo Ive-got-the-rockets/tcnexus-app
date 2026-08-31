@@ -23,7 +23,6 @@ export class RegisterModal {
 
   protected readonly status = signal<SubmitStatus>('idle');
   protected readonly errorMessage = signal<string | null>(null);
-  protected readonly submittedEmail = signal('');
   private successCloseTimer: ReturnType<typeof setTimeout> | null = null;
 
   private readonly emailInput = viewChild<ElementRef<HTMLInputElement>>('emailInput');
@@ -48,7 +47,6 @@ export class RegisterModal {
     // Reset so reopening later starts fresh instead of showing stale success/error state.
     this.status.set('idle');
     this.errorMessage.set(null);
-    this.submittedEmail.set('');
   }
 
   protected openRegister(): void {
@@ -70,7 +68,6 @@ export class RegisterModal {
         if (this.authModal.mode() === 'choice') {
           this.authModal.open('register');
         }
-        this.submittedEmail.set(email);
         this.status.set('success');
         this.scheduleSuccessClose();
       },
@@ -92,7 +89,6 @@ export class RegisterModal {
 
     this.accessService.login(email, password).subscribe({
       next: () => {
-        this.submittedEmail.set(email);
         this.status.set('success');
         this.scheduleSuccessClose();
       },

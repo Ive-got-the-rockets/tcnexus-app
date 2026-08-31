@@ -39,7 +39,11 @@
                 <p class="auth-modal__error">{{ errorMessage() }}</p>
               }
               <button type="submit" class="auth-modal__submit" [disabled]="status() === 'submitting'">
-                {{ status() === 'submitting' ? 'Creating profile…' : registerCopy.button_label }}
+                @if (status() === 'submitting') {
+                  <span class="auth-modal__spinner" aria-hidden="true"></span>Creating profile…
+                } @else {
+                  {{ registerCopy.button_label }}
+                }
               </button>
             </form>
             <div class="auth-modal__choice-divider" aria-hidden="true"><span>OR</span></div>
@@ -49,8 +53,7 @@
           </div>
         </section>
       } @else if (status() === 'success' && (authModal.mode() === 'register' || authModal.mode() === 'final_free')) {
-        <h2 class="auth-modal__title">Profile created</h2>
-        <p class="auth-modal__text">An email has been sent to <strong>{{ submittedEmail() }}</strong> with your login details for future reference. You are now logged in.</p>
+        <button type="button" class="auth-modal__submit auth-modal__submit--success" disabled>Profile Created</button>
       } @else if (status() === 'success' && authModal.mode() === 'login') {
         <h2 class="auth-modal__title">You're logged in</h2>
         <p class="auth-modal__text">Welcome back.</p>
@@ -102,7 +105,11 @@
             <p class="auth-modal__error">{{ errorMessage() }}</p>
           }
           <button type="submit" class="auth-modal__submit" [disabled]="status() === 'submitting'">
-            {{ status() === 'submitting' ? 'Creating profile…' : copy.button_label }}
+            @if (status() === 'submitting') {
+              <span class="auth-modal__spinner" aria-hidden="true"></span>Creating profile…
+            } @else {
+              {{ copy.button_label }}
+            }
           </button>
         </form>
       }
