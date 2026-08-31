@@ -57,6 +57,7 @@ export interface AccessCheckResult {
   free_views_used?: number;
   limit_reached?: boolean;
   all_registered_seen?: boolean;
+  viewer_tier?: 'anonymous' | 'registered' | 'paid';
 }
 
 export interface RegistrationCopy {

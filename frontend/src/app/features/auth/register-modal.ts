@@ -24,6 +24,7 @@ export class RegisterModal {
   protected readonly status = signal<SubmitStatus>('idle');
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly submittedEmail = signal('');
+  private successCloseTimer: ReturnType<typeof setTimeout> | null = null;
 
   private readonly emailInput = viewChild<ElementRef<HTMLInputElement>>('emailInput');
   private readonly passwordInput = viewChild<ElementRef<HTMLInputElement>>('passwordInput');
@@ -33,6 +34,10 @@ export class RegisterModal {
   }
 
   protected close(): void {
+    if (this.successCloseTimer) {
+      clearTimeout(this.successCloseTimer);
+      this.successCloseTimer = null;
+    }
     // A successful registration from the combined access choice keeps the
     // lesson player in its choice mode until the modal closes. Switch back to
     // the normal registration mode so the player can resume the pending lesson.
@@ -62,8 +67,12 @@ export class RegisterModal {
 
     this.accessService.register(email).subscribe({
       next: () => {
+        if (this.authModal.mode() === 'choice') {
+          this.authModal.open('register');
+        }
         this.submittedEmail.set(email);
         this.status.set('success');
+        this.scheduleSuccessClose();
       },
       error: (err: HttpErrorResponse) => {
         this.status.set('error');
@@ -85,11 +94,17 @@ export class RegisterModal {
       next: () => {
         this.submittedEmail.set(email);
         this.status.set('success');
+        this.scheduleSuccessClose();
       },
       error: (err: HttpErrorResponse) => {
         this.status.set('error');
         this.errorMessage.set(err.status === 401 ? 'Email or password is incorrect.' : 'Something went wrong — try again.');
       }
     });
+  }
+
+  private scheduleSuccessClose(): void {
+    if (this.successCloseTimer) clearTimeout(this.successCloseTimer);
+    this.successCloseTimer = setTimeout(() => this.close(), 1200);
   }
 }

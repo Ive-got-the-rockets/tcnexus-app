@@ -172,6 +172,7 @@ class TCNexus_REST_API {
 		$user_id    = self::get_user_id( $request );
 
 		$result = TCNexus_Access_Control::evaluate_access( $lesson_id, $visitor_id, $user_id );
+		$result['viewer_tier'] = TCNexus_Membership::get_user_tier( $user_id );
 
 		if ( $result['granted'] ) {
 			$result['vimeo_id'] = get_post_meta( $lesson_id, '_tcnexus_vimeo_id', true );

@@ -248,6 +248,7 @@ function handleAccessCheck(body, headers, res) {
   const userTier = tiersByToken.get(token) ?? null;
 
   const result = { granted: false, reason: 'requires_registration', tier: lesson.tier };
+  result.viewer_tier = userTier ?? 'anonymous';
 
   if (lesson.tier === 'paid') {
     result.granted = userTier === 'paid';

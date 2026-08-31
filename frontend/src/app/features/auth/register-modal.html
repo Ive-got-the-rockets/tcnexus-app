@@ -9,7 +9,7 @@
         </button>
       }
 
-      @if (authModal.mode() === 'choice') {
+      @if (authModal.mode() === 'choice' && status() !== 'success') {
         @let registerCopy = settings().registration;
         @let paidCopy = settings().paid_member;
         <section class="auth-modal__choice-card">
