@@ -223,6 +223,7 @@ export class LessonPlayerPage implements OnDestroy {
   private countdownFrame: number | null = null;
   private readonly promptPhase = signal<PromptPhase | null>(null);
   private readonly pendingStart = signal<{ lesson: Lesson; restart: boolean } | null>(null);
+  private readonly pendingChoice = signal<{ course: CourseDetail; lesson: Lesson; restart: boolean } | null>(null);
 
   constructor() {
     // Subscribed (not just read once from the snapshot): navigating from one
@@ -249,6 +250,14 @@ export class LessonPlayerPage implements OnDestroy {
         const pending = this.pendingStart();
         this.promptPhase.set(null);
         if (pending) this.startDeferredLesson(pending.lesson, pending.restart);
+      } else if (!this.authModal.isOpen() && this.pendingChoice()) {
+        // Keep the existing page mounted while the choice popup is dismissed.
+        // Once registration changes the modal back to its normal mode, retry
+        // the lesson that originally triggered the choice.
+        if (this.authModal.mode() === 'choice') return;
+        const pending = this.pendingChoice();
+        this.pendingChoice.set(null);
+        if (pending) this.checkAccessAndProceed(pending.course, pending.lesson, pending.restart);
       } else if (!this.authModal.isOpen() && this.status() === 'blocked') {
         // A dismissed choice modal should leave the viewer on the blocked state
         // instead of immediately reopening the same modal in a loop.
@@ -297,17 +306,23 @@ export class LessonPlayerPage implements OnDestroy {
   private checkAccessAndProceed(course: CourseDetail, lesson: Lesson, restart: boolean): void {
     this.accessService.checkAccess(lesson.id).subscribe({
       next: (access) => {
-        this.course.set(course);
-        this.lesson.set(lesson);
         this.accessResult.set(access);
 
         if (!access.granted) {
-          this.status.set('blocked');
           if (isAnonymousFreeLimitReached(access, this.visitor.isRegistered())) {
+            this.pendingChoice.set({ course, lesson, restart });
+            if (!this.player) this.status.set('blocked');
             this.authModal.open('choice');
+            return;
           }
+          this.course.set(course);
+          this.lesson.set(lesson);
+          this.status.set('blocked');
           return;
         }
+
+        this.course.set(course);
+        this.lesson.set(lesson);
 
         const next = course.lessons.find((l) => l.order === lesson.order + 1) ?? null;
         this.nextLesson.set(next);
