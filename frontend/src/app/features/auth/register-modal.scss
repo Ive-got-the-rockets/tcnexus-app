@@ -29,10 +29,17 @@
   box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.85);
 }
 
+.auth-modal-overlay--choice {
+  background: var(--ink);
+}
+
 .auth-modal--choice {
   width: min(64rem, calc(100% - 2.5rem));
   max-width: none;
-  padding: 2rem;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
 }
 
 .auth-modal__choice {
@@ -42,6 +49,7 @@
 }
 
 .auth-modal__choice-card {
+  position: relative;
   min-width: 0;
   flex: 1 1 0;
   display: flex;
@@ -50,6 +58,13 @@
   border: 1px solid color-mix(in srgb, var(--paper) 13%, transparent);
   border-radius: 0.35rem;
   overflow: hidden;
+  box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.85);
+}
+
+.auth-modal__choice-card .auth-modal__close {
+  z-index: 2;
+  top: 0.7rem;
+  right: 0.7rem;
 }
 
 .auth-modal__choice-card .auth-modal__media {
