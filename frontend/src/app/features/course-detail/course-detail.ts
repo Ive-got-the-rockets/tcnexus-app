@@ -3,7 +3,10 @@ import { Component, ElementRef, Injector, OnDestroy, afterNextRender, effect, in
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { CoursesService } from '../../core/courses.service';
+import { AccessService } from '../../core/access.service';
+import { AuthModalService } from '../../core/auth-modal.service';
 import { CourseDetail, Lesson, Person } from '../../core/models';
+import { isAnonymousFreeLimitReached } from '../../core/registration-settings';
 import { MorphHandoff, MorphRect, TransitionService } from '../../core/transition.service';
 import { VisitorService } from '../../core/visitor.service';
 import { WatchProgressService } from '../../core/watch-progress.service';
@@ -21,6 +24,8 @@ export class CourseDetailPage implements OnDestroy {
   private readonly router = inject(Router);
   private readonly location = inject(Location);
   private readonly coursesService = inject(CoursesService);
+  private readonly accessService = inject(AccessService);
+  private readonly authModal = inject(AuthModalService);
   private readonly transition = inject(TransitionService);
   private readonly visitor = inject(VisitorService);
   private readonly watchProgress = inject(WatchProgressService);
@@ -38,6 +43,7 @@ export class CourseDetailPage implements OnDestroy {
   /** Drives only the border-radius CSS class — the box itself is morphRect below. */
   protected readonly grown = signal(false);
   protected readonly rowsRevealed = signal(false);
+  private readonly pendingLesson = signal<Lesson | null>(null);
 
   /**
    * The morph overlay's current target box, in plain pixel numbers on both
@@ -53,6 +59,14 @@ export class CourseDetailPage implements OnDestroy {
   private readonly onResize = (): void => this.alignLessonsWithBack();
 
   constructor() {
+    effect(() => {
+      const lesson = this.pendingLesson();
+      const course = this.course();
+      if (!lesson || !course || this.authModal.isOpen() || !this.visitor.isRegistered()) return;
+      this.pendingLesson.set(null);
+      this.router.navigate(['/courses', course.id, 'lessons', lesson.id]);
+    });
+
     const id = Number(this.route.snapshot.paramMap.get('id'));
     this.coursesService.getCourse(id).subscribe({
       next: (course) => {
@@ -205,7 +219,17 @@ export class CourseDetailPage implements OnDestroy {
   protected openLesson(lesson: Lesson): void {
     const course = this.course();
     if (!course) return;
-    this.router.navigate(['/courses', course.id, 'lessons', lesson.id]);
+    this.accessService.checkAccess(lesson.id).subscribe({
+      next: (access) => {
+        if (isAnonymousFreeLimitReached(access, this.visitor.isRegistered())) {
+          this.pendingLesson.set(lesson);
+          this.authModal.open('choice');
+          return;
+        }
+        this.router.navigate(['/courses', course.id, 'lessons', lesson.id]);
+      },
+      error: () => this.router.navigate(['/courses', course.id, 'lessons', lesson.id]),
+    });
   }
 
   /** Same destination as openLesson, but tells the player (via ?restart=1) to skip resuming saved progress. */

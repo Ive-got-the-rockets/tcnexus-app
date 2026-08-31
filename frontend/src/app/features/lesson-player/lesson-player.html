@@ -12,21 +12,22 @@
     </div>
   }
   @case ('blocked') {
-    <!-- Kept plain for now — real access enforcement is the point here, not the presentation. -->
-    <div class="state state--error">
-      @switch (accessResult()?.reason) {
-        @case ('requires_payment') {
-          <h2>This lesson requires a paid plan.</h2>
-          <p>Upgrade your account to unlock it.</p>
+    @if (authModal.mode() !== 'choice') {
+      <div class="state state--error">
+        @switch (accessResult()?.reason) {
+          @case ('requires_payment') {
+            <h2>This lesson requires a paid plan.</h2>
+            <p>Upgrade your account to unlock it.</p>
+          }
+          @default {
+            <h2>Register to continue watching.</h2>
+            <p>Create a free account to keep watching.</p>
+            <button type="button" class="retry" (click)="openRegister()">Create free account</button>
+          }
         }
-        @default {
-          <h2>Register to continue watching.</h2>
-          <p>Create a free account to keep watching.</p>
-          <button type="button" class="retry" (click)="openRegister()">Create free account</button>
-        }
-      }
-      <a routerLink="/" class="retry">Back to the library</a>
-    </div>
+        <a routerLink="/" class="retry">Back to the library</a>
+      </div>
+    }
   }
   @case ('ready') {
     @if (course()) {
