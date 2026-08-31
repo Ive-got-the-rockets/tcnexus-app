@@ -80,13 +80,13 @@ describe('isFinalFreeLesson', () => {
     ).toBe(true);
   });
 
-  it('does not warn after the free-lesson limit has been exceeded', () => {
+  it('warns when the free-lesson limit has been exceeded', () => {
     expect(
       isFinalFreeLesson(
         { granted: true, reason: 'ok', tier: 'free', free_limit: 2, free_views_used: 3 },
         false,
       ),
-    ).toBe(false);
+    ).toBe(true);
   });
 });
 
