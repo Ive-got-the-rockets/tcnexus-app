@@ -34,7 +34,7 @@
 }
 
 .auth-modal--choice {
-  width: min(64rem, calc(100% - 2.5rem));
+  width: min(30rem, calc(100% - 2.5rem));
   max-width: none;
   padding: 0;
   background: transparent;
@@ -43,15 +43,12 @@
 }
 
 .auth-modal__choice {
-  display: flex;
-  align-items: stretch;
-  gap: 1.25rem;
+  display: block;
 }
 
 .auth-modal__choice-card {
   position: relative;
   min-width: 0;
-  flex: 1 1 0;
   display: flex;
   flex-direction: column;
   background: color-mix(in srgb, var(--ink) 46%, var(--ink-raised));
@@ -94,12 +91,22 @@
   margin-top: 1.25rem;
 }
 
-.auth-modal__choice-or {
-  align-self: center;
-  flex: 0 0 auto;
+.auth-modal__choice-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.5rem 0 1.35rem;
   color: var(--paper-dim);
   font-size: 0.75rem;
   letter-spacing: 0.12em;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: color-mix(in srgb, var(--paper) 13%, transparent);
+  }
 }
 
 .auth-modal__close {
@@ -212,11 +219,4 @@ form {
     overflow-y: auto;
   }
 
-  .auth-modal__choice {
-    flex-direction: column;
-  }
-
-  .auth-modal__choice-or {
-    padding: 0.1rem 0;
-  }
 }

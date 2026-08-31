@@ -12,58 +12,42 @@
       @if (authModal.mode() === 'choice') {
         @let registerCopy = settings().registration;
         @let paidCopy = settings().paid_member;
-        <div class="auth-modal__choice">
-          <section class="auth-modal__choice-card">
-            <button type="button" class="auth-modal__close" aria-label="Close registration popup" (click)="close()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M6 6l12 12M18 6 6 18" />
-              </svg>
-            </button>
-            @if (registerCopy.media.type === 'image' && registerCopy.media.url) {
-              <img class="auth-modal__media" [src]="registerCopy.media.url" [alt]="registerCopy.media.alt" />
-            } @else if (registerCopy.media.type === 'video' && registerCopy.media.url) {
-              <video class="auth-modal__media" [src]="registerCopy.media.url" autoplay muted loop playsinline></video>
-            }
-            <div class="auth-modal__choice-body">
-              <h2 class="auth-modal__title">{{ registerCopy.heading }}</h2>
-              <form (submit)="submit($event)">
-                <input
-                  #emailInput
-                  type="email"
-                  required
-                  placeholder="you@example.com"
-                  class="auth-modal__input"
-                  [disabled]="status() === 'submitting'"
-                />
-                <p class="auth-modal__text">{{ registerCopy.message }}</p>
-                @if (status() === 'error') {
-                  <p class="auth-modal__error">{{ errorMessage() }}</p>
-                }
-                <button type="submit" class="auth-modal__submit" [disabled]="status() === 'submitting'">
-                  {{ status() === 'submitting' ? 'Creating profile…' : registerCopy.button_label }}
-                </button>
-              </form>
-            </div>
-          </section>
-          <div class="auth-modal__choice-or" aria-hidden="true">OR</div>
-          <section class="auth-modal__choice-card">
-            <button type="button" class="auth-modal__close" aria-label="Close paid member popup" (click)="close()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M6 6l12 12M18 6 6 18" />
-              </svg>
-            </button>
-            @if (paidCopy.media.type === 'image' && paidCopy.media.url) {
-              <img class="auth-modal__media" [src]="paidCopy.media.url" [alt]="paidCopy.media.alt" />
-            } @else if (paidCopy.media.type === 'video' && paidCopy.media.url) {
-              <video class="auth-modal__media" [src]="paidCopy.media.url" autoplay muted loop playsinline></video>
-            }
-            <div class="auth-modal__choice-body">
-              <h2 class="auth-modal__title">{{ paidCopy.heading }}</h2>
-              <p class="auth-modal__text">{{ paidCopy.message }}</p>
-              <button type="button" class="auth-modal__submit" (click)="close()">{{ paidCopy.button_label }}</button>
-            </div>
-          </section>
-        </div>
+        <section class="auth-modal__choice-card">
+          <button type="button" class="auth-modal__close" aria-label="Close popup" (click)="close()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
+          </button>
+          @if (registerCopy.media.type === 'image' && registerCopy.media.url) {
+            <img class="auth-modal__media" [src]="registerCopy.media.url" [alt]="registerCopy.media.alt" />
+          } @else if (registerCopy.media.type === 'video' && registerCopy.media.url) {
+            <video class="auth-modal__media" [src]="registerCopy.media.url" autoplay muted loop playsinline></video>
+          }
+          <div class="auth-modal__choice-body">
+            <h2 class="auth-modal__title">{{ registerCopy.heading }}</h2>
+            <form (submit)="submit($event)">
+              <input
+                #emailInput
+                type="email"
+                required
+                placeholder="you@example.com"
+                class="auth-modal__input"
+                [disabled]="status() === 'submitting'"
+              />
+              <p class="auth-modal__text">{{ registerCopy.message }}</p>
+              @if (status() === 'error') {
+                <p class="auth-modal__error">{{ errorMessage() }}</p>
+              }
+              <button type="submit" class="auth-modal__submit" [disabled]="status() === 'submitting'">
+                {{ status() === 'submitting' ? 'Creating profile…' : registerCopy.button_label }}
+              </button>
+            </form>
+            <div class="auth-modal__choice-divider" aria-hidden="true"><span>OR</span></div>
+            <h2 class="auth-modal__title">{{ paidCopy.heading }}</h2>
+            <p class="auth-modal__text">{{ paidCopy.message }}</p>
+            <button type="button" class="auth-modal__submit" (click)="close()">{{ paidCopy.button_label }}</button>
+          </div>
+        </section>
       } @else if (status() === 'success' && (authModal.mode() === 'register' || authModal.mode() === 'final_free')) {
         <h2 class="auth-modal__title">Profile created</h2>
         <p class="auth-modal__text">An email has been sent to <strong>{{ submittedEmail() }}</strong> with your login details for future reference. You are now logged in.</p>
