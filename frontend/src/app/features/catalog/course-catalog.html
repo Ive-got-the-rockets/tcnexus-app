@@ -202,6 +202,8 @@
   <div
     class="preview"
     [class.preview--ready]="previewReady()"
+    [class.preview--closing]="previewClosing()"
+    [class.preview--switching]="previewSwitching()"
     [style.top]="previewPosition()?.top"
     [style.left]="previewPosition()?.left"
     (mouseenter)="cancelHide()"

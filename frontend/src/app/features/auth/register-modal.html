@@ -41,10 +41,10 @@
         </form>
       } @else {
         @let copy = authModal.mode() === 'final_free' ? settings().final_free : settings().registration;
-        @if (settings().media.type === 'image' && settings().media.url) {
-          <img class="auth-modal__media" [src]="settings().media.url" [alt]="settings().media.alt" />
-        } @else if (settings().media.type === 'video' && settings().media.url) {
-          <video class="auth-modal__media" [src]="settings().media.url" autoplay muted loop playsinline></video>
+        @if (copy.media.type === 'image' && copy.media.url) {
+          <img class="auth-modal__media" [src]="copy.media.url" [alt]="copy.media.alt" />
+        } @else if (copy.media.type === 'video' && copy.media.url) {
+          <video class="auth-modal__media" [src]="copy.media.url" autoplay muted loop playsinline></video>
         }
         <h2 class="auth-modal__title">{{ copy.heading }}</h2>
         <form (submit)="submit($event)">

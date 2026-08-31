@@ -60,6 +60,8 @@ export class CourseCatalog implements OnDestroy {
   protected readonly previewPosition = signal<PreviewPosition | null>(null);
   /** Pointer only after the hover-zoom animation has finished. */
   protected readonly previewReady = signal(false);
+  protected readonly previewClosing = signal(false);
+  protected readonly previewSwitching = signal(false);
   /**
    * The actual small grid card's rect, captured when the popup opens — NOT
    * the popup's own rect. The popup is centered on the card but clamped to
@@ -474,6 +476,7 @@ export class CourseCatalog implements OnDestroy {
 
     const cardEl = event.currentTarget as HTMLElement;
     this.showTimer = setTimeout(() => {
+      const switching = !!this.previewCourse() && this.previewCourse()?.id !== course.id;
       const rect = cardEl.getBoundingClientRect();
       this.previewCardRect = rect;
       this.previewRowTitle = rowTitle;
@@ -489,7 +492,12 @@ export class CourseCatalog implements OnDestroy {
 
       this.previewPosition.set({ top: `${top}px`, left: `${left}px` });
       this.previewReady.set(false);
+      this.previewClosing.set(false);
+      this.previewSwitching.set(false);
       this.previewCourse.set(course);
+      if (switching) {
+        this.previewSwitching.set(true);
+      }
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         this.previewReady.set(true);
       }
@@ -498,6 +506,15 @@ export class CourseCatalog implements OnDestroy {
 
   protected onPreviewAnimationEnd(event: AnimationEvent): void {
     if (event.animationName !== 'preview-in') {
+      if (event.animationName === 'preview-out') {
+        this.previewCourse.set(null);
+        this.previewPosition.set(null);
+        this.previewReady.set(false);
+        this.previewClosing.set(false);
+      } else if (event.animationName === 'preview-switch') {
+        this.previewSwitching.set(false);
+        this.previewReady.set(true);
+      }
       return;
     }
     this.previewReady.set(true);
@@ -508,14 +525,22 @@ export class CourseCatalog implements OnDestroy {
     this.clearShowTimer();
     this.clearHideTimer();
     this.hideTimer = setTimeout(() => {
-      this.previewCourse.set(null);
-      this.previewPosition.set(null);
-      this.previewReady.set(false);
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        this.previewCourse.set(null);
+        this.previewPosition.set(null);
+        this.previewReady.set(false);
+        this.previewClosing.set(false);
+        this.previewSwitching.set(false);
+      } else {
+        this.previewClosing.set(true);
+      }
     }, PREVIEW_HIDE_DELAY);
   }
 
   protected cancelHide(): void {
     this.clearHideTimer();
+    this.previewClosing.set(false);
+    this.previewSwitching.set(false);
   }
 
   ngOnDestroy(): void {

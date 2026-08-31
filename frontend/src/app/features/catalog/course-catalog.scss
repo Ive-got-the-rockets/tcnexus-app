@@ -618,11 +618,20 @@
   background: #181818;
   box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.85);
   animation: preview-in 0.18s ease;
+  transition: top 0.28s cubic-bezier(0.22, 1, 0.36, 1), left 0.28s cubic-bezier(0.22, 1, 0.36, 1);
   cursor: default;
 }
 
 .preview--ready {
   cursor: pointer;
+}
+
+.preview--closing {
+  animation: preview-out 0.18s ease forwards;
+}
+
+.preview--switching {
+  animation: preview-switch 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes preview-in {
@@ -636,9 +645,32 @@
   }
 }
 
+@keyframes preview-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@keyframes preview-switch {
+  from {
+    opacity: 0.45;
+    transform: scale(0.965);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .preview {
+.preview {
     animation: none;
+    transition: none;
   }
 }
 

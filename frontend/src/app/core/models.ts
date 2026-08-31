@@ -63,6 +63,7 @@ export interface RegistrationCopy {
   heading: string;
   message: string;
   button_label: string;
+  media: RegistrationMedia;
 }
 
 export interface RegistrationMedia {
@@ -74,7 +75,6 @@ export interface RegistrationMedia {
 export interface RegistrationSettings {
   registration: RegistrationCopy;
   final_free: RegistrationCopy;
-  media: RegistrationMedia;
 }
 
 export interface RegisterResult {
