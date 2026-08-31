@@ -45,6 +45,12 @@ export class VisitorService {
     this.email.set(null);
   }
 
+  /** Clears the browser-side session when the admin reset link is opened. */
+  resetTestSession(): void {
+    localStorage.removeItem(VISITOR_ID_KEY);
+    this.logout();
+  }
+
   /** Reads a signal internally, so calling this inside a computed() tracks it reactively. */
   isRegistered(): boolean {
     return this.registered();

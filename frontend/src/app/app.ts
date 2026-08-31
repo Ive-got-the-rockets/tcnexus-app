@@ -70,6 +70,13 @@ export class App implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     window.addEventListener('scroll', this.onScroll, { passive: true });
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('tcnexus_reset') === '1') {
+      this.visitor.resetTestSession();
+      params.delete('tcnexus_reset');
+      const cleanQuery = params.toString();
+      window.history.replaceState({}, document.title, `${window.location.pathname}${cleanQuery ? `?${cleanQuery}` : ''}${window.location.hash}`);
+    }
     if (this.visitor.isRegistered()) {
       this.accessService.validateSession().subscribe();
     }

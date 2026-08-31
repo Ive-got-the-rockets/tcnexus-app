@@ -43,6 +43,7 @@ add_action( 'admin_post_tcnexus_set_tier', array( 'TCNexus_Admin_Menu', 'handle_
 add_action( 'admin_post_tcnexus_set_free_limit', array( 'TCNexus_Admin_Menu', 'handle_set_free_limit' ) );
 add_action( 'admin_post_tcnexus_clear_visitor_tracker', array( 'TCNexus_Visitor_Tracking', 'handle_clear' ) );
 add_action( 'admin_post_tcnexus_clear_anonymous_trackers', array( 'TCNexus_Visitor_Tracking', 'handle_clear_all' ) );
+add_action( 'admin_post_tcnexus_reset_test_session', array( 'TCNexus_Visitor_Tracking', 'handle_reset_test_session' ) );
 add_action( 'admin_menu', array( 'TCNexus_Course_Builder', 'register' ), 20 );
 add_action( 'admin_post_tcnexus_save_course', array( 'TCNexus_Course_Builder', 'handle_save' ) );
 add_action( 'admin_post_tcnexus_delete_course', array( 'TCNexus_Course_Builder', 'handle_delete_course' ) );

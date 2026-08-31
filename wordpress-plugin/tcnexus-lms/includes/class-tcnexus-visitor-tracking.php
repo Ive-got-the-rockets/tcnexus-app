@@ -92,9 +92,23 @@ class TCNexus_Visitor_Tracking {
 			<?php if ( isset( $_GET['cleared_all'] ) ) : ?>
 				<div class="notice notice-success is-dismissible"><p>All anonymous trackers cleared.</p></div>
 			<?php endif; ?>
+			<?php if ( isset( $_GET['reset_test_session'] ) ) : ?>
+				<div class="notice notice-success is-dismissible"><p>Test session reset. Anonymous history and the browser session were cleared.</p></div>
+			<?php endif; ?>
 			<div class="tcn-membership-summary">
 				<p>Registered users are identified by their email. Names appear when users add them to their profile. Clearing trackers affects anonymous viewing history only.</p>
 				<div class="tcn-membership-summary__counts"><strong><?php echo esc_html( count( $rows ) ); ?></strong> tracked visitors <span aria-hidden="true">·</span> <strong><?php echo esc_html( $anonymous_count ); ?></strong> anonymous trackers available to clear</div>
+			</div>
+			<div class="tcn-test-reset-card">
+				<div>
+					<strong>Reset Test Session</strong>
+					<p>Clears all anonymous viewing history and removes the test browser token, email, and visitor ID. Registered and member accounts are not affected.</p>
+				</div>
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" onsubmit="return confirm('Reset the anonymous test session? This clears all anonymous viewing history.');">
+					<input type="hidden" name="action" value="tcnexus_reset_test_session" />
+					<?php wp_nonce_field( 'tcnexus_reset_test_session' ); ?>
+					<button type="submit" class="button tcn-test-reset-button">Reset Test Session</button>
+				</form>
 			</div>
 			<div class="tcn-membership-table-card">
 			<table class="widefat striped tcn-membership-table">
@@ -160,6 +174,22 @@ class TCNexus_Visitor_Tracking {
 		global $wpdb;
 		$wpdb->query( 'DELETE FROM ' . self::table() . ' WHERE user_id = 0' );
 		wp_safe_redirect( admin_url( 'admin.php?page=tcnexus-visitor-tracking&cleared_all=1' ) );
+		exit;
+	}
+
+	public static function handle_reset_test_session() {
+		if ( ! current_user_can( 'list_users' ) || ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( $_POST['_wpnonce'], 'tcnexus_reset_test_session' ) ) {
+			wp_die( 'Invalid request.' );
+		}
+
+		global $wpdb;
+		$wpdb->query( 'DELETE FROM ' . self::table() . ' WHERE user_id = 0' );
+
+		$frontend_url = apply_filters( 'tcnexus_frontend_url', 'https://dev.tcnexus.tv' );
+		$reset_url   = add_query_arg( 'tcnexus_reset', '1', $frontend_url );
+		// This intentionally redirects to the separately hosted frontend so it
+		// can clear that origin's localStorage session.
+		wp_redirect( esc_url_raw( $reset_url ) );
 		exit;
 	}
 }
