@@ -68,7 +68,8 @@ export class RegisterModal {
         if (this.authModal.mode() === 'choice') {
           this.authModal.open('register');
         }
-        this.close();
+        this.status.set('success');
+        this.scheduleSuccessClose();
       },
       error: (err: HttpErrorResponse) => {
         this.status.set('error');

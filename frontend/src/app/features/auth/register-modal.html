@@ -55,6 +55,8 @@
       } @else if (status() === 'success' && authModal.mode() === 'login') {
         <h2 class="auth-modal__title">You're logged in</h2>
         <p class="auth-modal__text">Welcome back.</p>
+      } @else if (status() === 'success' && (authModal.mode() === 'register' || authModal.mode() === 'final_free')) {
+        <button type="button" class="auth-modal__submit auth-modal__submit--success" disabled>Profile Created</button>
       } @else if (authModal.mode() === 'login') {
         <h2 class="auth-modal__title">Log In</h2>
         <form (submit)="submitLogin($event)">

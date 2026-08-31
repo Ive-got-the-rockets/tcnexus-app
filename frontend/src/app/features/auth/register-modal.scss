@@ -213,6 +213,10 @@ form {
   }
 }
 
+.auth-modal__submit--success {
+  opacity: 1;
+}
+
 .auth-modal__spinner {
   display: inline-block;
   width: 0.85rem;
