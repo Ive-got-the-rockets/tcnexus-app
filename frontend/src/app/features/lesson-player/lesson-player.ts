@@ -1,3 +1,4 @@
+import { Location } from '@angular/common';
 import { Component, ElementRef, Injector, OnDestroy, afterNextRender, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import Plyr from 'plyr';
@@ -171,6 +172,7 @@ const CUSTOM_ICONS: Record<string, CustomIcon> = {
 export class LessonPlayerPage implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
   private readonly coursesService = inject(CoursesService);
   private readonly accessService = inject(AccessService);
   protected readonly authModal = inject(AuthModalService);
@@ -254,7 +256,12 @@ export class LessonPlayerPage implements OnDestroy {
         // Keep the existing page mounted while the choice popup is dismissed.
         // Once registration changes the modal back to its normal mode, retry
         // the lesson that originally triggered the choice.
-        if (this.authModal.mode() === 'choice') return;
+        if (this.authModal.mode() === 'choice') {
+          const pending = this.pendingChoice();
+          this.pendingChoice.set(null);
+          if (!this.player && pending) this.location.back();
+          return;
+        }
         const pending = this.pendingChoice();
         this.pendingChoice.set(null);
         if (pending) this.checkAccessAndProceed(pending.course, pending.lesson, pending.restart);
