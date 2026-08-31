@@ -53,9 +53,12 @@ export class AccessService {
         }
       }),
       catchError((error) => {
-        if (error.status === 401 || error.status === 403) {
-          this.visitor.logout();
-        }
+        // A security layer may return an HTML verification page with HTTP
+        // 200. Angular reports that as a JSON parse error (also status 200),
+        // so checking only 401/403 leaves a deleted account's token active.
+        // Session validation must fail closed for every response that cannot
+        // be confirmed as a valid JSON session.
+        this.visitor.logout();
         return throwError(() => error);
       }),
     );
