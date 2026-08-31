@@ -23,16 +23,45 @@ class TCNexus_Access_Control {
 		return $wpdb->prefix . TCNEXUS_LMS_TABLE_VIEWS;
 	}
 
+	public static function is_ip_tracking_enabled() {
+		return '1' === get_option( 'tcnexus_track_ip', '1' );
+	}
+
+	public static function is_visitor_tracking_enabled() {
+		return '1' === get_option( 'tcnexus_track_visitor_id', '1' );
+	}
+
+	private static function identity_conditions( $visitor_id, $ip, $user_id, &$values ) {
+		$conditions = array();
+		$values    = array();
+
+		if ( self::is_visitor_tracking_enabled() && $visitor_id ) {
+			$conditions[] = 'visitor_id = %s';
+			$values[]     = $visitor_id;
+		}
+		if ( self::is_ip_tracking_enabled() && $ip ) {
+			$conditions[] = 'ip_address = %s';
+			$values[]     = $ip;
+		}
+		// Anonymous user_id=0 is not an identity. Including it would make all
+		// anonymous visitors share one history.
+		if ( (int) $user_id > 0 ) {
+			$conditions[] = 'user_id = %d';
+			$values[]     = (int) $user_id;
+		}
+
+		return $conditions;
+	}
+
 	public static function has_viewed( $visitor_id, $ip, $user_id, $lesson_id ) {
 		global $wpdb;
 		$table = self::table();
-		$sql   = $wpdb->prepare(
-			"SELECT COUNT(*) FROM {$table} WHERE lesson_id = %d AND (visitor_id = %s OR ip_address = %s OR user_id = %d)",
-			$lesson_id,
-			$visitor_id,
-			$ip,
-			$user_id
-		);
+		$values = array();
+		$ids    = self::identity_conditions( $visitor_id, $ip, $user_id, $values );
+		if ( empty( $ids ) ) {
+			return false;
+		}
+		$sql = $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE lesson_id = %d AND (" . implode( ' OR ', $ids ) . ')', array_merge( array( $lesson_id ), $values ) );
 		return (int) $wpdb->get_var( $sql ) > 0;
 	}
 
@@ -64,18 +93,23 @@ class TCNexus_Access_Control {
 	public static function count_distinct_tier_views( $visitor_id, $ip, $user_id, $tier ) {
 		global $wpdb;
 		$table = self::table();
-		$sql   = $wpdb->prepare(
-			"SELECT COUNT(DISTINCT lesson_id) FROM {$table} WHERE tier = %s AND (visitor_id = %s OR ip_address = %s OR user_id = %d)",
-			$tier,
-			$visitor_id,
-			$ip,
-			$user_id
-		);
+		$values = array();
+		$ids    = self::identity_conditions( $visitor_id, $ip, $user_id, $values );
+		if ( empty( $ids ) ) {
+			return 0;
+		}
+		$sql = $wpdb->prepare( "SELECT COUNT(DISTINCT lesson_id) FROM {$table} WHERE tier = %s AND (" . implode( ' OR ', $ids ) . ')', array_merge( array( $tier ), $values ) );
 		return (int) $wpdb->get_var( $sql );
 	}
 
 	public static function record_view( $visitor_id, $ip, $user_id, $lesson_id, $tier ) {
 		global $wpdb;
+		if ( ! self::is_visitor_tracking_enabled() ) {
+			$visitor_id = '';
+		}
+		if ( ! self::is_ip_tracking_enabled() ) {
+			$ip = '';
+		}
 		$wpdb->insert(
 			self::table(),
 			array(
@@ -93,12 +127,12 @@ class TCNexus_Access_Control {
 	public static function attach_anonymous_history_to_user( $visitor_id, $ip, $user_id ) {
 		global $wpdb;
 		$table = self::table();
-		$wpdb->query( $wpdb->prepare(
-			"UPDATE {$table} SET user_id = %d WHERE user_id = 0 AND (visitor_id = %s OR ip_address = %s)",
-			$user_id,
-			$visitor_id,
-			$ip
-		) );
+		$values = array();
+		$ids    = self::identity_conditions( $visitor_id, $ip, 0, $values );
+		if ( empty( $ids ) ) {
+			return;
+		}
+		$wpdb->query( $wpdb->prepare( "UPDATE {$table} SET user_id = %d WHERE user_id = 0 AND (" . implode( ' OR ', $ids ) . ')', array_merge( array( $user_id ), $values ) ) );
 	}
 
 	public static function get_free_limit() {

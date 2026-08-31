@@ -95,6 +95,24 @@ class TCNexus_Visitor_Tracking {
 			<?php if ( isset( $_GET['reset_test_session'] ) ) : ?>
 				<div class="notice notice-success is-dismissible"><p>Test session reset. Anonymous history and the browser session were cleared.</p></div>
 			<?php endif; ?>
+			<?php if ( isset( $_GET['tracking_saved'] ) ) : ?>
+				<div class="notice notice-success is-dismissible"><p>Anonymous tracking settings saved.</p></div>
+			<?php endif; ?>
+			<?php $track_ip = '1' === get_option( 'tcnexus_track_ip', '1' ); ?>
+			<?php $track_visitor_id = '1' === get_option( 'tcnexus_track_visitor_id', '1' ); ?>
+			<div class="tcn-tracking-settings-card">
+				<div>
+					<strong>Anonymous Tracking Settings</strong>
+					<p>Choose which anonymous identifiers are used to remember free-lesson views. Account tokens remain enabled for registered-user authentication.</p>
+				</div>
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="tcn-tracking-settings-form">
+					<input type="hidden" name="action" value="tcnexus_save_tracking_settings" />
+					<?php wp_nonce_field( 'tcnexus_save_tracking_settings' ); ?>
+					<label><input type="checkbox" name="track_ip" value="1" <?php checked( $track_ip ); ?> /> Use IP address</label>
+					<label><input type="checkbox" name="track_visitor_id" value="1" <?php checked( $track_visitor_id ); ?> /> Use browser visitor ID</label>
+					<button type="submit" class="button tcn-membership-button">Save Tracking Settings</button>
+				</form>
+			</div>
 			<div class="tcn-membership-summary">
 				<p>Registered users are identified by their email. Names appear when users add them to their profile. Clearing trackers affects anonymous viewing history only.</p>
 				<div class="tcn-membership-summary__counts"><strong><?php echo esc_html( count( $rows ) ); ?></strong> tracked visitors <span aria-hidden="true">·</span> <strong><?php echo esc_html( $anonymous_count ); ?></strong> anonymous trackers available to clear</div>
@@ -190,6 +208,17 @@ class TCNexus_Visitor_Tracking {
 		// This intentionally redirects to the separately hosted frontend so it
 		// can clear that origin's localStorage session.
 		wp_redirect( esc_url_raw( $reset_url ) );
+		exit;
+	}
+
+	public static function handle_save_tracking_settings() {
+		if ( ! current_user_can( 'list_users' ) || ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( $_POST['_wpnonce'], 'tcnexus_save_tracking_settings' ) ) {
+			wp_die( 'Invalid request.' );
+		}
+
+		update_option( 'tcnexus_track_ip', isset( $_POST['track_ip'] ) ? '1' : '0' );
+		update_option( 'tcnexus_track_visitor_id', isset( $_POST['track_visitor_id'] ) ? '1' : '0' );
+		wp_safe_redirect( admin_url( 'admin.php?page=tcnexus-visitor-tracking&tracking_saved=1' ) );
 		exit;
 	}
 }

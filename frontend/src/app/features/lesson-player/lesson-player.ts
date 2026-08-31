@@ -259,7 +259,14 @@ export class LessonPlayerPage implements OnDestroy {
         if (this.authModal.mode() === 'choice') {
           const pending = this.pendingChoice();
           this.pendingChoice.set(null);
-          if (!this.player && pending) this.location.back();
+          if (this.visitor.isRegistered()) {
+            // Registration may close the choice modal before its mode change
+            // is observed by this effect. Keep the lesson route mounted and
+            // retry access here instead of navigating back to course details.
+            if (pending) this.checkAccessAndProceed(pending.course, pending.lesson, pending.restart);
+          } else if (!this.player && pending) {
+            this.location.back();
+          }
           return;
         }
         const pending = this.pendingChoice();
