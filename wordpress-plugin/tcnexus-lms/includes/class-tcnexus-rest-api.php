@@ -35,6 +35,12 @@ class TCNexus_REST_API {
 			),
 		) );
 
+		register_rest_route( self::NAMESPACE_, '/session', array(
+			'methods'             => 'GET',
+			'callback'            => array( __CLASS__, 'session_status' ),
+			'permission_callback' => '__return_true',
+		) );
+
 		register_rest_route( self::NAMESPACE_, '/register', array(
 			'methods'             => 'POST',
 			'callback'            => array( __CLASS__, 'register_email' ),
@@ -179,6 +185,13 @@ class TCNexus_REST_API {
 		}
 
 		return new WP_REST_Response( $result, 200 );
+	}
+
+	public static function session_status( \WP_REST_Request $request ) {
+		$user_id = self::get_user_id( $request );
+		return new WP_REST_Response( array(
+			'viewer_tier' => TCNexus_Membership::get_user_tier( $user_id ),
+		), 200 );
 	}
 
 	public static function login( \WP_REST_Request $request ) {

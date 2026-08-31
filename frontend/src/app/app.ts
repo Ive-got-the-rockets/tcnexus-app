@@ -3,6 +3,7 @@ import { ActivatedRoute, NavigationEnd, Router, RouterLink, RouterOutlet } from 
 import { filter } from 'rxjs';
 
 import { AuthModalService } from './core/auth-modal.service';
+import { AccessService } from './core/access.service';
 import { VisitorService } from './core/visitor.service';
 import { RegisterModal } from './features/auth/register-modal';
 
@@ -17,6 +18,7 @@ export class App implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   protected readonly authModal = inject(AuthModalService);
   protected readonly visitor = inject(VisitorService);
+  private readonly accessService = inject(AccessService);
 
   protected readonly year = new Date().getFullYear();
   protected readonly headerHidden = signal(false);
@@ -68,6 +70,9 @@ export class App implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     window.addEventListener('scroll', this.onScroll, { passive: true });
+    if (this.visitor.isRegistered()) {
+      this.accessService.validateSession().subscribe();
+    }
   }
 
   ngOnDestroy(): void {

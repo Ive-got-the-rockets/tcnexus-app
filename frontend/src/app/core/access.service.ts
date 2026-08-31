@@ -32,7 +32,23 @@ export class AccessService {
         // A WordPress user may have been deleted while the browser still has
         // its old token. The API reports the actual viewer tier so this stale
         // local registration state is removed automatically.
-        if (this.visitor.isRegistered() && access.viewer_tier === 'anonymous') {
+        if (this.visitor.isRegistered() && (access.viewer_tier === 'anonymous' || access.reason === 'requires_registration')) {
+          this.visitor.logout();
+        }
+      }),
+      catchError((error) => {
+        if (error.status === 401 || error.status === 403) {
+          this.visitor.logout();
+        }
+        return throwError(() => error);
+      }),
+    );
+  }
+
+  validateSession(): Observable<{ viewer_tier: 'anonymous' | 'registered' | 'paid' }> {
+    return this.http.get<{ viewer_tier: 'anonymous' | 'registered' | 'paid' }>(`${this.baseUrl}/session`).pipe(
+      tap((session) => {
+        if (this.visitor.isRegistered() && session.viewer_tier === 'anonymous') {
           this.visitor.logout();
         }
       }),
