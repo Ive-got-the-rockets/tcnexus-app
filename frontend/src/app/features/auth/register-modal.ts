@@ -37,12 +37,6 @@ export class RegisterModal {
       clearTimeout(this.successCloseTimer);
       this.successCloseTimer = null;
     }
-    // A successful registration from the combined access choice keeps the
-    // lesson player in its choice mode until the modal closes. Switch back to
-    // the normal registration mode so the player can resume the pending lesson.
-    if (this.authModal.mode() === 'choice' && this.visitor.isRegistered()) {
-      this.authModal.open('register');
-    }
     this.authModal.close();
     // Reset so reopening later starts fresh instead of showing stale success/error state.
     this.status.set('idle');
@@ -65,9 +59,6 @@ export class RegisterModal {
 
     this.accessService.register(email).subscribe({
       next: () => {
-        if (this.authModal.mode() === 'choice') {
-          this.authModal.open('register');
-        }
         this.status.set('success');
         this.scheduleSuccessClose();
       },

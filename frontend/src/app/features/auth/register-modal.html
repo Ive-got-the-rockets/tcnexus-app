@@ -9,7 +9,7 @@
         </button>
       }
 
-      @if (authModal.mode() === 'choice' && status() !== 'success') {
+      @if (authModal.mode() === 'choice') {
         @let registerCopy = settings().registration;
         @let paidCopy = settings().paid_member;
         <section class="auth-modal__choice-card">
@@ -38,9 +38,11 @@
               @if (status() === 'error') {
                 <p class="auth-modal__error">{{ errorMessage() }}</p>
               }
-              <button type="submit" class="auth-modal__submit" [disabled]="status() === 'submitting'">
+              <button type="submit" class="auth-modal__submit" [disabled]="status() === 'submitting' || status() === 'success'">
                 @if (status() === 'submitting') {
                   <span class="auth-modal__spinner" aria-hidden="true"></span>Creating profile…
+                } @else if (status() === 'success') {
+                  Profile Created
                 } @else {
                   {{ registerCopy.button_label }}
                 }
@@ -55,8 +57,6 @@
       } @else if (status() === 'success' && authModal.mode() === 'login') {
         <h2 class="auth-modal__title">You're logged in</h2>
         <p class="auth-modal__text">Welcome back.</p>
-      } @else if (status() === 'success' && (authModal.mode() === 'register' || authModal.mode() === 'final_free')) {
-        <button type="button" class="auth-modal__submit auth-modal__submit--success" disabled>Profile Created</button>
       } @else if (authModal.mode() === 'login') {
         <h2 class="auth-modal__title">Log In</h2>
         <form (submit)="submitLogin($event)">
@@ -104,9 +104,11 @@
           @if (status() === 'error') {
             <p class="auth-modal__error">{{ errorMessage() }}</p>
           }
-          <button type="submit" class="auth-modal__submit" [disabled]="status() === 'submitting'">
+          <button type="submit" class="auth-modal__submit" [disabled]="status() === 'submitting' || status() === 'success'">
             @if (status() === 'submitting') {
               <span class="auth-modal__spinner" aria-hidden="true"></span>Creating profile…
+            } @else if (status() === 'success') {
+              Profile Created
             } @else {
               {{ copy.button_label }}
             }
