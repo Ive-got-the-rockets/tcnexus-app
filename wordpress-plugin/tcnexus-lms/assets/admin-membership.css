@@ -223,3 +223,20 @@
   .tcn-popup-card__grid { grid-template-columns: 1fr; }
   .tcn-popup-card__media { order: -1; }
 }
+
+.tcn-pricing-global { padding: 23px 25px 0; }
+.tcn-pricing-global__row, .tcn-pricing-tier__row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.tcn-pricing-global .description { margin: -5px 0 20px; color: var(--tcn-text-dim); }
+.tcn-pricing-tiers { display: grid; gap: 12px; padding: 0 25px 24px; }
+.tcn-pricing-tier { border: 1px solid var(--tcn-border); border-radius: var(--tcn-radius-sm); background: var(--tcn-bg); overflow: hidden; }
+.tcn-pricing-tier summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 17px; background: var(--tcn-bg-sunken); cursor: pointer; list-style: none; }
+.tcn-pricing-tier summary::-webkit-details-marker { display: none; }
+.tcn-pricing-tier summary strong { color: var(--tcn-text); font-family: 'Fraunces', 'Iowan Old Style', serif; font-size: 19px; font-weight: 500; }
+.tcn-pricing-tier summary span { color: var(--tcn-text-dim); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+.tcn-pricing-tier__body { padding: 20px 17px 7px; border-top: 1px solid var(--tcn-border); }
+.tcn-pricing-bullet { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+.tcn-pricing-bullet input { flex: 1; min-height: 40px; width: 100%; border: 1px solid var(--tcn-border); border-radius: var(--tcn-radius-sm); background: var(--tcn-bg-sunken); color: var(--tcn-text); padding: 8px 11px; font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; font-size: 13px; }
+.tcn-pricing-bullet__remove { width: 36px; height: 36px; border: 1px solid #ead7d4; border-radius: var(--tcn-radius-sm); background: #fff9f8; color: #a64235; cursor: pointer; font-size: 18px; }
+.tcn-pricing-bullet__add { margin: 2px 0 15px; border: 0; background: transparent; color: var(--tcn-primary-strong); cursor: pointer; font-size: 12px; }
+.tcn-pricing-card .tcn-popup-details__actions { padding-top: 0; }
+@media (max-width: 800px) { .tcn-pricing-global__row, .tcn-pricing-tier__row { grid-template-columns: 1fr; gap: 0; } .tcn-pricing-global, .tcn-pricing-tiers { padding-left: 18px; padding-right: 18px; } }

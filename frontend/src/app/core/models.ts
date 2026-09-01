@@ -77,6 +77,24 @@ export interface RegistrationSettings {
   registration: RegistrationCopy;
   final_free: RegistrationCopy;
   paid_member: RegistrationCopy;
+  pricing: PaidMembershipSettings;
+}
+
+export interface MembershipTierSettings {
+  name: string;
+  description: string;
+  monthly_price: number;
+  button_label: string;
+  bullets: string[];
+}
+
+export interface PaidMembershipSettings {
+  heading: string;
+  message: string;
+  save_percent: number;
+  currency: string;
+  close_label: string;
+  tiers: [MembershipTierSettings, MembershipTierSettings, MembershipTierSettings];
 }
 
 export interface RegisterResult {

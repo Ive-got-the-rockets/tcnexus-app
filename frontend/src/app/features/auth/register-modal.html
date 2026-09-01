@@ -1,7 +1,7 @@
 @if (authModal.isOpen()) {
   <div class="auth-modal-overlay" [class.auth-modal-overlay--choice]="authModal.mode() === 'choice'" (click)="close()">
-    <div class="auth-modal" [class.auth-modal--choice]="authModal.mode() === 'choice'" (click)="$event.stopPropagation()">
-      @if (authModal.mode() !== 'choice') {
+    <div class="auth-modal" [class.auth-modal--choice]="authModal.mode() === 'choice'" [class.auth-modal--paid]="authModal.mode() === 'paid'" (click)="$event.stopPropagation()">
+      @if (authModal.mode() !== 'choice' && authModal.mode() !== 'paid') {
         <button type="button" class="auth-modal__close" aria-label="Close" (click)="close()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M6 6l12 12M18 6 6 18" />
@@ -9,7 +9,28 @@
         </button>
       }
 
-      @if (authModal.mode() === 'choice') {
+      @if (authModal.mode() === 'paid') {
+        @let pricing = settings().pricing;
+        <section class="auth-modal__paid-card">
+          <button type="button" class="auth-modal__close" [attr.aria-label]="pricing.close_label" (click)="close()">{{ pricing.close_label }}</button>
+          <div class="auth-modal__paid-heading">
+            <div><h2 class="auth-modal__title">{{ pricing.heading }}</h2><p class="auth-modal__text">{{ pricing.message }}</p></div>
+            <div class="auth-modal__billing"><button type="button" [class.active]="!annualBilling()" (click)="setBilling(false)">Monthly</button><button type="button" [class.active]="annualBilling()" (click)="setBilling(true)">Annual <span [class.auth-modal__save-active]="annualBilling()">SAVE {{ pricing.save_percent }}%</span></button></div>
+          </div>
+          <div class="auth-modal__paid-grid">
+            @for (tier of pricing.tiers; track tier.name; let i = $index) {
+              <article class="auth-modal__paid-tier" [class.auth-modal__paid-tier--featured]="i === 1">
+                @if (i === 1) { <span class="auth-modal__paid-badge">Most popular</span> }
+                <h3>{{ tier.name }}</h3><p class="auth-modal__paid-description">{{ tier.description }}</p>
+                <div class="auth-modal__paid-price"><span>{{ pricing.currency }}</span>@for (digit of priceDigits(tier.monthly_price); track digit + '-' + priceVersion(); let digitIndex = $index) {<span class="auth-modal__price-digit" [style.animation-delay.ms]="digitIndex * 300">{{ digit }}</span>}<small>/ month</small></div>
+                @if (annualBilling()) { <p class="auth-modal__paid-note">Billed annually · save {{ pricing.save_percent }}%</p> }
+                <ul>@for (bullet of tier.bullets; track bullet) {<li>{{ bullet }}</li>}</ul>
+                <button type="button" class="auth-modal__submit auth-modal__paid-button">{{ tier.button_label }}</button>
+              </article>
+            }
+          </div>
+        </section>
+      } @else if (authModal.mode() === 'choice') {
         @let registerCopy = settings().registration;
         @let paidCopy = settings().paid_member;
         <section class="auth-modal__choice-card">
@@ -51,7 +72,7 @@
             <div class="auth-modal__choice-divider" aria-hidden="true"><span>OR</span></div>
             <h2 class="auth-modal__title">{{ paidCopy.heading }}</h2>
             <p class="auth-modal__text">{{ paidCopy.message }}</p>
-            <button type="button" class="auth-modal__submit" (click)="close()">{{ paidCopy.button_label }}</button>
+            <button type="button" class="auth-modal__submit" (click)="authModal.open('paid')">{{ paidCopy.button_label }}</button>
           </div>
         </section>
       } @else if (status() === 'success' && authModal.mode() === 'login') {

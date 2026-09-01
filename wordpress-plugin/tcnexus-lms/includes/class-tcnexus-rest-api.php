@@ -228,7 +228,9 @@ class TCNexus_REST_API {
 	}
 
 	public static function get_registration_settings() {
-		return new WP_REST_Response( TCNexus_Registration_Settings::get_public_settings(), 200 );
+		$settings = TCNexus_Registration_Settings::get_public_settings();
+		$settings['pricing'] = TCNexus_Registration_Settings::get_paid_membership_settings();
+		return new WP_REST_Response( $settings, 200 );
 	}
 
 	private static function count_course_lessons( $course_id ) {

@@ -4,7 +4,7 @@ import { Component, ElementRef, inject, signal, viewChild } from '@angular/core'
 import { AccessService } from '../../core/access.service';
 import { AuthModalService } from '../../core/auth-modal.service';
 import { VisitorService } from '../../core/visitor.service';
-import { DEFAULT_REGISTRATION_SETTINGS } from '../../core/registration-settings';
+import { annualPrice, DEFAULT_REGISTRATION_SETTINGS } from '../../core/registration-settings';
 import { RegistrationSettings } from '../../core/models';
 
 type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error';
@@ -23,6 +23,8 @@ export class RegisterModal {
 
   protected readonly status = signal<SubmitStatus>('idle');
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly annualBilling = signal(false);
+  protected readonly priceVersion = signal(0);
   private successCloseTimer: ReturnType<typeof setTimeout> | null = null;
 
   private readonly emailInput = viewChild<ElementRef<HTMLInputElement>>('emailInput');
@@ -38,6 +40,8 @@ export class RegisterModal {
       this.successCloseTimer = null;
     }
     this.authModal.close();
+    this.annualBilling.set(false);
+    this.priceVersion.update((version) => version + 1);
     // Reset so reopening later starts fresh instead of showing stale success/error state.
     this.status.set('idle');
     this.errorMessage.set(null);
@@ -47,6 +51,20 @@ export class RegisterModal {
     this.status.set('idle');
     this.errorMessage.set(null);
     this.authModal.open('register');
+  }
+
+  protected setBilling(annual: boolean): void {
+    if (this.annualBilling() === annual) return;
+    this.annualBilling.set(annual);
+    this.priceVersion.update((version) => version + 1);
+  }
+
+  protected tierPrice(monthly: number): number {
+    return this.annualBilling() ? annualPrice(monthly, this.settings().pricing.save_percent) : monthly;
+  }
+
+  protected priceDigits(monthly: number): string[] {
+    return Array.from(String(this.tierPrice(monthly)));
   }
 
   protected submit(event: Event): void {

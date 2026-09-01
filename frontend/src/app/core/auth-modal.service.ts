@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 
-export type AuthModalMode = 'register' | 'final_free' | 'login' | 'choice';
+export type AuthModalMode = 'register' | 'final_free' | 'login' | 'choice' | 'paid';
 
 /** Lets any component open the shared create-profile / log-in modal. */
 @Injectable({ providedIn: 'root' })

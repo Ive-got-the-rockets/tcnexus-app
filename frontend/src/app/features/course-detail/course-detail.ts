@@ -221,6 +221,10 @@ export class CourseDetailPage implements OnDestroy {
     if (!course) return;
     this.accessService.checkAccess(lesson.id).subscribe({
       next: (access) => {
+        if (access.reason === 'requires_payment') {
+          this.authModal.open('paid');
+          return;
+        }
         if (isAnonymousFreeLimitReached(access, this.visitor.isRegistered())) {
           this.pendingLesson.set(lesson);
           this.authModal.open('choice');

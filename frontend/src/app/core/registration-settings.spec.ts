@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isFinalFreeLesson, isAnonymousFreeLimitReached, normalizeRegistrationSettings } from './registration-settings';
+import { annualPrice, isFinalFreeLesson, isAnonymousFreeLimitReached, normalizePaidMembershipSettings, normalizeRegistrationSettings } from './registration-settings';
 import { AccessCheckResult } from './models';
 
 describe('isFinalFreeLesson', () => {
@@ -149,5 +149,29 @@ describe('isAnonymousFreeLimitReached', () => {
         false,
       ),
     ).toBe(false);
+  });
+});
+
+describe('paid membership pricing', () => {
+  it('provides the three paid tiers by default', () => {
+    const settings = normalizePaidMembershipSettings(undefined);
+    expect(settings.tiers.map((tier) => tier.name)).toEqual(['Starter', 'Trader', 'Pro Desk']);
+    expect(settings.tiers.map((tier) => tier.monthly_price)).toEqual([15, 29, 79]);
+  });
+
+  it('normalizes prices, save percentage, and bullet rows', () => {
+    const settings = normalizePaidMembershipSettings({
+      save_percent: 140,
+      tiers: [{ monthly_price: -4, bullets: ['', 'Core access'] }] as never,
+    });
+    expect(settings.save_percent).toBe(100);
+    expect(settings.tiers[0].monthly_price).toBe(0);
+    expect(settings.tiers[0].bullets).toEqual(['Core access']);
+    expect(settings.tiers[1].bullets.length).toBeGreaterThan(0);
+  });
+
+  it('calculates annual monthly-equivalent prices from the save percentage', () => {
+    expect(annualPrice(15, 20)).toBe(12);
+    expect(annualPrice(29, 20)).toBe(23);
   });
 });
