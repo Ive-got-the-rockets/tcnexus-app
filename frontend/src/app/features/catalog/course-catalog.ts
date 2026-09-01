@@ -76,6 +76,7 @@ export class CourseCatalog implements OnDestroy {
 
   protected readonly status = signal<CatalogStatus>('loading');
   protected readonly courses = signal<Course[]>([]);
+  private readonly featuredCourseId = signal<number | null>(null);
   protected readonly failedImages = signal<ReadonlySet<number>>(new Set());
   protected readonly rowEdges = signal<ReadonlyMap<string, ScrollEdges>>(new Map());
   protected readonly skeletonRows = Array.from({ length: 3 });
@@ -105,7 +106,11 @@ export class CourseCatalog implements OnDestroy {
     }
     return courses;
   });
-  protected readonly featured = computed<Course | null>(() => this.categoryCourses()[0] ?? null);
+  protected readonly featured = computed<Course | null>(() => {
+    const candidates = this.categoryCourses();
+    const selected = this.featuredCourseId();
+    return candidates.find((course) => course.id === selected) ?? candidates[0] ?? null;
+  });
 
   /** Toggle description visibility */
   protected readonly descriptionExpanded = signal(false);  // Hidden by default
@@ -155,22 +160,24 @@ export class CourseCatalog implements OnDestroy {
 
     const isPlatform = (course: Course) => course.course_types.includes('Platform');
     const mode = this.catalogMode();
+    const featuredId = this.featured()?.id;
+    const withoutFeatured = (course: Course) => course.id !== featuredId;
     if (mode === 'trading' || mode === 'platform') {
-      return [{ title: mode === 'platform' ? 'Platform Courses' : 'Trading Courses', courses: this.categoryCourses() }];
+      return [{ title: mode === 'platform' ? 'Platform Courses' : 'Trading Courses', courses: this.categoryCourses().filter(withoutFeatured) }];
     }
 
-    const rows: CourseRow[] = [{ title: 'All Courses', courses }];
+    const rows: CourseRow[] = [{ title: 'All Courses', courses: courses.filter(withoutFeatured) }];
 
     if (this.visitor.isRegistered()) {
       const listedIds = this.myList.courseIds();
-      const listed = courses.filter((course) => listedIds.has(course.id));
+      const listed = courses.filter((course) => listedIds.has(course.id)).filter(withoutFeatured);
       if (listed.length > 0) {
         rows.push({ title: 'My List', courses: listed });
       }
     }
 
-    rows.push({ title: 'Trading Courses', courses: courses.filter((course) => !isPlatform(course)) });
-    rows.push({ title: 'Platform Courses', courses: courses.filter(isPlatform) });
+    rows.push({ title: 'Trading Courses', courses: courses.filter((course) => !isPlatform(course)).filter(withoutFeatured) });
+    rows.push({ title: 'Platform Courses', courses: courses.filter(isPlatform).filter(withoutFeatured) });
 
     return rows;
   });
@@ -181,6 +188,9 @@ export class CourseCatalog implements OnDestroy {
       this.catalogMode.set(mode === 'trading' || mode === 'platform' ? mode : 'home');
       this.episodeListOpen.set(false);
       this.episodeRowsRevealed.set(false);
+      if (this.courses().length) {
+        this.chooseFeaturedCourse(this.courses());
+      }
       this.loadFeaturedDetail();
     });
 
@@ -246,6 +256,7 @@ export class CourseCatalog implements OnDestroy {
     this.coursesService.getCourses().subscribe({
       next: (courses) => {
         this.courses.set(courses);
+        this.chooseFeaturedCourse(courses);
         this.status.set('ready');
         afterNextRender(() => this.pinHeroContent(), { injector: this.injector });
         this.loadFeaturedDetail();
@@ -254,6 +265,14 @@ export class CourseCatalog implements OnDestroy {
         this.status.set('error');
       }
     });
+  }
+
+  private chooseFeaturedCourse(courses: Course[]): void {
+    const candidates = this.catalogMode() === 'platform'
+      ? courses.filter((course) => course.course_types.includes('Platform'))
+      : courses.filter((course) => !course.course_types.includes('Platform'));
+    const selected = candidates[Math.floor(Math.random() * candidates.length)];
+    this.featuredCourseId.set(selected?.id ?? null);
   }
 
   private loadFeaturedDetail(): void {
