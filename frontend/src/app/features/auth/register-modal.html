@@ -19,14 +19,16 @@
           </div>
           <div class="auth-modal__paid-grid">
             @for (tier of pricing.tiers; track tier.name; let i = $index) {
-              <article class="auth-modal__paid-tier" [class.auth-modal__paid-tier--featured]="i === 1">
-                @if (i === 1) { <span class="auth-modal__paid-badge">Most popular</span> }
-                <h3>{{ tier.name }}</h3><p class="auth-modal__paid-description">{{ tier.description }}</p>
-                <div class="auth-modal__paid-price"><span>{{ pricing.currency }}</span>@for (digit of priceDigits(tier.monthly_price); track digit + '-' + priceVersion(); let digitIndex = $index) {<span class="auth-modal__price-digit" [style.animation-delay.ms]="digitIndex * 300">{{ digit }}</span>}<small>/ month</small></div>
-                @if (annualBilling()) { <p class="auth-modal__paid-note">Billed annually · save {{ pricing.save_percent }}%</p> }
-                <ul>@for (bullet of tier.bullets; track bullet) {<li>{{ bullet }}</li>}</ul>
-                <button type="button" class="auth-modal__submit auth-modal__paid-button">{{ tier.button_label }}</button>
-              </article>
+              @if (tier.visible) {
+                <article class="auth-modal__paid-tier" [class.auth-modal__paid-tier--featured]="i === 1">
+                  @if (i === 1) { <span class="auth-modal__paid-badge">Most popular</span> }
+                  <h3>{{ tier.name }}</h3><p class="auth-modal__paid-description">{{ tier.description }}</p>
+                  <div class="auth-modal__paid-price">@for (symbol of [pricing.currency]; track symbol + '-' + priceVersion()) {<span class="auth-modal__price-symbol">{{ symbol }}</span>}@for (digit of priceDigits(tier.monthly_price); track digit + '-' + priceVersion(); let digitIndex = $index) {<span class="auth-modal__price-digit" [class.auth-modal__price-digit--first]="digitIndex === 0" [class.auth-modal__price-digit--second]="digitIndex === 1" [style.animation-delay.ms]="digitIndex * 300">{{ digit }}</span>}<small>/ month</small></div>
+                  @if (annualBilling()) { <p class="auth-modal__paid-note">Billed annually · save {{ pricing.save_percent }}%</p> }
+                  <ul>@for (bullet of tier.bullets; track bullet) {<li>{{ bullet }}</li>}</ul>
+                  <button type="button" class="auth-modal__submit auth-modal__paid-button">{{ tier.button_label }}</button>
+                </article>
+              }
             }
           </div>
         </section>

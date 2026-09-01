@@ -58,9 +58,9 @@ class TCNexus_Registration_Settings {
 			'currency'     => '$',
 			'close_label'  => '×',
 			'tiers'        => array(
-				array( 'name' => 'Starter', 'description' => 'A focused path into the core library.', 'monthly_price' => 15, 'button_label' => 'Choose Starter', 'bullets' => array( 'Core free library', 'Weekly market notes', 'Member profile' ) ),
-				array( 'name' => 'Trader', 'description' => 'The complete learning path for serious traders.', 'monthly_price' => 29, 'button_label' => 'Choose Trader', 'bullets' => array( 'Everything in Starter', 'All registered lessons', 'Live market sessions' ) ),
-				array( 'name' => 'Pro Desk', 'description' => 'Premium access for advanced market work.', 'monthly_price' => 79, 'button_label' => 'Choose Pro Desk', 'bullets' => array( 'Everything in Trader', 'Paid video library', 'Priority member support' ) ),
+				array( 'visible' => true, 'name' => 'Starter', 'description' => 'A focused path into the core library.', 'monthly_price' => 15, 'button_label' => 'Choose Starter', 'bullets' => array( 'Core free library', 'Weekly market notes', 'Member profile' ) ),
+				array( 'visible' => true, 'name' => 'Trader', 'description' => 'The complete learning path for serious traders.', 'monthly_price' => 29, 'button_label' => 'Choose Trader', 'bullets' => array( 'Everything in Starter', 'All registered lessons', 'Live market sessions' ) ),
+				array( 'visible' => true, 'name' => 'Pro Desk', 'description' => 'Premium access for advanced market work.', 'monthly_price' => 79, 'button_label' => 'Choose Pro Desk', 'bullets' => array( 'Everything in Trader', 'Paid video library', 'Priority member support' ) ),
 			),
 		);
 	}
@@ -83,6 +83,7 @@ class TCNexus_Registration_Settings {
 			$tier = isset( $tiers[ $index ] ) && is_array( $tiers[ $index ] ) ? $tiers[ $index ] : array();
 			$bullets = isset( $tier['bullets'] ) && is_array( $tier['bullets'] ) ? array_values( array_filter( array_map( 'sanitize_text_field', $tier['bullets'] ), function ( $bullet ) { return '' !== trim( $bullet ); } ) ) : array();
 			$settings['tiers'][ $index ] = array(
+				'visible'       => ! isset( $tier['visible'] ) || '0' !== (string) $tier['visible'],
 				'name'          => isset( $tier['name'] ) && '' !== trim( (string) $tier['name'] ) ? sanitize_text_field( $tier['name'] ) : $fallback['name'],
 				'description'   => isset( $tier['description'] ) && '' !== trim( (string) $tier['description'] ) ? sanitize_text_field( $tier['description'] ) : $fallback['description'],
 				'monthly_price' => isset( $tier['monthly_price'] ) ? max( 0, absint( $tier['monthly_price'] ) ) : $fallback['monthly_price'],
@@ -182,7 +183,7 @@ class TCNexus_Registration_Settings {
 			</div>
 			<div class="tcn-pricing-tiers">
 			<?php foreach ( $pricing['tiers'] as $index => $tier ) : ?>
-				<details class="tcn-pricing-tier" <?php echo 0 === $index ? 'open' : ''; ?>><summary><strong>Tier <?php echo esc_html( $index + 1 ); ?> · <?php echo esc_html( $tier['name'] ); ?></strong><span>Visible</span></summary><div class="tcn-pricing-tier__body">
+				<details class="tcn-pricing-tier" <?php echo 0 === $index ? 'open' : ''; ?>><summary><strong>Tier <?php echo esc_html( $index + 1 ); ?> · <?php echo esc_html( $tier['name'] ); ?></strong><label class="tcn-pricing-visibility"><input type="hidden" name="paid_membership[tiers][<?php echo esc_attr( $index ); ?>][visible]" value="0" /><input class="tcn-pricing-visibility__input" type="checkbox" name="paid_membership[tiers][<?php echo esc_attr( $index ); ?>][visible]" value="1" <?php checked( $tier['visible'], true ); ?> /><span class="tcn-pricing-visibility__switch" aria-hidden="true"></span><span class="tcn-pricing-visibility__text"><?php echo $tier['visible'] ? 'Visible' : 'Not Visible'; ?></span></label></summary><div class="tcn-pricing-tier__body">
 					<p class="tcn-popup-field"><label>Tier name</label><input name="paid_membership[tiers][<?php echo esc_attr( $index ); ?>][name]" value="<?php echo esc_attr( $tier['name'] ); ?>" /></p>
 					<p class="tcn-popup-field"><label>Sub text</label><input name="paid_membership[tiers][<?php echo esc_attr( $index ); ?>][description]" value="<?php echo esc_attr( $tier['description'] ); ?>" /></p>
 					<div class="tcn-pricing-tier__row"><p class="tcn-popup-field"><label>Monthly price</label><input type="number" min="0" name="paid_membership[tiers][<?php echo esc_attr( $index ); ?>][monthly_price]" value="<?php echo esc_attr( $tier['monthly_price'] ); ?>" /></p><p class="tcn-popup-field"><label>Button text</label><input name="paid_membership[tiers][<?php echo esc_attr( $index ); ?>][button_label]" value="<?php echo esc_attr( $tier['button_label'] ); ?>" /></p></div>

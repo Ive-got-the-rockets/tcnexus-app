@@ -81,6 +81,7 @@ export interface RegistrationSettings {
 }
 
 export interface MembershipTierSettings {
+  visible: boolean;
   name: string;
   description: string;
   monthly_price: number;

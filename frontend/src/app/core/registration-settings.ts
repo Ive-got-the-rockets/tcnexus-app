@@ -1,9 +1,9 @@
 import { AccessCheckResult, MembershipTierSettings, PaidMembershipSettings, RegistrationCopy, RegistrationMedia, RegistrationSettings } from './models';
 
 const DEFAULT_TIERS: [MembershipTierSettings, MembershipTierSettings, MembershipTierSettings] = [
-  { name: 'Starter', description: 'A focused path into the core library.', monthly_price: 15, button_label: 'Choose Starter', bullets: ['Core free library', 'Weekly market notes', 'Member profile'] },
-  { name: 'Trader', description: 'The complete learning path for serious traders.', monthly_price: 29, button_label: 'Choose Trader', bullets: ['Everything in Starter', 'All registered lessons', 'Live market sessions'] },
-  { name: 'Pro Desk', description: 'Premium access for advanced market work.', monthly_price: 79, button_label: 'Choose Pro Desk', bullets: ['Everything in Trader', 'Paid video library', 'Priority member support'] },
+  { visible: true, name: 'Starter', description: 'A focused path into the core library.', monthly_price: 15, button_label: 'Choose Starter', bullets: ['Core free library', 'Weekly market notes', 'Member profile'] },
+  { visible: true, name: 'Trader', description: 'The complete learning path for serious traders.', monthly_price: 29, button_label: 'Choose Trader', bullets: ['Everything in Starter', 'All registered lessons', 'Live market sessions'] },
+  { visible: true, name: 'Pro Desk', description: 'Premium access for advanced market work.', monthly_price: 79, button_label: 'Choose Pro Desk', bullets: ['Everything in Trader', 'Paid video library', 'Priority member support'] },
 ];
 
 export const DEFAULT_PAID_MEMBERSHIP_SETTINGS: PaidMembershipSettings = {
@@ -62,6 +62,7 @@ export function normalizePaidMembershipSettings(value: Partial<PaidMembershipSet
     const tier = (inputTiers[index] ?? {}) as Partial<MembershipTierSettings>;
     const bullets = Array.isArray(tier.bullets) ? tier.bullets.map((bullet) => String(bullet).trim()).filter(Boolean) : [];
     return {
+      visible: tier.visible !== false,
       name: String(tier.name ?? fallback.name).trim() || fallback.name,
       description: String(tier.description ?? fallback.description).trim() || fallback.description,
       monthly_price: Math.max(0, Math.round(Number(tier.monthly_price ?? fallback.monthly_price) || 0)),

@@ -170,6 +170,15 @@ describe('paid membership pricing', () => {
     expect(settings.tiers[1].bullets.length).toBeGreaterThan(0);
   });
 
+  it('preserves tier visibility while keeping omitted visibility enabled', () => {
+    const settings = normalizePaidMembershipSettings({
+      tiers: [{ visible: false }, {}] as never,
+    });
+
+    expect(settings.tiers[0].visible).toBe(false);
+    expect(settings.tiers[1].visible).toBe(true);
+  });
+
   it('calculates annual monthly-equivalent prices from the save percentage', () => {
     expect(annualPrice(15, 20)).toBe(12);
     expect(annualPrice(29, 20)).toBe(23);

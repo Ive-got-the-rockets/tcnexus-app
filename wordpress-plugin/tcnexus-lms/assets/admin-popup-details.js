@@ -15,6 +15,22 @@
 }());
 
 (function () {
+  function wirePricingVisibility() {
+    document.querySelectorAll('.tcn-pricing-visibility__input').forEach(function (input) {
+      var label = input.closest('.tcn-pricing-visibility');
+      var text = label && label.querySelector('.tcn-pricing-visibility__text');
+      if (!text) return;
+      function update() {
+        text.textContent = input.checked ? 'Visible' : 'Not Visible';
+      }
+      input.addEventListener('change', update);
+      update();
+    });
+  }
+  wirePricingVisibility();
+}());
+
+(function () {
   function wireBulletControls() {
     document.querySelectorAll('.tcn-pricing-bullet__remove').forEach(function (button) {
       button.addEventListener('click', function () {

@@ -233,6 +233,13 @@
 .tcn-pricing-tier summary::-webkit-details-marker { display: none; }
 .tcn-pricing-tier summary strong { color: var(--tcn-text); font-family: 'Fraunces', 'Iowan Old Style', serif; font-size: 19px; font-weight: 500; }
 .tcn-pricing-tier summary span { color: var(--tcn-text-dim); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+.tcn-pricing-visibility { display: inline-flex; align-items: center; gap: 7px; margin: 0; color: var(--tcn-text-dim); cursor: pointer; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.tcn-pricing-visibility__input { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; clip-path: inset(50%); }
+.tcn-pricing-visibility__switch { position: relative; display: inline-block; width: 32px; height: 18px; border: 1px solid var(--tcn-border-strong, var(--tcn-border)); border-radius: var(--tcn-radius-pill); background: var(--tcn-bg-sunken); transition: background .18s ease, border-color .18s ease; }
+.tcn-pricing-visibility__switch::after { position: absolute; top: 3px; left: 3px; width: 10px; height: 10px; border-radius: 50%; background: var(--tcn-text-dim); content: ''; transition: transform .18s ease, background .18s ease; }
+.tcn-pricing-visibility__input:checked + .tcn-pricing-visibility__switch { border-color: var(--tcn-primary-strong); background: var(--tcn-primary-soft, #e6f4ef); }
+.tcn-pricing-visibility__input:checked + .tcn-pricing-visibility__switch::after { background: var(--tcn-primary-strong); transform: translateX(14px); }
+.tcn-pricing-visibility__input:focus-visible + .tcn-pricing-visibility__switch { outline: 2px solid var(--tcn-primary-strong); outline-offset: 2px; }
 .tcn-pricing-tier__body { padding: 20px 17px 7px; border-top: 1px solid var(--tcn-border); }
 .tcn-pricing-bullet { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
 .tcn-pricing-bullet input { flex: 1; min-height: 40px; width: 100%; border: 1px solid var(--tcn-border); border-radius: var(--tcn-radius-sm); background: var(--tcn-bg-sunken); color: var(--tcn-text); padding: 8px 11px; font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; font-size: 13px; }
