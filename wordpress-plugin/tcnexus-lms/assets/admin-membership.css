@@ -247,3 +247,35 @@
 .tcn-pricing-bullet__add { margin: 2px 0 15px; border: 0; background: transparent; color: var(--tcn-primary-strong); cursor: pointer; font-size: 12px; }
 .tcn-pricing-card .tcn-popup-details__actions { padding-top: 0; }
 @media (max-width: 800px) { .tcn-pricing-global__row, .tcn-pricing-tier__row { grid-template-columns: 1fr; gap: 0; } .tcn-pricing-global, .tcn-pricing-tiers { padding-left: 18px; padding-right: 18px; } }
+
+.tcn-animation-wrap .tcn-membership-header { margin-bottom: 20px; }
+.tcn-animation-panel { border: 1px solid var(--tcn-border); border-radius: var(--tcn-radius-md); background: var(--tcn-bg); box-shadow: var(--tcn-shadow-2); overflow: hidden; }
+.tcn-animation-panel__header { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 20px 25px; border-bottom: 1px solid var(--tcn-border); background: var(--tcn-bg-sunken); }
+.tcn-animation-panel__header .tcn-membership-eyebrow { margin: 0 0 5px; }
+.tcn-animation-panel__header h2 { margin: 0; color: var(--tcn-text); font-family: 'Fraunces', 'Iowan Old Style', serif; font-size: 22px; font-weight: 500; }
+.tcn-animation-preset-picker { display: flex; align-items: center; gap: 10px; margin: 0; }
+.tcn-animation-preset-picker label, .tcn-animation-actions label { color: var(--tcn-text-dim); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.tcn-animation-preset-picker select, .tcn-animation-field__input input, .tcn-animation-actions input { min-height: 40px; border: 1px solid var(--tcn-border); border-radius: var(--tcn-radius-sm); background: var(--tcn-bg-sunken); color: var(--tcn-text); font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; font-size: 13px; box-shadow: none; }
+.tcn-animation-preset-picker select { min-width: 220px; padding: 8px 11px; }
+.tcn-animation-fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 24px 25px 0; }
+.tcn-animation-field { min-width: 0; }
+.tcn-animation-field > label { display: block; margin-bottom: 8px; color: var(--tcn-text-dim); font-size: 12px; font-weight: 400; letter-spacing: .03em; text-transform: uppercase; }
+.tcn-animation-field__input { position: relative; }
+.tcn-animation-field__input input { width: 100%; padding: 8px 58px 8px 11px; box-sizing: border-box; }
+.tcn-animation-field__input span { position: absolute; top: 13px; right: 11px; color: var(--tcn-text-dim); font-size: 11px; }
+.tcn-animation-field p { margin: 7px 0 0; color: var(--tcn-text-dim); font-size: 11px; }
+.tcn-animation-preview { margin: 24px 25px; padding: 18px; border: 1px solid var(--tcn-border); border-radius: var(--tcn-radius-sm); background: var(--tcn-bg-sunken); }
+.tcn-animation-preview__label { margin: 0 0 14px; color: var(--tcn-text-dim); font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.tcn-animation-preview__stage { display: flex; align-items: center; justify-content: center; min-height: 150px; border: 1px dashed var(--tcn-border); border-radius: var(--tcn-radius-sm); background: var(--tcn-bg); }
+.tcn-animation-preview__card { width: min(260px, 80%); padding: 20px; border: 1px solid var(--tcn-border); border-radius: var(--tcn-radius-sm); background: var(--tcn-bg); box-shadow: var(--tcn-shadow-2); }
+.tcn-animation-preview__card span { display: block; width: 44%; height: 6px; margin-bottom: 13px; border-radius: var(--tcn-radius-pill); background: var(--tcn-primary); }
+.tcn-animation-preview__card h3 { margin: 0 0 7px; color: var(--tcn-text); font-family: 'Fraunces', 'Iowan Old Style', serif; font-size: 20px; font-weight: 500; }
+.tcn-animation-preview__card p { margin: 0; color: var(--tcn-text-dim); font-size: 12px; line-height: 1.5; }
+.tcn-animation-actions { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; padding: 0 25px 25px; }
+.tcn-animation-actions > div:first-child { display: flex; flex: 1; flex-direction: column; gap: 8px; max-width: 360px; }
+.tcn-animation-actions input { width: 100%; padding: 8px 11px; box-sizing: border-box; }
+.tcn-animation-actions__buttons { display: flex; align-items: center; gap: 10px; }
+.tcn-animation-actions__buttons button { min-height: 40px; padding: 8px 14px; border-radius: 4.8px; cursor: pointer; font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; font-size: 12px; }
+.tcn-animation-actions__buttons .tcn-btn-ghost { border: 1px solid var(--tcn-border); background: var(--tcn-bg); color: var(--tcn-text); }
+.tcn-animation-actions__buttons .tcn-btn-primary { border: 1px solid var(--tcn-primary-strong); background: var(--tcn-primary-strong); color: var(--tcn-primary-text); }
+@media (max-width: 800px) { .tcn-animation-panel__header, .tcn-animation-actions { align-items: flex-start; flex-direction: column; } .tcn-animation-preset-picker { align-items: flex-start; flex-direction: column; width: 100%; } .tcn-animation-preset-picker select { width: 100%; } .tcn-animation-fields { grid-template-columns: 1fr; gap: 0; } .tcn-animation-actions__buttons { flex-wrap: wrap; } }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { annualPrice, isFinalFreeLesson, isAnonymousFreeLimitReached, normalizePaidMembershipSettings, normalizeRegistrationSettings } from './registration-settings';
+import { annualPrice, DEFAULT_CARD_ANIMATION_SETTINGS, isFinalFreeLesson, isAnonymousFreeLimitReached, normalizeCardAnimationSettings, normalizePaidMembershipSettings, normalizeRegistrationSettings } from './registration-settings';
 import { AccessCheckResult } from './models';
 
 describe('isFinalFreeLesson', () => {
@@ -182,5 +182,25 @@ describe('paid membership pricing', () => {
   it('calculates annual monthly-equivalent prices from the save percentage', () => {
     expect(annualPrice(15, 20)).toBe(12);
     expect(annualPrice(29, 20)).toBe(23);
+  });
+});
+
+describe('card carousel animation settings', () => {
+  it('provides Preset 01 defaults', () => {
+    expect(normalizeCardAnimationSettings(undefined)).toEqual(DEFAULT_CARD_ANIMATION_SETTINGS);
+  });
+
+  it('clamps invalid durations to the supported range', () => {
+    const settings = normalizeCardAnimationSettings({ open: 0, switch: 4, close: 'bad' } as never);
+
+    expect(settings.open).toBe(0.1);
+    expect(settings.switch).toBe(2);
+    expect(settings.close).toBe(0.35);
+  });
+
+  it('preserves a named active preset', () => {
+    const settings = normalizeCardAnimationSettings({ id: 'custom-1', name: 'Gentle', open: 0.75, switch: 0.4, close: 0.55 });
+
+    expect(settings).toEqual({ id: 'custom-1', name: 'Gentle', open: 0.75, switch: 0.4, close: 0.55 });
   });
 });

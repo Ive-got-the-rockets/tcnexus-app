@@ -260,9 +260,9 @@ Call `updateCardAnimation(settings)` alongside the existing settings assignment.
 Add style bindings to the `.preview` element:
 
 ```html
-[style.--preview-open-duration.s]="cardAnimation().open"
-[style.--preview-switch-duration.s]="cardAnimation().switch"
-[style.--preview-close-duration.s]="cardAnimation().close"
+[style.--preview-open-duration]="cardAnimation().open + 's'"
+[style.--preview-switch-duration]="cardAnimation().switch + 's'"
+[style.--preview-close-duration]="cardAnimation().close + 's'"
 ```
 
 - [ ] **Step 3: Replace hard-coded preview durations**
@@ -342,4 +342,3 @@ git push origin main
 ```
 
 For WordPress FTP deployment, provide paths beginning from `plugins/tcnexus-lms/`. The Angular front end deploys through Vercel from the pushed repository and does not require FTP upload.
-

@@ -230,6 +230,9 @@ class TCNexus_REST_API {
 	public static function get_registration_settings() {
 		$settings = TCNexus_Registration_Settings::get_public_settings();
 		$settings['pricing'] = TCNexus_Registration_Settings::get_paid_membership_settings();
+		$settings['animations'] = array(
+			'card_carousel' => TCNexus_Animations_Settings::get_active_preset(),
+		);
 		return new WP_REST_Response( $settings, 200 );
 	}
 

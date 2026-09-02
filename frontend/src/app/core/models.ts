@@ -73,11 +73,22 @@ export interface RegistrationMedia {
   alt: string;
 }
 
+export interface CardAnimationSettings {
+  id: string;
+  name: string;
+  open: number;
+  switch: number;
+  close: number;
+}
+
 export interface RegistrationSettings {
   registration: RegistrationCopy;
   final_free: RegistrationCopy;
   paid_member: RegistrationCopy;
   pricing: PaidMembershipSettings;
+  animations?: {
+    card_carousel: CardAnimationSettings;
+  };
 }
 
 export interface MembershipTierSettings {

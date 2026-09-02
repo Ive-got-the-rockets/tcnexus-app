@@ -1,4 +1,12 @@
-import { AccessCheckResult, MembershipTierSettings, PaidMembershipSettings, RegistrationCopy, RegistrationMedia, RegistrationSettings } from './models';
+import { AccessCheckResult, CardAnimationSettings, MembershipTierSettings, PaidMembershipSettings, RegistrationCopy, RegistrationMedia, RegistrationSettings } from './models';
+
+export const DEFAULT_CARD_ANIMATION_SETTINGS: CardAnimationSettings = {
+  id: 'preset-01',
+  name: 'Preset 01',
+  open: 0.5,
+  switch: 0.28,
+  close: 0.35,
+};
 
 const DEFAULT_TIERS: [MembershipTierSettings, MembershipTierSettings, MembershipTierSettings] = [
   { visible: true, name: 'Starter', description: 'A focused path into the core library.', monthly_price: 15, button_label: 'Choose Starter', bullets: ['Core free library', 'Weekly market notes', 'Member profile'] },
@@ -30,6 +38,7 @@ export const DEFAULT_REGISTRATION_SETTINGS: RegistrationSettings = {
     media: { type: 'none', url: '', alt: '' },
   },
   pricing: DEFAULT_PAID_MEMBERSHIP_SETTINGS,
+  animations: { card_carousel: DEFAULT_CARD_ANIMATION_SETTINGS },
 };
 
 export function normalizeRegistrationSettings(value: Partial<RegistrationSettings> | null | undefined): RegistrationSettings {
@@ -39,6 +48,7 @@ export function normalizeRegistrationSettings(value: Partial<RegistrationSetting
     final_free?: Partial<RegistrationCopy>;
     paid_member?: Partial<RegistrationCopy>;
     pricing?: Partial<PaidMembershipSettings>;
+    animations?: { card_carousel?: Partial<CardAnimationSettings> };
   };
   const legacyMedia = normalizeMedia(source.media);
   const normalizeCopy = (copy: Partial<RegistrationCopy> | undefined, fallback: RegistrationCopy): RegistrationCopy => ({
@@ -51,6 +61,26 @@ export function normalizeRegistrationSettings(value: Partial<RegistrationSetting
     final_free: normalizeCopy(source.final_free, DEFAULT_REGISTRATION_SETTINGS.final_free),
     paid_member: normalizeCopy(source.paid_member, DEFAULT_REGISTRATION_SETTINGS.paid_member),
     pricing: normalizePaidMembershipSettings(source.pricing),
+    animations: { card_carousel: normalizeCardAnimationSettings(source.animations?.card_carousel) },
+  };
+}
+
+export function normalizeCardAnimationSettings(value: Partial<CardAnimationSettings> | null | undefined): CardAnimationSettings {
+  const source = value ?? {};
+  const duration = (input: unknown, fallback: number): number => {
+    const parsed = Number(input);
+    if (!Number.isFinite(parsed)) {
+      return fallback;
+    }
+    return Math.round(Math.min(2, Math.max(0.1, parsed)) * 100) / 100;
+  };
+
+  return {
+    id: String(source.id ?? DEFAULT_CARD_ANIMATION_SETTINGS.id).trim() || DEFAULT_CARD_ANIMATION_SETTINGS.id,
+    name: String(source.name ?? DEFAULT_CARD_ANIMATION_SETTINGS.name).trim() || DEFAULT_CARD_ANIMATION_SETTINGS.name,
+    open: duration(source.open, DEFAULT_CARD_ANIMATION_SETTINGS.open),
+    switch: duration(source.switch, DEFAULT_CARD_ANIMATION_SETTINGS.switch),
+    close: duration(source.close, DEFAULT_CARD_ANIMATION_SETTINGS.close),
   };
 }
 

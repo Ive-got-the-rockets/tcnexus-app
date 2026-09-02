@@ -617,8 +617,8 @@
   border-radius: 0.4rem;
   background: #181818;
   box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.85);
-  animation: preview-in 0.18s ease;
-  transition: top 0.28s cubic-bezier(0.22, 1, 0.36, 1), left 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: preview-in var(--preview-open-duration, 0.5s) ease;
+  transition: top var(--preview-switch-duration, 0.28s) cubic-bezier(0.22, 1, 0.36, 1), left var(--preview-switch-duration, 0.28s) cubic-bezier(0.22, 1, 0.36, 1);
   cursor: default;
 }
 
@@ -627,11 +627,11 @@
 }
 
 .preview--closing {
-  animation: preview-out 0.18s ease forwards;
+  animation: preview-out var(--preview-close-duration, 0.35s) ease forwards;
 }
 
 .preview--switching {
-  animation: preview-switch 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: preview-switch var(--preview-switch-duration, 0.28s) cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes preview-in {

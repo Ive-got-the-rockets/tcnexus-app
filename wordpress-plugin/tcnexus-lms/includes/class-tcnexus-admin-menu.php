@@ -15,6 +15,7 @@ class TCNexus_Admin_Menu {
 			'dashicons-groups',
 			26
 		);
+		TCNexus_Animations_Settings::register();
 	}
 
 	public static function render_membership_page() {

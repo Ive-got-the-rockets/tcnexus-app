@@ -3,7 +3,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 
 import { CoursesService } from '../../core/courses.service';
 import { MyListService } from '../../core/my-list.service';
-import { Course, CourseDetail, Lesson, Person } from '../../core/models';
+import { Course, CourseDetail, Lesson, Person, RegistrationSettings } from '../../core/models';
+import { DEFAULT_CARD_ANIMATION_SETTINGS, normalizeCardAnimationSettings } from '../../core/registration-settings';
+import { AccessService } from '../../core/access.service';
 import { MorphRect, TransitionService } from '../../core/transition.service';
 import { VisitorService } from '../../core/visitor.service';
 import { WatchProgressService } from '../../core/watch-progress.service';
@@ -44,6 +46,7 @@ export class CourseCatalog implements OnDestroy {
   private readonly visitor = inject(VisitorService);
   private readonly myList = inject(MyListService);
   private readonly watchProgress = inject(WatchProgressService);
+  private readonly accessService = inject(AccessService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly transition = inject(TransitionService);
@@ -62,6 +65,7 @@ export class CourseCatalog implements OnDestroy {
   protected readonly previewReady = signal(false);
   protected readonly previewClosing = signal(false);
   protected readonly previewSwitching = signal(false);
+  protected readonly cardAnimation = signal(DEFAULT_CARD_ANIMATION_SETTINGS);
   /**
    * The actual small grid card's rect, captured when the popup opens — NOT
    * the popup's own rect. The popup is centered on the card but clamped to
@@ -183,6 +187,10 @@ export class CourseCatalog implements OnDestroy {
   });
 
   constructor() {
+    this.accessService.registrationSettings$.subscribe((settings: RegistrationSettings) => {
+      this.cardAnimation.set(normalizeCardAnimationSettings(settings.animations?.card_carousel));
+    });
+
     this.route.data.subscribe((data) => {
       const mode = data['catalogMode'];
       this.catalogMode.set(mode === 'trading' || mode === 'platform' ? mode : 'home');

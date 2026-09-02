@@ -19,8 +19,9 @@ class TCNexus_Admin_Theme {
 		// installs that normalize the parent menu slug differently.
 		$is_membership_screen = false !== strpos( $hook, '_page_tcnexus-visitor-tracking' );
 		$is_popup_details_screen = false !== strpos( $hook, '_page_tcnexus-registration-settings' );
+		$is_animation_screen = false !== strpos( $hook, '_page_tcnexus-card-carousel-animation' ) || false !== strpos( $hook, '_page_tcnexus-animations' );
 
-		if ( ! $is_taxonomy_screen && ! $is_membership_screen && ! $is_popup_details_screen ) {
+		if ( ! $is_taxonomy_screen && ! $is_membership_screen && ! $is_popup_details_screen && ! $is_animation_screen ) {
 			return;
 		}
 
@@ -40,7 +41,7 @@ class TCNexus_Admin_Theme {
 			);
 		}
 
-		if ( $is_membership_screen || $is_popup_details_screen ) {
+		if ( $is_membership_screen || $is_popup_details_screen || $is_animation_screen ) {
 			wp_enqueue_style(
 				'tcnexus-admin-membership',
 				TCNEXUS_LMS_URL . 'assets/admin-membership.css',
