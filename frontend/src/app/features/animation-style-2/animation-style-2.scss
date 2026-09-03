@@ -526,16 +526,23 @@
 
 .style-row {
   position: relative;
+  margin-right: calc(-1 * clamp(22px, 4vw, 42px));
   padding: 0 0 150px;
 }
 
 .style-row--platform {
-  margin-top: -200px;
+  margin-top: -350px;
+}
+
+.style-row--platform .style-carousel {
+  margin-top: 0;
 }
 
 .style-row__title {
+  position: absolute;
+  top: calc(var(--carousel-headroom) - 41px);
+  left: 0;
   margin: 0;
-  margin-bottom: 15px;
   font-family: var(--font-ui);
   font-size: 22px;
   font-weight: 500;
@@ -565,8 +572,11 @@
 
 .style-carousel {
   position: relative;
-  margin-top: -150px;
+  margin-top: -65px;
   border: 2px solid red;
+  container-type: inline-size;
+  --card-art-height: calc((100cqw - var(--nav-w) - var(--card-gap)) * 0.28125);
+  --nav-panel-w: calc(var(--nav-w) + var(--card-gap) - 10px);
 }
 
 .style-carousel__viewport {
@@ -578,9 +588,9 @@
   &::after {
     position: absolute;
     top: var(--carousel-headroom);
-    height: var(--art-height, 160px);
+    height: var(--card-art-height);
     z-index: 4;
-    width: 45px;
+    width: var(--nav-panel-w);
     content: '';
     pointer-events: none;
   }
@@ -596,21 +606,22 @@
   }
 }
 
+.style-carousel--at-start .style-carousel__viewport::before {
+  display: none;
+}
+
 .style-carousel__track {
   display: flex;
   gap: var(--card-gap);
   overflow-x: auto;
   overflow-y: visible;
   padding: var(--carousel-headroom) 0;
-  padding-inline-start: calc(var(--nav-w) + var(--card-gap));
+  padding-inline-start: 0;
   /* Keep one card-period available after the final course so the last slide
      can still align its incoming edge with the navigation boundary instead
      of being clamped early by the track's natural content width. */
-  padding-inline-end: calc(
-    (100cqw - 2 * var(--nav-w) - var(--card-gap)) / var(--cards-per-page) +
-    var(--nav-w) + var(--card-gap)
-  );
-  scroll-padding-inline-start: calc(var(--nav-w) + var(--card-gap));
+  padding-inline-end: 0;
+  scroll-padding-inline-start: 0;
   /* Navigation calculates exact card-group targets in TypeScript. Avoid
      mandatory snapping overriding those targets at narrower breakpoints. */
   scroll-snap-type: none;
@@ -627,7 +638,7 @@
      while each slide keeps the cards at that breakpoint's size. */
   flex: 0 0 auto;
   width: calc(
-    (100cqw - 2 * var(--nav-w) - var(--card-gap)) / var(--cards-per-page) - var(--card-gap)
+    (100cqw - var(--nav-w) - var(--card-gap)) / 2
   );
   padding: 0;
   border: 0;
@@ -733,7 +744,7 @@
   justify-content: center;
   width: 28px;
   height: 28px;
-  margin-bottom: 8px;
+  margin: 0;
   padding: 0;
   border: 1px solid color-mix(in srgb, var(--paper) 70%, transparent);
   border-radius: 50%;
@@ -750,6 +761,43 @@
     left: 2px;
     width: 13.8px;
     height: 13.8px;
+  }
+
+  &:hover {
+    border-color: var(--signal);
+    color: var(--signal);
+  }
+}
+
+.style-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.style-card__list {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--paper) 70%, transparent);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--paper);
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
 
   &:hover {
@@ -806,12 +854,12 @@
 .style-carousel__arrow {
   position: absolute;
   top: var(--carousel-headroom);
-  height: var(--art-height, 160px);
+  height: var(--card-art-height);
   z-index: 20;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: var(--nav-w);
+  width: var(--nav-panel-w);
   border: 0;
   border-radius: 0;
   background: rgba(11, 13, 12, 0.58);
@@ -827,8 +875,15 @@
   }
 }
 
-.style-carousel__arrow--prev { left: 0; }
-.style-carousel__arrow--next { right: 0; }
+.style-carousel__arrow--prev {
+  left: 0;
+  border-radius: 0 var(--button-radius) var(--button-radius) 0;
+}
+
+.style-carousel__arrow--next {
+  right: 0;
+  border-radius: var(--button-radius) 0 0 var(--button-radius);
+}
 
 @media (max-width: 800px) {
   .style-card:hover {
@@ -837,6 +892,36 @@
 
   .style-card:hover .style-card__meta {
     transform: scale(0.69);
+  }
+}
+
+@media (min-width: 600px) {
+  .style-carousel {
+    --card-art-height: calc((100cqw - var(--nav-w) - 3 * var(--card-gap)) * 0.140625);
+  }
+
+  .style-card {
+    width: calc((100cqw - var(--nav-w) - 3 * var(--card-gap)) / 4);
+  }
+}
+
+@media (min-width: 1200px) {
+  .style-carousel {
+    --card-art-height: calc((100cqw - var(--nav-w) - 4 * var(--card-gap)) * 0.1125);
+  }
+
+  .style-card {
+    width: calc((100cqw - var(--nav-w) - 4 * var(--card-gap)) / 5);
+  }
+}
+
+@media (min-width: 1600px) {
+  .style-carousel {
+    --card-art-height: calc((100cqw - var(--nav-w) - 5 * var(--card-gap)) * 0.09375);
+  }
+
+  .style-card {
+    width: calc((100cqw - var(--nav-w) - 5 * var(--card-gap)) / 6);
   }
 }
 

@@ -107,13 +107,10 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
     // card visible beside the navigation arrow.
     const cards = Array.from(track.querySelectorAll<HTMLElement>('.style-card'));
     const cardsPerPage = Number.parseInt(getComputedStyle(track).getPropertyValue('--cards-per-page'), 10) || 1;
-    const carousel = track.closest('.style-carousel');
-    const navigationWidth = carousel?.querySelector<HTMLElement>('.style-carousel__arrow')?.offsetWidth ?? 45;
-    const cardGap = Number.parseFloat(getComputedStyle(track).columnGap) || 5;
     const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
     const pageTargets = cards
       .filter((_, index) => index % cardsPerPage === 0)
-      .map(card => Math.min(maxScroll, Math.max(0, card.offsetLeft - navigationWidth - cardGap)));
+      .map(card => Math.min(maxScroll, Math.max(0, card.offsetLeft)));
     if (pageTargets.length < 2) return;
 
     let currentPage = 0;

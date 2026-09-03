@@ -56,8 +56,8 @@
   }
 
   <section class="style-row" aria-label="Courses">
-    <h2 class="style-row__title">Trading Courses</h2>
-    <div class="style-carousel" #carousel>
+    <div class="style-carousel" #carousel [class.style-carousel--at-start]="edges().atStart">
+      <h2 class="style-row__title">Trading Courses</h2>
       @if (!edges().atStart) {
         <button type="button" class="style-carousel__arrow style-carousel__arrow--prev" aria-label="Scroll left" (click)="scroll(-1)">‹</button>
       }
@@ -79,11 +79,21 @@
                 <img [src]="thumbnailUrl(course, index)" [alt]="course.title" loading="lazy" (error)="onImageError($event)" />
               </div>
               <div class="style-card__details">
-                <button type="button" class="style-card__play" aria-label="Play course" (click)="$event.stopPropagation(); openCourse(course)">
-                  <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true">
-                    <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
-                  </svg>
-                </button>
+                <div class="style-card__actions">
+                  <button type="button" class="style-card__play" aria-label="Play course" (click)="$event.stopPropagation(); openCourse(course)">
+                    <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true">
+                      <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
+                    </svg>
+                  </button>
+                  <button type="button" class="style-card__list" aria-label="View lessons" (click)="$event.stopPropagation(); openCourse(course)">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <circle cx="6" cy="6" r="1.5" />
+                      <circle cx="6" cy="12" r="1.5" />
+                      <circle cx="6" cy="18" r="1.5" />
+                      <path d="M11 6h8M11 12h8M11 18h8" />
+                    </svg>
+                  </button>
+                </div>
                 <h3>{{ course.title }}</h3>
                 <div class="style-card__meta">
                   <span>{{ course.course_types[0] || 'Trading Course' }}</span>
@@ -103,8 +113,8 @@
   </section>
 
   <section class="style-row style-row--platform" aria-labelledby="platform-courses-title">
-    <h2 id="platform-courses-title" class="style-row__title">Platform Courses</h2>
-    <div class="style-carousel" #platformCarousel>
+    <div class="style-carousel" #platformCarousel [class.style-carousel--at-start]="platformEdges().atStart">
+      <h2 id="platform-courses-title" class="style-row__title">Platform Courses</h2>
       @if (!platformEdges().atStart) {
         <button type="button" class="style-carousel__arrow style-carousel__arrow--prev" aria-label="Scroll left" (click)="scroll(-1, 'platform')">‹</button>
       }
@@ -121,11 +131,21 @@
                 <img [src]="thumbnailUrl(course, index)" [alt]="course.title" loading="lazy" (error)="onImageError($event)" />
               </div>
               <div class="style-card__details">
-                <button type="button" class="style-card__play" aria-label="Play course" (click)="$event.stopPropagation(); openCourse(course)">
-                  <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true">
-                    <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
-                  </svg>
-                </button>
+                <div class="style-card__actions">
+                  <button type="button" class="style-card__play" aria-label="Play course" (click)="$event.stopPropagation(); openCourse(course)">
+                    <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true">
+                      <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
+                    </svg>
+                  </button>
+                  <button type="button" class="style-card__list" aria-label="View lessons" (click)="$event.stopPropagation(); openCourse(course)">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <circle cx="6" cy="6" r="1.5" />
+                      <circle cx="6" cy="12" r="1.5" />
+                      <circle cx="6" cy="18" r="1.5" />
+                      <path d="M11 6h8M11 12h8M11 18h8" />
+                    </svg>
+                  </button>
+                </div>
                 <h3>{{ course.title }}</h3>
                 <div class="style-card__meta">
                   <span>Platform Course</span>
