@@ -1,14 +1,62 @@
 <main class="style-page">
-  <p class="style-page__eyebrow">Animation Style 2 · Card Carousel</p>
-  <h1 class="style-page__title">Trading courses</h1>
-  <p class="style-page__copy">Hover over a course to preview the new expanding card animation.</p>
-
-  <section class="style-row" aria-labelledby="style-row-title">
-    <div class="style-row__head">
-      <h2 id="style-row-title">All Courses</h2>
-      <span>{{ courses().length }} courses · hover preview</span>
+  @if (featured(); as course) {
+    <div class="style-featured__background" aria-hidden="true">
+      <img [src]="featuredImageUrl(course)" alt="" (error)="onFeaturedImageError($event)" />
     </div>
+    <section class="style-featured" aria-labelledby="style-featured-title">
+      <p class="style-page__eyebrow">Featured Course</p>
+      <div class="style-featured__heading" (mouseenter)="openDescriptionOnHover()" (mouseleave)="closeDescriptionOnHover()">
+        <h1 id="style-featured-title" class="style-featured__title">{{ course.title }}</h1>
+        <button type="button" class="style-featured__info" [attr.aria-expanded]="descriptionOpen()" (click)="toggleDescription()">i</button>
+      </div>
+      <div class="style-featured__details" [class.style-featured__details--expanded]="descriptionOpen()">
+        <p class="style-featured__description">{{ course.excerpt }}</p>
+        @if (featuredDetail(); as detail) {
+          @if (detail.instructor; as instructor) {
+            <div class="style-featured__person">
+              <p class="style-featured__person-label">Instructor</p>
+              <div class="style-featured__person-row">
+                <img class="style-featured__person-avatar" [src]="personPhotoUrl(instructor)" [alt]="instructor.name" />
+                <span>{{ instructor.name }}</span>
+              </div>
+            </div>
+          }
+          @if (detail.guest; as guest) {
+            <div class="style-featured__person">
+              <p class="style-featured__person-label">Guest</p>
+              <div class="style-featured__person-row">
+                <img class="style-featured__person-avatar" [src]="personPhotoUrl(guest)" [alt]="guest.name" />
+                <span>{{ guest.name }}</span>
+              </div>
+            </div>
+          }
+        }
+      </div>
+      <div class="style-featured__meta">
+        <span>{{ courseTypeLabel(course) }}</span>
+        <span aria-hidden="true">•</span>
+        <span>{{ course.lesson_count }} lessons</span>
+      </div>
+      <div class="style-featured__actions">
+        <button type="button" class="style-featured__start" (click)="startWatching(course)">
+          <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true">
+            <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
+          </svg>
+          <span class="style-featured__start-label">Start Watching</span>
+        </button>
+        <button
+          type="button"
+          class="style-featured__overview"
+          [attr.aria-expanded]="lessonsOpen()"
+          (click)="toggleLessons(course)"
+        >Lessons List</button>
+        <button type="button" class="style-featured__overview" (click)="openOverview(course)">Course Overview</button>
+      </div>
+    </section>
+  }
 
+  <section class="style-row" aria-label="Courses">
+    <h2 class="style-row__title">Trading Courses</h2>
     <div class="style-carousel" #carousel>
       @if (!edges().atStart) {
         <button type="button" class="style-carousel__arrow style-carousel__arrow--prev" aria-label="Scroll left" (click)="scroll(-1)">‹</button>
@@ -16,17 +64,32 @@
 
       <div class="style-carousel__viewport">
         <div class="style-carousel__track" #track [appRowScroll]="'animation-style-2'">
-          @for (course of courses(); track course.id; let index = $index) {
-            <article class="style-card" (mouseenter)="onCardEnter($event)" (mouseleave)="onCardLeave()">
+          @for (course of carouselCourses(); track course.id; let index = $index) {
+            <article
+              class="style-card"
+              role="link"
+              tabindex="0"
+              (mouseenter)="onCardEnter($event)"
+              (mouseleave)="onCardLeave()"
+              (click)="openCourse(course)"
+              (keydown.enter)="openCourse(course)"
+              (keydown.space)="openCourse(course); $event.preventDefault()"
+            >
               <div class="style-card__art">
                 <img [src]="thumbnailUrl(course, index)" [alt]="course.title" loading="lazy" (error)="onImageError($event)" />
               </div>
               <div class="style-card__details">
-                <div class="style-card__actions" aria-hidden="true">
-                  <span>▶</span><span>＋</span><span>♡</span>
-                </div>
+                <button type="button" class="style-card__play" aria-label="Play course" (click)="$event.stopPropagation(); openCourse(course)">
+                  <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true">
+                    <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
+                  </svg>
+                </button>
                 <h3>{{ course.title }}</h3>
-                <p>{{ course.lesson_count }} lessons · {{ course.course_types[0] || 'Trading' }}</p>
+                <div class="style-card__meta">
+                  <span>{{ course.course_types[0] || 'Trading Course' }}</span>
+                  <span aria-hidden="true">•</span>
+                  <span>{{ course.lesson_count }} lessons</span>
+                </div>
               </div>
             </article>
           }
@@ -38,4 +101,81 @@
       }
     </div>
   </section>
+
+  <section class="style-row style-row--platform" aria-labelledby="platform-courses-title">
+    <h2 id="platform-courses-title" class="style-row__title">Platform Courses</h2>
+    <div class="style-carousel" #platformCarousel>
+      @if (!platformEdges().atStart) {
+        <button type="button" class="style-carousel__arrow style-carousel__arrow--prev" aria-label="Scroll left" (click)="scroll(-1, 'platform')">‹</button>
+      }
+
+      <div class="style-carousel__viewport">
+        <div class="style-carousel__track" #platformTrack [appRowScroll]="'animation-style-2-platform'">
+          @for (course of platformCourses; track course.id; let index = $index) {
+            <article
+              class="style-card"
+              (mouseenter)="onCardEnter($event, 'platform')"
+              (mouseleave)="onCardLeave()"
+            >
+              <div class="style-card__art">
+                <img [src]="thumbnailUrl(course, index)" [alt]="course.title" loading="lazy" (error)="onImageError($event)" />
+              </div>
+              <div class="style-card__details">
+                <button type="button" class="style-card__play" aria-label="Play course" (click)="$event.stopPropagation(); openCourse(course)">
+                  <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true">
+                    <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
+                  </svg>
+                </button>
+                <h3>{{ course.title }}</h3>
+                <div class="style-card__meta">
+                  <span>Platform Course</span>
+                  <span aria-hidden="true">•</span>
+                  <span>{{ course.lesson_count }} lessons</span>
+                </div>
+              </div>
+            </article>
+          }
+        </div>
+      </div>
+
+      @if (!platformEdges().atEnd) {
+        <button type="button" class="style-carousel__arrow style-carousel__arrow--next" aria-label="Scroll right" (click)="scroll(1, 'platform')">›</button>
+      }
+    </div>
+  </section>
 </main>
+
+<button
+  type="button"
+  class="episode-backdrop"
+  [class.episode-backdrop--open]="lessonsOpen()"
+  aria-label="Close lessons list"
+  (click)="closeLessons()"
+></button>
+
+<aside class="episode-panel" [class.episode-panel--open]="lessonsOpen()" aria-label="Lessons list">
+  <div class="episode-panel__header" [class.episode-panel__header--revealed]="lessonsRevealed()">
+    <button type="button" class="episode-panel__close" aria-label="Close lessons list" (click)="closeLessons()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M6 6l12 12M18 6 6 18"></path>
+      </svg>
+    </button>
+    <h2 class="episode-panel__title">Lessons</h2>
+  </div>
+  @if (featuredDetail(); as detail) {
+    <ol class="lesson-list" [class.lesson-list--revealed]="lessonsRevealed()">
+      @for (lesson of detail.lessons; track lesson.id; let index = $index) {
+        <li class="lesson-row" [style.transition-delay]="(index * 35) + 'ms'" (click)="openLesson(lesson)">
+          <span class="lesson-row__order">{{ lesson.order }}</span>
+          <span class="lesson-row__thumb"><img [src]="lessonThumbnailUrl(lesson)" alt="" /></span>
+          <div class="lesson-row__info">
+            <span class="lesson-row__title">{{ lesson.title }}</span>
+            <p class="lesson-row__excerpt">{{ lesson.excerpt }}</p>
+          </div>
+        </li>
+      }
+    </ol>
+  } @else if (lessonsOpen()) {
+    <p class="style-lessons-panel__loading">Loading lessons…</p>
+  }
+</aside>

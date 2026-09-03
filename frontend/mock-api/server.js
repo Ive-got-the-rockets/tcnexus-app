@@ -14,6 +14,26 @@ const TEST_VIDEO_URL = 'https://vimeo.com/1068479580';
 
 const courses = [
   {
+    id: 93,
+    title: 'From Market 0 to top gun',
+    excerpt: 'Morbi molestie enim vitae orci scelerisque maximus. In at congue dolor, nec eleifend lectus.',
+    thumbnail: 'http://localhost:8082/wp-content/uploads/2026/08/cropped-hero-course-image-1-300x169.jpg',
+    image: 'http://localhost:8082/wp-content/uploads/2026/08/cropped-hero-course-image.jpg',
+    course_types: ['Trading Course'],
+    lesson_count: 3,
+    overview_link: 'https://gamma.app/docs/Market-Mavericks-s1zmj0f59xs70ex?mode=doc'
+  },
+  {
+    id: 55,
+    title: 'Mastering the Greeks',
+    excerpt: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam efficitur lorem vitae tincidunt aliquet.',
+    thumbnail: 'http://localhost:8082/wp-content/uploads/2026/08/cropped-mastering-the-greeks-main-1-300x169.jpg',
+    image: 'http://localhost:8082/wp-content/uploads/2026/08/cropped-mastering-the-greeks-main-3.jpg',
+    course_types: ['Options'],
+    lesson_count: 3,
+    overview_link: 'https://gamma.app/docs/Copy-of-WELCOME-TO-t8qv4sb2qoely4c'
+  },
+  {
     id: 1,
     title: 'Reading Price Action Like a Desk Trader',
     excerpt: 'Learn to read candles, structure, and liquidity the way institutional desks do, without the indicator clutter.',
@@ -124,6 +144,126 @@ const courses = [
     thumbnail: null,
     course_types: ['Platform'],
     lesson_count: 3
+  },
+  {
+    id: 15,
+    title: 'The Trader’s Morning Routine',
+    excerpt: 'Build a calm, repeatable pre-market routine that turns overnight information into a focused trading plan.',
+    thumbnail: 'https://picsum.photos/seed/tcnexus-placeholder-course-15/640/360',
+    image: 'https://picsum.photos/seed/tcnexus-placeholder-hero-15/1600/900',
+    course_types: ['Beginner', 'Price Action'],
+    lesson_count: 4,
+    placeholder: true
+  },
+  {
+    id: 16,
+    title: 'Chart Structure Fundamentals',
+    excerpt: 'Learn to identify trend, range, and transition conditions before choosing a setup or taking a trade.',
+    thumbnail: 'https://picsum.photos/seed/tcnexus-placeholder-course-16/640/360',
+    image: 'https://picsum.photos/seed/tcnexus-placeholder-hero-16/1600/900',
+    course_types: ['Price Action', 'Beginner'],
+    lesson_count: 4,
+    placeholder: true
+  },
+  {
+    id: 17,
+    title: 'Momentum Without the Noise',
+    excerpt: 'Separate healthy momentum from late-stage chasing with a clean, price-first framework.',
+    thumbnail: 'https://picsum.photos/seed/tcnexus-placeholder-course-17/640/360',
+    image: 'https://picsum.photos/seed/tcnexus-placeholder-hero-17/1600/900',
+    course_types: ['Price Action', 'Intermediate'],
+    lesson_count: 4,
+    placeholder: true
+  },
+  {
+    id: 18,
+    title: 'The Options Trader’s Checklist',
+    excerpt: 'A practical checklist for liquidity, volatility, structure, and risk before entering an options position.',
+    thumbnail: 'https://picsum.photos/seed/tcnexus-placeholder-course-18/640/360',
+    image: 'https://picsum.photos/seed/tcnexus-placeholder-hero-18/1600/900',
+    course_types: ['Options', 'Beginner'],
+    lesson_count: 4,
+    placeholder: true
+  },
+  {
+    id: 19,
+    title: 'Reading Volatility With Confidence',
+    excerpt: 'Understand implied volatility, realized movement, and the context behind expanding or contracting ranges.',
+    thumbnail: 'https://picsum.photos/seed/tcnexus-placeholder-course-19/640/360',
+    image: 'https://picsum.photos/seed/tcnexus-placeholder-hero-19/1600/900',
+    course_types: ['Options', 'Intermediate'],
+    lesson_count: 4,
+    placeholder: true
+  },
+  {
+    id: 20,
+    title: 'Macro Signals for Everyday Traders',
+    excerpt: 'Turn rates, liquidity, and economic data into a simple backdrop for your daily market decisions.',
+    thumbnail: 'https://picsum.photos/seed/tcnexus-placeholder-course-20/640/360',
+    image: 'https://picsum.photos/seed/tcnexus-placeholder-hero-20/1600/900',
+    course_types: ['Macro', 'Intermediate'],
+    lesson_count: 4,
+    placeholder: true
+  },
+  {
+    id: 21,
+    title: 'Trading Around Key Economic Events',
+    excerpt: 'Plan for scheduled volatility around CPI, jobs data, and central-bank decisions without forcing a trade.',
+    thumbnail: 'https://picsum.photos/seed/tcnexus-placeholder-course-21/640/360',
+    image: 'https://picsum.photos/seed/tcnexus-placeholder-hero-21/1600/900',
+    course_types: ['Macro', 'Advanced'],
+    lesson_count: 4,
+    placeholder: true
+  },
+  {
+    id: 22,
+    title: 'A Better Risk Framework',
+    excerpt: 'Create a risk framework that keeps position size, stop placement, and daily loss limits working together.',
+    thumbnail: 'https://picsum.photos/seed/tcnexus-placeholder-course-22/640/360',
+    image: 'https://picsum.photos/seed/tcnexus-placeholder-hero-22/1600/900',
+    course_types: ['Risk', 'Beginner'],
+    lesson_count: 4,
+    placeholder: true
+  },
+  {
+    id: 23,
+    title: 'Managing Trades in Real Time',
+    excerpt: 'Know when to hold, reduce, or exit a position as the market gives you new information.',
+    thumbnail: 'https://picsum.photos/seed/tcnexus-placeholder-course-23/640/360',
+    image: 'https://picsum.photos/seed/tcnexus-placeholder-hero-23/1600/900',
+    course_types: ['Risk', 'Intermediate'],
+    lesson_count: 4,
+    placeholder: true
+  },
+  {
+    id: 24,
+    title: 'Building a Repeatable Trade Plan',
+    excerpt: 'Turn your best ideas into a written process you can execute consistently across different market conditions.',
+    thumbnail: 'https://picsum.photos/seed/tcnexus-placeholder-course-24/640/360',
+    image: 'https://picsum.photos/seed/tcnexus-placeholder-hero-24/1600/900',
+    course_types: ['Beginner', 'Risk'],
+    lesson_count: 4,
+    placeholder: true
+  },
+  {
+    id: 25,
+    title: 'From Watchlist to Setup',
+    excerpt: 'Create a focused watchlist and narrow it down to the few setups that deserve your attention today.',
+    thumbnail: 'https://picsum.photos/seed/tcnexus-placeholder-course-25/640/360',
+    image: 'https://picsum.photos/seed/tcnexus-placeholder-hero-25/1600/900',
+    course_types: ['Platform', 'Beginner'],
+    lesson_count: 4,
+    placeholder: true
+  },
+  {
+    id: 26,
+    title: 'Your Weekly Trading Review',
+    excerpt: 'Review your decisions, identify patterns, and make one clear improvement for the week ahead.',
+    thumbnail: 'https://picsum.photos/seed/tcnexus-placeholder-course-26/640/360',
+    image: 'https://picsum.photos/seed/tcnexus-placeholder-hero-26/1600/900',
+    course_types: ['Platform', 'Risk'],
+    lesson_count: 4,
+    placeholder: true
   }
 ];
 
@@ -137,10 +277,10 @@ function buildLessons(course) {
       order: i,
       tier,
       course_id: course.id,
-      thumbnail: null,
+      thumbnail: course.placeholder ? `https://picsum.photos/seed/tcnexus-placeholder-lesson-${course.id}-${i}/320/180` : null,
       locked: tier === 'paid',
       excerpt: `Part ${i} of ${course.title.toLowerCase()} — a focused, worked walkthrough building directly on the previous lesson.`,
-      video_url: TEST_VIDEO_URL
+      video_url: course.placeholder ? null : TEST_VIDEO_URL
     });
   }
   return lessons;
@@ -153,6 +293,16 @@ function buildCourseDetail(course) {
     content: `<p>${course.excerpt}</p><p>This course walks through the concepts step by step, with worked examples pulled from real charts and real trades — not theory slides.</p>`,
     thumbnail: course.thumbnail,
     course_types: course.course_types,
+    instructor: {
+      id: 1,
+      name: 'Coco Blanco',
+      photo: 'https://i.pravatar.cc/120?u=coco-blanco'
+    },
+    guest: {
+      id: 2,
+      name: 'TC Nexus Guest',
+      photo: 'https://i.pravatar.cc/120?u=tcnexus-guest'
+    },
     lessons: buildLessons(course)
   };
 }
