@@ -30,9 +30,14 @@ interface ReturnOverlayState {
 
 const UNKNOWN_EDGES: ScrollEdges = { atStart: true, atEnd: true };
 const PREVIEW_WIDTH = 416;
-const PREVIEW_HEIGHT = 460;
-const PREVIEW_SHOW_DELAY = 200;
-const PREVIEW_HIDE_DELAY = 150;
+// Keep the positioning geometry in sync with the mockup-style preview:
+// 16:9 artwork (234px) plus the compact details section (118px).
+const PREVIEW_HEIGHT = 352;
+// Animation Style 2 responds immediately as the pointer enters the next card.
+const PREVIEW_SHOW_DELAY = 0;
+// Start the Style 2 close animation as soon as the pointer leaves the card
+// or preview; the close itself remains a full 0.5s motion.
+const PREVIEW_HIDE_DELAY = 0;
 const VIEWPORT_MARGIN = 8;
 
 @Component({
@@ -58,6 +63,7 @@ export class CourseCatalog implements OnDestroy {
 
   private showTimer: ReturnType<typeof setTimeout> | null = null;
   private hideTimer: ReturnType<typeof setTimeout> | null = null;
+  private closeCleanupTimer: ReturnType<typeof setTimeout> | null = null;
 
   protected readonly previewCourse = signal<Course | null>(null);
   protected readonly previewPosition = signal<PreviewPosition | null>(null);
@@ -65,6 +71,8 @@ export class CourseCatalog implements OnDestroy {
   protected readonly previewReady = signal(false);
   protected readonly previewClosing = signal(false);
   protected readonly previewSwitching = signal(false);
+  protected readonly previewStartScale = signal(0.72);
+  protected readonly previewTransformOrigin = signal('center center');
   protected readonly cardAnimation = signal(DEFAULT_CARD_ANIMATION_SETTINGS);
   /**
    * The actual small grid card's rect, captured when the popup opens — NOT
@@ -500,6 +508,7 @@ export class CourseCatalog implements OnDestroy {
   protected onCardEnter(course: Course, rowTitle: string, event: MouseEvent): void {
     this.clearHideTimer();
     this.clearShowTimer();
+    this.clearCloseCleanupTimer();
 
     const cardEl = event.currentTarget as HTMLElement;
     this.showTimer = setTimeout(() => {
@@ -515,6 +524,20 @@ export class CourseCatalog implements OnDestroy {
       const top = Math.min(
         Math.max(rect.top + rect.height / 2 - PREVIEW_HEIGHT / 2, VIEWPORT_MARGIN),
         window.innerHeight - PREVIEW_HEIGHT - VIEWPORT_MARGIN
+      );
+
+      // Start the fixed preview at the hovered card's visual scale. The
+      // existing preview body remains unchanged; this only changes how the
+      // complete preview grows into place.
+      const startScale = Math.min(rect.width / PREVIEW_WIDTH, rect.height / PREVIEW_HEIGHT);
+      this.previewStartScale.set(Math.max(0.42, Math.min(0.78, startScale)));
+      const cardCenter = rect.left + rect.width / 2;
+      this.previewTransformOrigin.set(
+        cardCenter < window.innerWidth * 0.32
+          ? 'left center'
+          : cardCenter > window.innerWidth * 0.68
+            ? 'right center'
+            : 'center center'
       );
 
       this.previewPosition.set({ top: `${top}px`, left: `${left}px` });
@@ -534,6 +557,7 @@ export class CourseCatalog implements OnDestroy {
   protected onPreviewAnimationEnd(event: AnimationEvent): void {
     if (event.animationName !== 'preview-in') {
       if (event.animationName === 'preview-out') {
+        this.clearCloseCleanupTimer();
         this.previewCourse.set(null);
         this.previewPosition.set(null);
         this.previewReady.set(false);
@@ -559,13 +583,29 @@ export class CourseCatalog implements OnDestroy {
         this.previewClosing.set(false);
         this.previewSwitching.set(false);
       } else {
+        // A quick leave during a card switch can otherwise leave both
+        // animation classes active. The later switching rule would win and
+        // prevent preview-out from firing its cleanup handler.
+        this.previewSwitching.set(false);
         this.previewClosing.set(true);
+        this.clearCloseCleanupTimer();
+        this.closeCleanupTimer = setTimeout(() => {
+          if (this.previewClosing()) {
+            this.previewCourse.set(null);
+            this.previewPosition.set(null);
+            this.previewReady.set(false);
+            this.previewClosing.set(false);
+            this.previewSwitching.set(false);
+          }
+          this.closeCleanupTimer = null;
+        }, Math.ceil(this.cardAnimation().close * 1000) + 100);
       }
     }, PREVIEW_HIDE_DELAY);
   }
 
   protected cancelHide(): void {
     this.clearHideTimer();
+    this.clearCloseCleanupTimer();
     this.previewClosing.set(false);
     this.previewSwitching.set(false);
   }
@@ -573,6 +613,7 @@ export class CourseCatalog implements OnDestroy {
   ngOnDestroy(): void {
     this.clearShowTimer();
     this.clearHideTimer();
+    this.clearCloseCleanupTimer();
   }
 
   private clearShowTimer(): void {
@@ -586,6 +627,13 @@ export class CourseCatalog implements OnDestroy {
     if (this.hideTimer !== null) {
       clearTimeout(this.hideTimer);
       this.hideTimer = null;
+    }
+  }
+
+  private clearCloseCleanupTimer(): void {
+    if (this.closeCleanupTimer !== null) {
+      clearTimeout(this.closeCleanupTimer);
+      this.closeCleanupTimer = null;
     }
   }
 }

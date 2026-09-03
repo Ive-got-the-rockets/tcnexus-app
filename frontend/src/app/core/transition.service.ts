@@ -12,12 +12,18 @@ export interface MorphHandoff {
   thumbnailUrl: string;
   /** Which row the click came from — a course can appear in more than one row, and they scroll independently. */
   rowTitle: string;
+  source?: 'catalog' | 'style-2';
+  style2State?: {
+    scrollLeft: number;
+    featuredId: number;
+  };
 }
 
 export interface ReturnHandoff {
   courseId: number;
   rowTitle: string;
   thumbnailUrl: string;
+  style2State?: MorphHandoff['style2State'];
 }
 
 /**
@@ -40,8 +46,14 @@ export class TransitionService {
   private pending: MorphHandoff | null = null;
   private pendingReturn: ReturnHandoff | null = null;
 
-  stage(rect: MorphRect, thumbnailUrl: string, rowTitle: string): void {
-    this.pending = { rect, thumbnailUrl, rowTitle };
+  stage(
+    rect: MorphRect,
+    thumbnailUrl: string,
+    rowTitle: string,
+    source: MorphHandoff['source'] = 'catalog',
+    style2State?: MorphHandoff['style2State']
+  ): void {
+    this.pending = { rect, thumbnailUrl, rowTitle, source, style2State };
   }
 
   consume(): MorphHandoff | null {
@@ -50,8 +62,8 @@ export class TransitionService {
     return value;
   }
 
-  stageReturn(courseId: number, rowTitle: string, thumbnailUrl: string): void {
-    this.pendingReturn = { courseId, rowTitle, thumbnailUrl };
+  stageReturn(courseId: number, rowTitle: string, thumbnailUrl: string, style2State?: MorphHandoff['style2State']): void {
+    this.pendingReturn = { courseId, rowTitle, thumbnailUrl, style2State };
   }
 
   consumeReturn(): ReturnHandoff | null {

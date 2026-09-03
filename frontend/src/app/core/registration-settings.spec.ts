@@ -195,7 +195,7 @@ describe('card carousel animation settings', () => {
 
     expect(settings.open).toBe(0.1);
     expect(settings.switch).toBe(2);
-    expect(settings.close).toBe(0.35);
+    expect(settings.close).toBe(0.5);
   });
 
   it('preserves a named active preset', () => {

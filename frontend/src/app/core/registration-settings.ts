@@ -4,8 +4,8 @@ export const DEFAULT_CARD_ANIMATION_SETTINGS: CardAnimationSettings = {
   id: 'preset-01',
   name: 'Preset 01',
   open: 0.5,
-  switch: 0.28,
-  close: 0.35,
+  switch: 0.5,
+  close: 0.5,
 };
 
 const DEFAULT_TIERS: [MembershipTierSettings, MembershipTierSettings, MembershipTierSettings] = [

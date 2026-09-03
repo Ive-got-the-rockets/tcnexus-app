@@ -1,12 +1,21 @@
-import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, computed, inject, signal, viewChild } from '@angular/core';
-import { Router } from '@angular/router';
+import { AfterViewInit, Component, ElementRef, HostListener, Injector, OnDestroy, afterNextRender, computed, inject, signal, viewChild } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { Course, CourseDetail, Lesson, Person } from '../../core/models';
 import { CoursesService } from '../../core/courses.service';
+import { CatalogScrollService } from '../../core/catalog-scroll.service';
+import { MorphRect, TransitionService } from '../../core/transition.service';
 import { RowScrollDirective, ScrollEdges } from '../catalog/row-scroll.directive';
 
 const EMPTY_EDGES: ScrollEdges = { atStart: true, atEnd: true };
 type CarouselKind = 'trading' | 'platform';
+const PAGE_EXIT_DURATION = 280;
+const STYLE2_SCROLL_STORAGE_KEY = 'tcnexus-style2-trading-scroll';
+const STYLE2_FEATURED_STORAGE_KEY = 'tcnexus-style2-featured-id';
+
+interface ReturnOverlayState {
+  thumbnailUrl: string;
+}
 
 @Component({
   selector: 'app-animation-style-2',
@@ -16,13 +25,18 @@ type CarouselKind = 'trading' | 'platform';
 })
 export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
   private readonly coursesService = inject(CoursesService);
+  private readonly catalogScroll = inject(CatalogScrollService);
+  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly injector = inject(Injector);
+  private readonly transition = inject(TransitionService);
   private readonly track = viewChild<ElementRef<HTMLElement>>('track');
   private readonly carousel = viewChild<ElementRef<HTMLElement>>('carousel');
   private readonly platformTrack = viewChild<ElementRef<HTMLElement>>('platformTrack');
   private readonly platformCarousel = viewChild<ElementRef<HTMLElement>>('platformCarousel');
   private resizeObserver?: ResizeObserver;
   private expandedCardCheck?: ReturnType<typeof setTimeout>;
+  private pageExitTimer?: ReturnType<typeof setTimeout>;
   private readonly onScroll = () => this.measureEdges();
   private readonly onPlatformScroll = () => this.measureEdges('platform');
 
@@ -40,6 +54,14 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
   });
   protected readonly edges = signal<ScrollEdges>(EMPTY_EDGES);
   protected readonly platformEdges = signal<ScrollEdges>(EMPTY_EDGES);
+  protected readonly leaving = signal(false);
+  protected readonly returning = signal(false);
+  protected readonly returnRevealed = signal(false);
+  protected readonly returnOverlay = signal<ReturnOverlayState | null>(null);
+  protected readonly returnRect = signal<MorphRect | null>(null);
+  protected readonly returnSettled = signal(false);
+  private readonly pendingReturn = this.transition.consumeReturn();
+  private returnAnimationStarted = false;
   protected readonly platformCourses: Course[] = Array.from({ length: 8 }, (_, index) => ({
     id: -(index + 1),
     title: ['Platform Foundations', 'Reading the Dashboard', 'Workspace Setup', 'Building Your Watchlist', 'Chart Tools Essentials', 'Alerts and Notifications', 'Using the Trade Journal', 'Platform Shortcuts'][index],
@@ -52,12 +74,37 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
   }));
 
   constructor() {
+    if (this.pendingReturn) {
+      this.returning.set(true);
+      this.returnRect.set({ top: 0, left: 0, width: window.innerWidth, height: window.innerHeight });
+      this.returnOverlay.set({ thumbnailUrl: this.pendingReturn.thumbnailUrl });
+    }
+
     this.coursesService.getCourses().subscribe({
       next: courses => {
         const available = courses.filter(course => !course.course_types.includes('Platform'));
-        const featured = available[Math.floor(Math.random() * available.length)] ?? courses[0] ?? null;
+        const queryFeaturedId = this.readQueryNumber('style2Featured');
+        const savedFeaturedId = this.pendingReturn
+          ? this.pendingReturn.style2State?.featuredId
+            ?? queryFeaturedId
+            ?? this.readSessionNumber(STYLE2_FEATURED_STORAGE_KEY)
+            ?? this.catalogScroll.get('animation-style-2-featured')
+          : this.catalogScroll.get('animation-style-2-featured');
+        const featured = available.find(course => course.id === savedFeaturedId)
+          ?? available[Math.floor(Math.random() * available.length)]
+          ?? courses[0]
+          ?? null;
         this.featured.set(featured);
         this.courses.set(courses.slice(0, 12));
+        if (this.pendingReturn) {
+          // Wait for Angular to commit the async course list to the DOM. The
+          // track exists before the cards do, so restoring from rAF alone can
+          // still run against an empty track and leave the row at slide one.
+          afterNextRender(() => {
+            this.restoreTradingCarouselPosition();
+            this.startReturnAnimation(this.pendingReturn!.courseId);
+          }, { injector: this.injector });
+        }
         if (featured) {
           this.coursesService.getCourse(featured.id).subscribe({
             next: detail => {
@@ -95,6 +142,9 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
     this.resizeObserver?.disconnect();
     if (this.expandedCardCheck !== undefined) {
       clearTimeout(this.expandedCardCheck);
+    }
+    if (this.pageExitTimer !== undefined) {
+      clearTimeout(this.pageExitTimer);
     }
   }
 
@@ -142,8 +192,27 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
     this.router.navigate(['/courses', course.id]);
   }
 
-  protected openCourse(course: Course): void {
-    this.router.navigate(['/courses', course.id]);
+  protected openCourse(course: Course, event?: Event): void {
+    const source = event?.currentTarget instanceof HTMLElement
+      ? event.currentTarget.closest('.style-card') as HTMLElement | null
+      : null;
+    this.navigateToCourse(course, source?.getBoundingClientRect());
+  }
+
+  /** Starts playback at the course's first lesson instead of opening the detail page. */
+  protected playCourse(course: Course, event: Event): void {
+    event.stopPropagation();
+
+    this.coursesService.getCourse(course.id).subscribe({
+      next: detail => {
+        const firstLesson = detail.lessons[0];
+        if (firstLesson) {
+          this.router.navigate(['/courses', course.id, 'lessons', firstLesson.id], {
+            queryParams: { restart: '1' }
+          });
+        }
+      }
+    });
   }
 
   protected toggleLessons(course: Course): void {
@@ -193,7 +262,109 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
       window.open(course.overview_link, '_blank', 'noopener');
       return;
     }
-    this.router.navigate(['/courses', course.id]);
+    this.navigateToCourse(course);
+  }
+
+  private navigateToCourse(course: Course, rect?: DOMRect): void {
+    const track = this.track()?.nativeElement;
+    if (track) {
+      this.catalogScroll.save('animation-style-2', track.scrollLeft);
+      this.writeSessionNumber(STYLE2_SCROLL_STORAGE_KEY, track.scrollLeft);
+    }
+    const featuredId = this.featured()?.id;
+    if (featuredId !== undefined) {
+      this.catalogScroll.save('animation-style-2-featured', featuredId);
+      this.writeSessionNumber(STYLE2_FEATURED_STORAGE_KEY, featuredId);
+    }
+    if (rect) {
+      this.transition.stage(
+        { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+        course.thumbnail ?? course.image ?? `https://picsum.photos/seed/tcnexus-style2-${course.id}/640/360`,
+        'Trading Courses',
+        'style-2',
+        { scrollLeft: track?.scrollLeft ?? 0, featuredId: this.featured()?.id ?? 0 }
+      );
+    }
+    this.leaving.set(true);
+    this.pageExitTimer = setTimeout(() => this.router.navigate(['/courses', course.id]), PAGE_EXIT_DURATION);
+  }
+
+  private restoreTradingCarouselPosition(): void {
+    const track = this.track()?.nativeElement;
+    const saved = this.pendingReturn?.style2State?.scrollLeft
+      ?? this.readQueryNumber('style2Scroll')
+      ?? this.readSessionNumber(STYLE2_SCROLL_STORAGE_KEY)
+      ?? this.catalogScroll.get('animation-style-2');
+    if (!track || saved === undefined) return;
+
+    const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
+    if (maxScroll > 0) {
+      track.scrollLeft = Math.min(saved, maxScroll);
+    }
+  }
+
+  private readSessionNumber(key: string): number | undefined {
+    try {
+      const stored = sessionStorage.getItem(key);
+      if (stored === null) return undefined;
+      const value = Number(stored);
+      return Number.isFinite(value) ? value : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private writeSessionNumber(key: string, value: number): void {
+    try {
+      sessionStorage.setItem(key, String(value));
+    } catch {
+      // Session storage can be unavailable in privacy-restricted browsers;
+      // the in-memory CatalogScrollService remains the fallback.
+    }
+  }
+
+  private readQueryNumber(key: string): number | undefined {
+    const stored = this.route.snapshot.queryParamMap.get(key);
+    if (stored === null) return undefined;
+    const value = Number(stored);
+    return Number.isFinite(value) ? value : undefined;
+  }
+
+  private startReturnAnimation(courseId: number): void {
+    if (this.returnAnimationStarted) return;
+
+    const background = document.querySelector<HTMLImageElement>('.style-featured__background img');
+    if (background && !background.complete) {
+      background.addEventListener('load', () => this.startReturnAnimation(courseId), { once: true });
+      background.addEventListener('error', () => this.startReturnAnimation(courseId), { once: true });
+      return;
+    }
+
+    this.returnAnimationStarted = true;
+    const card = document.querySelector<HTMLElement>('.style-card[data-course-id="' + courseId + '"]');
+    if (!card) {
+      this.returnRevealed.set(true);
+      this.returnOverlay.set(null);
+      this.returning.set(false);
+      return;
+    }
+
+    this.returnRect.set({ top: 0, left: 0, width: window.innerWidth, height: window.innerHeight });
+    this.returnSettled.set(true);
+    requestAnimationFrame(() => this.returnRect.set(this.rectFromElement(card)));
+    setTimeout(() => this.returnRevealed.set(true), 260);
+  }
+
+  private rectFromElement(element: HTMLElement): MorphRect {
+    const rect = element.getBoundingClientRect();
+    return { top: rect.top, left: rect.left, width: rect.width, height: rect.height };
+  }
+
+  protected onReturnTransitionEnd(event: TransitionEvent): void {
+    if (event.propertyName !== 'width') return;
+    this.returnOverlay.set(null);
+    this.returning.set(false);
+    this.returnSettled.set(false);
   }
 
   @HostListener('document:keydown.escape')

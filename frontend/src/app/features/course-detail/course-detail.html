@@ -20,7 +20,12 @@
   </div>
 }
 
-<div class="detail" [class.detail--visible]="contentVisible()">
+<div
+  class="detail"
+  [class.detail--visible]="contentVisible()"
+  [class.detail--style2-entry]="morph?.source === 'style-2'"
+  [class.detail--leaving]="leaving()"
+>
   @switch (status()) {
     @case ('loading') {
       <div class="detail__hero detail__hero--skeleton"></div>

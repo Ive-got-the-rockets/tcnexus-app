@@ -1,4 +1,23 @@
-<main class="style-page">
+@if (returnOverlay(); as overlay) {
+  <div
+    class="style-return-overlay"
+    [class.style-return-overlay--settled]="returnSettled()"
+    [style.top.px]="returnRect()?.top"
+    [style.left.px]="returnRect()?.left"
+    [style.width.px]="returnRect()?.width"
+    [style.height.px]="returnRect()?.height"
+    (transitionend)="onReturnTransitionEnd($event)"
+  >
+    <img [src]="overlay.thumbnailUrl" alt="" />
+  </div>
+}
+
+<main
+  class="style-page"
+  [class.style-page--leaving]="leaving()"
+  [class.style-page--returning]="returning()"
+  [class.style-page--return-revealed]="returnRevealed()"
+>
   @if (featured(); as course) {
     <div class="style-featured__background" aria-hidden="true">
       <img [src]="featuredImageUrl(course)" alt="" (error)="onFeaturedImageError($event)" />
@@ -67,25 +86,26 @@
           @for (course of carouselCourses(); track course.id; let index = $index) {
             <article
               class="style-card"
+              [attr.data-course-id]="course.id"
               role="link"
               tabindex="0"
               (mouseenter)="onCardEnter($event)"
               (mouseleave)="onCardLeave()"
-              (click)="openCourse(course)"
-              (keydown.enter)="openCourse(course)"
-              (keydown.space)="openCourse(course); $event.preventDefault()"
+              (click)="openCourse(course, $event)"
+              (keydown.enter)="openCourse(course, $event)"
+              (keydown.space)="openCourse(course, $event); $event.preventDefault()"
             >
               <div class="style-card__art">
                 <img [src]="thumbnailUrl(course, index)" [alt]="course.title" loading="lazy" (error)="onImageError($event)" />
               </div>
               <div class="style-card__details">
                 <div class="style-card__actions">
-                  <button type="button" class="style-card__play" aria-label="Play course" (click)="$event.stopPropagation(); openCourse(course)">
+                  <button type="button" class="style-card__play" aria-label="Play first lesson" (click)="playCourse(course, $event)">
                     <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true">
                       <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
                     </svg>
                   </button>
-                  <button type="button" class="style-card__list" aria-label="View lessons" (click)="$event.stopPropagation(); openCourse(course)">
+                  <button type="button" class="style-card__list" aria-label="View lessons" (click)="$event.stopPropagation(); openCourse(course, $event)">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <circle cx="6" cy="6" r="1.5" />
                       <circle cx="6" cy="12" r="1.5" />
@@ -124,6 +144,7 @@
           @for (course of platformCourses; track course.id; let index = $index) {
             <article
               class="style-card"
+              [attr.data-course-id]="course.id"
               (mouseenter)="onCardEnter($event, 'platform')"
               (mouseleave)="onCardLeave()"
             >
@@ -132,12 +153,12 @@
               </div>
               <div class="style-card__details">
                 <div class="style-card__actions">
-                  <button type="button" class="style-card__play" aria-label="Play course" (click)="$event.stopPropagation(); openCourse(course)">
+                  <button type="button" class="style-card__play" aria-label="Play first lesson" (click)="playCourse(course, $event)">
                     <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true">
                       <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
                     </svg>
                   </button>
-                  <button type="button" class="style-card__list" aria-label="View lessons" (click)="$event.stopPropagation(); openCourse(course)">
+                  <button type="button" class="style-card__list" aria-label="View lessons" (click)="$event.stopPropagation(); openCourse(course, $event)">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <circle cx="6" cy="6" r="1.5" />
                       <circle cx="6" cy="12" r="1.5" />

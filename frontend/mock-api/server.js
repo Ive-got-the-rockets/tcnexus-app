@@ -267,6 +267,16 @@ const courses = [
   }
 ];
 
+// The first demo records intentionally start without media so they can be
+// populated consistently for the carousel and course-detail placeholders.
+for (const course of courses) {
+  if (!course.thumbnail) {
+    course.thumbnail = `https://picsum.photos/seed/tcnexus-placeholder-course-${course.id}/640/360`;
+    course.image = `https://picsum.photos/seed/tcnexus-placeholder-hero-${course.id}/1600/900`;
+    course.placeholder = true;
+  }
+}
+
 function buildLessons(course) {
   const lessons = [];
   for (let i = 1; i <= course.lesson_count; i++) {
@@ -292,6 +302,7 @@ function buildCourseDetail(course) {
     title: course.title,
     content: `<p>${course.excerpt}</p><p>This course walks through the concepts step by step, with worked examples pulled from real charts and real trades — not theory slides.</p>`,
     thumbnail: course.thumbnail,
+    image: course.image,
     course_types: course.course_types,
     instructor: {
       id: 1,

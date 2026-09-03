@@ -21,6 +21,7 @@
   </div>
 }
 
+<div class="catalog-shell" [class.catalog-shell--preview-open]="previewCourse() !== null">
 @switch (status()) {
   @case ('loading') {
     <div class="hero hero--skeleton"></div>
@@ -131,7 +132,10 @@
       <div class="rows">
         @for (row of rows(); track row.title) {
           <section class="row" [attr.data-row-title]="row.title">
-            <h2 class="row__title">{{ row.title }}</h2>
+            <div class="row__head">
+              <h2 class="row__title">{{ row.title }}</h2>
+              <span class="row__count">{{ row.courses.length }} courses · hover preview</span>
+            </div>
             @if (row.courses.length === 0) {
               <p class="row__empty">Coming soon.</p>
             } @else {
@@ -197,6 +201,7 @@
     }
   }
 }
+</div>
 
 @if (previewCourse(); as course) {
   <div
@@ -206,6 +211,8 @@
     [class.preview--switching]="previewSwitching()"
     [style.top]="previewPosition()?.top"
     [style.left]="previewPosition()?.left"
+    [style.--preview-start-scale]="previewStartScale()"
+    [style.transform-origin]="previewTransformOrigin()"
     [style.--preview-open-duration]="cardAnimation().open + 's'"
     [style.--preview-switch-duration]="cardAnimation().switch + 's'"
     [style.--preview-close-duration]="cardAnimation().close + 's'"

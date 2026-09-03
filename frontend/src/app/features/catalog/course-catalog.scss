@@ -16,12 +16,6 @@
    further down for how --nav-w and --card-gap factor in. */
 @media (min-width: 600px) {
   :host {
-    --cards-per-page: 3;
-  }
-}
-
-@media (min-width: 900px) {
-  :host {
     --cards-per-page: 4;
   }
 }
@@ -307,6 +301,19 @@
 
 /* Rows */
 
+/* The floating preview owns the pointer while it is open. Lock every
+   carousel strip so wheel, touch, keyboard focus, and arrow clicks cannot
+   move the artwork underneath it. Normal page scrolling remains available. */
+.catalog-shell--preview-open {
+  .row__track {
+    overflow: hidden;
+  }
+
+  .row__nav {
+    pointer-events: none;
+  }
+}
+
 .rows {
   /* .hero overlaps this by 200px (see its margin-bottom) — position+z-index
      guarantees .rows paints above .hero's scrim/content there. Without an
@@ -317,22 +324,50 @@
      dark scrim was rendering on top of "All Courses" instead of under it. */
   position: relative;
   z-index: 1;
-  padding-block: clamp(1rem, 4vw, 2rem) clamp(4rem, 8vw, 6rem);
+  padding-block: 0 6rem;
   display: flex;
   flex-direction: column;
-  gap: clamp(1.75rem, 4vw, 2.5rem);
+  gap: 0;
 }
 
 
 .row {
   min-width: 0;
+  position: relative;
+  padding: 22px 0 150px;
+}
+
+.row__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-inline: clamp(1.25rem, 2.2vw, 2.625rem);
+  margin-bottom: 12px;
 }
 
 .row__title {
-  font-family: var(--font-ui);
-  font-size: 28px;
-  font-weight: 300;
-  padding-inline: 20px;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.row__count {
+  color: var(--paper-dim);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.row__title + .row__count {
+  margin-left: auto;
+}
+
+.row__title {
   margin-bottom: 0;
 }
 
@@ -345,6 +380,7 @@
 .row__viewport {
   position: relative;
   container-type: inline-size;
+  margin-inline: clamp(1.25rem, 2.2vw, 2.625rem);
 
   &::before,
   &::after {
@@ -457,9 +493,10 @@
     (100cqw - 2 * var(--nav-w) - var(--card-gap)) / var(--cards-per-page) - var(--card-gap)
   );
   aspect-ratio: 16 / 9;
-  border-radius: 2.5px;
-  overflow: hidden;
-  background: var(--ink-raised);
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+  background: transparent;
   scroll-snap-align: start;
   cursor: default;
 
@@ -475,6 +512,7 @@
   position: relative;
   width: 100%;
   height: 100%;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -487,21 +525,18 @@
   color: var(--signal-dim);
 }
 
-/* Static scrim so the title stays legible; the card itself has no hover
-   state of its own now — the popup (further down) is the only hover
-   animation left. */
+/* The base carousel mirrors the mockup: cards are artwork-first. Details are
+   intentionally reserved for the expanded-card pass. */
 .card__scrim {
   position: absolute;
   inset: auto 0 0 0;
   height: 75%;
   background: linear-gradient(0deg, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.5) 45%, transparent 100%);
-  opacity: 0.6;
+  display: none;
 }
 
 .card__info {
-  position: absolute;
-  inset: auto 0 0 0;
-  padding: 0.6rem 0.75rem 0.65rem;
+  display: none;
 }
 
 .card__title {
@@ -612,13 +647,15 @@
      past the popup's edge instead of being clipped by it. */
   position: fixed;
   z-index: 100;
-  width: 416px;
-  height: 460px;
-  border-radius: 0.4rem;
-  background: #181818;
+  width: min(416px, calc(100vw - 2rem));
+  height: 352px;
+  border-radius: 2px;
+  background: var(--ink-raised);
   box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.85);
-  animation: preview-in var(--preview-open-duration, 0.5s) ease;
-  transition: top var(--preview-switch-duration, 0.28s) cubic-bezier(0.22, 1, 0.36, 1), left var(--preview-switch-duration, 0.28s) cubic-bezier(0.22, 1, 0.36, 1);
+  /* Animation Style 2: scale the existing floating preview without an
+     opacity fade, so switching cards never reveals the card underneath. */
+  animation: preview-in var(--preview-open-duration, 0.5s) cubic-bezier(0.22, 1, 0.36, 1);
+  transition: top var(--preview-switch-duration, 0.5s) cubic-bezier(0.22, 1, 0.36, 1), left var(--preview-switch-duration, 0.5s) cubic-bezier(0.22, 1, 0.36, 1);
   cursor: default;
 }
 
@@ -627,17 +664,17 @@
 }
 
 .preview--closing {
-  animation: preview-out var(--preview-close-duration, 0.35s) ease forwards;
+  animation: preview-out var(--preview-close-duration, 0.5s) cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .preview--switching {
-  animation: preview-switch var(--preview-switch-duration, 0.28s) cubic-bezier(0.22, 1, 0.36, 1);
+  animation: preview-switch var(--preview-switch-duration, 0.5s) cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes preview-in {
   from {
-    opacity: 0;
-    transform: scale(0.96);
+    opacity: 1;
+    transform: scale(var(--preview-start-scale, 0.72));
   }
   to {
     opacity: 1;
@@ -651,15 +688,15 @@
     transform: scale(1);
   }
   to {
-    opacity: 0;
-    transform: scale(0.96);
+    opacity: 1;
+    transform: scale(var(--preview-start-scale, 0.72));
   }
 }
 
 @keyframes preview-switch {
   from {
-    opacity: 0.45;
-    transform: scale(0.965);
+    opacity: 1;
+    transform: scale(var(--preview-start-scale, 0.72));
   }
   to {
     opacity: 1;
@@ -676,9 +713,11 @@
 
 .preview__image {
   position: relative;
-  height: 50%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  flex: 0 0 auto;
   width: 100%;
-  border-radius: 0.4rem 0.4rem 0 0;
+  border-radius: 2px 2px 0 0;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -695,29 +734,30 @@
 }
 
 .preview__body {
-  height: 50%;
-  border-radius: 0 0 0.4rem 0.4rem;
-  background: #181818;
-  padding: 20px 1.25rem 1.25rem;
+  height: 118px;
+  border-radius: 0 0 2px 2px;
+  background: #181d1a;
+  padding: 11px;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .preview__controls {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 5px;
 }
 
 .preview__btn {
   position: relative;
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: var(--button-radius);
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
   border: 1px solid color-mix(in srgb, var(--paper) 35%, transparent);
   background: transparent;
   color: var(--paper);
-  font-size: 1rem;
+  font-size: 9px;
   line-height: 1;
   cursor: pointer;
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
@@ -752,11 +792,11 @@
 }
 
 .preview__btn--play {
-  border-radius: var(--button-radius);
+  border-radius: 50%;
   border: 1px solid var(--signal);
   background: transparent;
   color: var(--signal);
-  font-size: 1.125rem;
+  font-size: 9px;
 
   &:hover {
     background: var(--signal);
@@ -766,16 +806,16 @@
 
 .preview__btn--continue {
   width: auto;
-  padding: 0 0.85rem;
+  padding: 0 0.45rem;
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.2rem;
   white-space: nowrap;
   border-radius: var(--button-radius);
   border: 1px solid var(--signal);
   color: var(--signal);
   font-family: var(--font-ui);
-  font-size: 0.8125rem;
+  font-size: 0.55rem;
   font-weight: 400;
 
   &:hover {
@@ -785,7 +825,7 @@
 }
 
 .preview__btn-icon {
-  font-size: 1rem;
+  font-size: 9px;
   line-height: 1;
 }
 
@@ -806,19 +846,22 @@
 
 .preview__btn--help {
   margin-left: auto;
-  border-radius: var(--button-radius);
+  border-radius: 50%;
 }
 
 .preview__title {
-  margin-top: 20px;
+  margin-top: 9px;
   font-family: var(--font-ui);
-  font-size: 1.125rem;
-  font-weight: 400;
+  font-size: 0.6875rem;
+  font-weight: 600;
   line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .preview__subline {
-  margin-top: 20px;
+  margin-top: 6px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -827,21 +870,21 @@
 
 .preview__lessons {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: 0.5rem;
   color: var(--paper-dim);
   white-space: nowrap;
 }
 
 .preview__type {
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: 0.5rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--amber);
 }
 
 .preview__instructor {
-  margin-top: 20px;
+  display: none;
 }
 
 .preview__instructor-label {

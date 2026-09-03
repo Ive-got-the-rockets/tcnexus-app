@@ -16,6 +16,8 @@ export class RowScrollDirective implements AfterViewInit, OnDestroy {
 
   private readonly catalogScroll = inject(CatalogScrollService);
   private resizeObserver?: ResizeObserver;
+  private mutationObserver?: MutationObserver;
+  private savedPosition?: number;
   private readonly onScroll = () => this.measure();
 
   constructor(private readonly el: ElementRef<HTMLElement>) {}
@@ -25,14 +27,17 @@ export class RowScrollDirective implements AfterViewInit, OnDestroy {
 
     // Restore before the first measure() so the reported start/end state
     // reflects where the row actually resumes, not its reset-to-0 default.
-    const saved = this.catalogScroll.get(this.appRowScroll);
-    if (saved !== undefined) {
-      track.scrollLeft = saved;
-    }
+    this.savedPosition = this.catalogScroll.get(this.appRowScroll);
+    this.restoreSavedPosition();
 
     track.addEventListener('scroll', this.onScroll, { passive: true });
     this.resizeObserver = new ResizeObserver(() => this.measure());
     this.resizeObserver.observe(track);
+    // The track exists before async course data is rendered. Watch for the
+    // cards to be inserted so a saved second-slide position is not lost when
+    // the initial restore runs against an empty track.
+    this.mutationObserver = new MutationObserver(() => this.restoreSavedPosition());
+    this.mutationObserver.observe(track, { childList: true, subtree: true });
     this.measure();
   }
 
@@ -40,6 +45,18 @@ export class RowScrollDirective implements AfterViewInit, OnDestroy {
     this.catalogScroll.save(this.appRowScroll, this.el.nativeElement.scrollLeft);
     this.el.nativeElement.removeEventListener('scroll', this.onScroll);
     this.resizeObserver?.disconnect();
+    this.mutationObserver?.disconnect();
+  }
+
+  private restoreSavedPosition(): void {
+    const track = this.el.nativeElement;
+    if (this.savedPosition === undefined) return;
+
+    const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
+    if (maxScroll <= 0) return;
+
+    track.scrollLeft = Math.min(this.savedPosition, maxScroll);
+    this.savedPosition = undefined;
   }
 
   private measure(): void {

@@ -14,7 +14,8 @@
     left 0.42s cubic-bezier(0.4, 0, 0.2, 1),
     width 0.42s cubic-bezier(0.4, 0, 0.2, 1),
     height 0.42s cubic-bezier(0.4, 0, 0.2, 1),
-    border-radius 0.3s ease;
+    border-radius 0.3s ease,
+    opacity 0.24s ease-out;
   will-change: top, left, width, height;
 
   img {
@@ -57,6 +58,12 @@
   opacity: 1;
 }
 
+.detail--leaving .detail__hero-content,
+.detail--leaving .detail__body {
+  opacity: 0;
+  transition: opacity 0.24s ease-out;
+}
+
 .detail__hero {
   /* Sticky, not fixed: it stays pinned only for as long as its shared
      parent with .detail__body still has height left to give — i.e. for
@@ -65,56 +72,83 @@
      behind it — no JS scroll-handling needed for either half of that. */
   position: sticky;
   top: 0;
-  min-height: 60vh;
+  min-height: 92vh;
   display: flex;
   align-items: flex-end;
   background-color: var(--ink-raised);
   background-size: cover;
-  background-position: center 30%;
+  background-position: center;
   padding: 0 clamp(1.25rem, 5vw, 4rem) clamp(2.5rem, 6vw, 4rem);
 }
 
 .detail__hero--skeleton {
-  min-height: 60vh;
+  min-height: 92vh;
   background: linear-gradient(160deg, var(--ink-raised), var(--ink));
+}
+
+/* Style 2 enters with the detail artwork already present underneath the
+   handoff image, then settles from a subtle zoom while the content arrives. */
+.detail--style2-entry .detail__hero {
+  background-size: 112% 112%;
+  transition: background-size 0.42s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.detail--style2-entry.detail--visible .detail__hero {
+  background-size: cover;
 }
 
 .detail__scrim {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, var(--ink) 0%, color-mix(in srgb, var(--ink) 55%, transparent) 45%, transparent 75%),
-    linear-gradient(0deg, var(--ink) 0%, transparent 45%);
+    linear-gradient(
+      90deg,
+      rgba(11, 13, 12, 0.9) 0px,
+      rgba(11, 13, 12, 0.3) 520px,
+      transparent 900px
+    ),
+    linear-gradient(
+      to top,
+      rgba(11, 13, 12, 1) 0px,
+      transparent 250px
+    );
 }
 
 .detail__hero-content {
   position: relative;
   z-index: 3;
   max-width: 42rem;
-  /* Shifts the whole stack (back link, title, lesson count, description)
-     down together, as one block, without disturbing their order or the
-     flex-end anchoring they're built on. */
-  transform: translateY(200px);
+  /* Keeps the artwork height independent while lifting the whole content
+     stack (back link, title, metadata, description and people) by 200px. */
+  transform: translateY(0);
 
   /* Each direct child (back link, title, meta row, description, instructor,
      guests) starts hidden and slides/fades in one at a time, in DOM order,
      once --revealed is added (same moment .detail--visible fires). */
   > * {
     opacity: 0;
-    transform: translateY(16px);
-    transition: opacity 0.4s ease-in, transform 0.4s ease-in;
+    transform: translateX(-100vw);
+    transition: opacity 0.7s ease-out, transform 0.7s ease-out;
   }
+}
+
+.detail--style2-entry .detail__hero-content > * {
+  transform: translateX(-100vw);
+}
+
+.detail--style2-entry .detail__hero-content--revealed > * {
+  transform: translateX(0);
 }
 
 .detail__hero-content--revealed {
   > * {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(0);
   }
 
   @for $i from 1 through 6 {
     > *:nth-child(#{$i}) {
-      transition-delay: #{($i - 1) * 90}ms;
+      transition-delay: calc(180ms + #{($i - 1) * 90}ms);
     }
   }
 }
@@ -252,7 +286,7 @@
   max-width: calc(100% - clamp(1.25rem, 5vw, 4rem) - 100px);
   margin-left: auto;
   margin-right: clamp(1.25rem, 8vw, 100px);
-  margin-top: -200px;
+  margin-top: -400px;
   padding-block: 0 clamp(4rem, 8vw, 6rem);
 }
 
@@ -329,13 +363,13 @@
   /* Fades/slides in right as the rows below it start their own stagger,
      same treatment as the hero-content elements on the left. */
   opacity: 0;
-  transform: translateY(16px);
-  transition: opacity 0.4s ease-in, transform 0.4s ease-in;
+  transform: translateX(100vw);
+  transition: opacity 0.7s ease-out 0.18s, transform 0.7s ease-out 0.18s;
 }
 
 .detail__lessons-title--revealed {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateX(0);
 }
 
 .lesson-list {
@@ -363,8 +397,8 @@
      the entry morph finishes) flips both back, and each row's own
      transition-delay (bound per-index in the template) staggers the reveal. */
   opacity: 0;
-  transform: translateX(40px);
-  transition: opacity 0.4s ease-in, transform 0.4s ease-in, border-color 0.2s ease-in;
+  transform: translateX(100vw);
+  transition: opacity 0.7s ease-out, transform 0.7s ease-out, border-color 0.2s ease-in;
   /* The row (and its thumbnail) stay a plain cursor — only the play and
      restart icons below get cursor: pointer, even though the whole row is
      still clickable via openLesson(). */
@@ -386,6 +420,13 @@
     transition: opacity 0.3s ease-in;
     pointer-events: none;
   }
+}
+
+/* Style 2 uses the same right-to-left entrance as the regular course page.
+   Each row keeps the template's incremental transition delay, creating the
+   stepped reveal instead of moving the whole list at once. */
+.detail--style2-entry .lesson-list--revealed .lesson-row {
+  transform: translateX(0);
 }
 
 /* Higher specificity than .lesson-list--revealed .lesson-row's own
@@ -420,7 +461,7 @@
   /* Once settled, the hover scale animates at its own (faster) speed —
      separate from the 0.4s entrance-stagger transition on the base
      .lesson-row rule, which this overrides for both hover in and out. */
-  transition: transform 0.2s ease-in, border-color 0.2s ease-in;
+  transition: transform 0.7s ease-out, border-color 0.2s ease-in;
 }
 
 @media (prefers-reduced-motion: reduce) {

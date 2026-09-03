@@ -37,9 +37,78 @@
   min-height: calc(100vh - 140px);
   /* Keep the featured heading approximately 300px from the window top on a
      standard 1200px-tall display, while scaling naturally with the viewport. */
-  padding: calc(25vh + 100px) clamp(22px, 4vw, 42px) 96px;
+  padding: calc(25vh + 100px) clamp(22px, 4vw, 42px) 0;
   color: var(--paper);
   font-family: Arial, sans-serif;
+}
+
+/* Route choreography: the page leaves as one surface so the detail route can
+   take over without a black frame between screens. */
+.style-page > .style-featured,
+.style-page > .style-row {
+  transition: transform 0.28s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.22s ease-out;
+}
+
+.style-page--leaving > .style-featured,
+.style-page--leaving > .style-row {
+  opacity: 0;
+  transform: translateX(-48px);
+}
+
+.style-featured__background img {
+  transition: transform 0.42s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.28s ease-out;
+}
+
+.style-page--leaving .style-featured__background img {
+  opacity: 0;
+  transform: scale(1.06);
+}
+
+.style-page--returning > .style-featured,
+.style-page--returning > .style-row {
+  opacity: 0;
+  transform: translateX(40px);
+  transition-duration: 0.32s;
+}
+
+.style-page--return-revealed > .style-featured,
+.style-page--return-revealed > .style-row {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.style-return-overlay {
+  position: fixed;
+  z-index: 200;
+  overflow: hidden;
+  border-radius: 0;
+  transition:
+    top 0.42s cubic-bezier(0.23, 1, 0.32, 1),
+    left 0.42s cubic-bezier(0.23, 1, 0.32, 1),
+    width 0.42s cubic-bezier(0.23, 1, 0.32, 1),
+    height 0.42s cubic-bezier(0.23, 1, 0.32, 1),
+    border-radius 0.3s ease;
+  will-change: top, left, width, height;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(0.85) contrast(1.05);
+  }
+}
+
+.style-return-overlay--settled {
+  border-radius: var(--button-radius);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .style-page > .style-featured,
+  .style-page > .style-row,
+  .style-featured__background img,
+  .style-return-overlay {
+    transition: none;
+  }
 }
 
 .style-featured__background {
@@ -531,7 +600,8 @@
 }
 
 .style-row--platform {
-  margin-top: -350px;
+  margin-top: -300px;
+  padding-bottom: 0;
 }
 
 .style-row--platform .style-carousel {
@@ -573,7 +643,6 @@
 .style-carousel {
   position: relative;
   margin-top: -65px;
-  border: 2px solid red;
   container-type: inline-size;
   --card-art-height: calc((100cqw - var(--nav-w) - var(--card-gap)) * 0.28125);
   --nav-panel-w: calc(var(--nav-w) + var(--card-gap) - 10px);
@@ -643,7 +712,10 @@
   padding: 0;
   border: 0;
   border-radius: var(--button-radius);
-  overflow: hidden;
+  /* The details panel grows below the artwork. Clipping the article itself
+     makes that expanded area stop being part of the hover target. Clip each
+     visual surface instead, while keeping the complete card interactive. */
+  overflow: visible;
   background: transparent;
   cursor: pointer;
   scroll-snap-align: start;
@@ -685,15 +757,14 @@
   height: 0;
   padding-top: 56.25%;
   overflow: hidden;
+  border-radius: var(--button-radius) var(--button-radius) 0 0;
   background: var(--raised);
 
   &::after {
     position: absolute;
     inset: -10px;
-    background: linear-gradient(to bottom, transparent 26%, rgba(11, 13, 12, 0.96) 100%);
+    display: none;
     content: '';
-    opacity: 0;
-    transition: opacity 0.5s ease;
   }
 
   img {
@@ -706,10 +777,6 @@
   }
 }
 
-.style-card:hover .style-card__art::after {
-  opacity: 1;
-}
-
 .style-card__details {
   position: relative;
   z-index: 2;
@@ -719,6 +786,7 @@
   background: #181d1a;
   opacity: 0;
   text-shadow: 0 1px 2px #000;
+  border-radius: 0 0 var(--button-radius) var(--button-radius);
   transition: max-height 0.5s ease, opacity 0.5s ease, padding 0.5s ease;
 }
 

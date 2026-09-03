@@ -40,10 +40,14 @@ export class CourseDetailPage implements OnDestroy {
   protected readonly overlayHidden = signal(false);
   /** Controls only the real page's .detail--visible class. */
   protected readonly contentVisible = signal(false);
+  /** Becomes true when both the route handoff and course data can reveal the page. */
+  protected readonly entryReady = signal(false);
   /** Drives only the border-radius CSS class — the box itself is morphRect below. */
   protected readonly grown = signal(false);
   protected readonly rowsRevealed = signal(false);
+  protected readonly leaving = signal(false);
   private readonly pendingLesson = signal<Lesson | null>(null);
+  private backNavigationTimer?: ReturnType<typeof setTimeout>;
 
   /**
    * The morph overlay's current target box, in plain pixel numbers on both
@@ -59,6 +63,13 @@ export class CourseDetailPage implements OnDestroy {
   private readonly onResize = (): void => this.alignLessonsWithBack();
 
   constructor() {
+    effect(() => {
+      if (!this.course() || !this.entryReady() || this.contentVisible()) return;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => this.contentVisible.set(true));
+      });
+    });
+
     effect(() => {
       const lesson = this.pendingLesson();
       const course = this.course();
@@ -95,7 +106,12 @@ export class CourseDetailPage implements OnDestroy {
       });
     } else {
       this.overlayHidden.set(true);
-      this.contentVisible.set(true);
+      // Keep the initial off-screen state in the DOM for one painted frame.
+      // Setting this synchronously during construction makes direct loads
+      // render the revealed state immediately, skipping the entrance motion.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => this.entryReady.set(true));
+      });
     }
 
     // The lesson rows' slide-in only fires once BOTH the course data has
@@ -119,6 +135,9 @@ export class CourseDetailPage implements OnDestroy {
 
   ngOnDestroy(): void {
     window.removeEventListener('resize', this.onResize);
+    if (this.backNavigationTimer !== undefined) {
+      clearTimeout(this.backNavigationTimer);
+    }
   }
 
   private fullscreenRect(): MorphRect {
@@ -153,7 +172,7 @@ export class CourseDetailPage implements OnDestroy {
     }
     // Forward grow just finished: hand off from the overlay to the real page.
     this.overlayHidden.set(true);
-    this.contentVisible.set(true);
+    this.entryReady.set(true);
   }
 
   /**
@@ -167,20 +186,33 @@ export class CourseDetailPage implements OnDestroy {
    */
   protected goBack(event: Event): void {
     event.preventDefault();
+    if (this.leaving()) return;
     const course = this.course();
     if (course) {
-      this.transition.stageReturn(course.id, this.morph?.rowTitle ?? 'All Courses', this.backdropUrl());
+      this.transition.stageReturn(
+        course.id,
+        this.morph?.rowTitle ?? 'All Courses',
+        this.backdropUrl(),
+        this.morph?.style2State
+      );
     }
 
-    if (this.morph) {
-      // Came here via a real navigation from the catalog, so there's an
-      // actual history entry to pop back to (and with it, scroll
-      // restoration for the catalog's own position).
-      this.location.back();
-    } else {
-      // Direct link / refresh — no reliable "back" target exists.
-      this.router.navigate(['/']);
-    }
+    this.leaving.set(true);
+    this.backNavigationTimer = setTimeout(() => {
+      if (this.morph?.source === 'style-2' && this.morph.style2State) {
+        this.router.navigate(['/animation-style-2'], {
+          queryParams: {
+            style2Scroll: this.morph.style2State.scrollLeft,
+            style2Featured: this.morph.style2State.featuredId,
+          }
+        });
+      } else if (this.morph) {
+        this.location.back();
+      } else {
+        this.router.navigate(['/']);
+      }
+    }, 240);
+
   }
 
   protected courseTypeLabel(course: CourseDetail): string {
@@ -261,7 +293,7 @@ export class CourseDetailPage implements OnDestroy {
 
   /** Staggers the slide-in-from-right reveal, capped so a long lesson list doesn't drag it out. */
   protected lessonRowDelay(index: number): string {
-    return `${Math.min(index * 40, 600)}ms`;
+    return (180 + Math.min(index * 40, 600)) + 'ms';
   }
 
 }

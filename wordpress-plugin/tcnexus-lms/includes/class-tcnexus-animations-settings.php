@@ -34,8 +34,8 @@ class TCNexus_Animations_Settings {
 					'id'     => 'preset-01',
 					'name'   => 'Preset 01',
 					'open'   => 0.50,
-					'switch' => 0.28,
-					'close'  => 0.35,
+					'switch' => 0.50,
+					'close'  => 0.50,
 				),
 			),
 		);
@@ -175,8 +175,8 @@ class TCNexus_Animations_Settings {
 			'id'     => $preset_id,
 			'name'   => trim( $preset_name ) ?: 'Preset 01',
 			'open'   => isset( $_POST['open'] ) ? $_POST['open'] : 0.50,
-			'switch' => isset( $_POST['switch'] ) ? $_POST['switch'] : 0.28,
-			'close'  => isset( $_POST['close'] ) ? $_POST['close'] : 0.35,
+			'switch' => isset( $_POST['switch'] ) ? $_POST['switch'] : 0.50,
+			'close'  => isset( $_POST['close'] ) ? $_POST['close'] : 0.50,
 		);
 		$preset = self::normalize( array( 'active_preset' => $preset_id, 'presets' => array( $preset ) ) )['presets'][0];
 		if ( 'save_as' === $mode ) {
