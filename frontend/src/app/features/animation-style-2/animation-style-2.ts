@@ -37,6 +37,7 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
   private resizeObserver?: ResizeObserver;
   private expandedCardCheck?: ReturnType<typeof setTimeout>;
   private pageExitTimer?: ReturnType<typeof setTimeout>;
+  private descriptionCloseTimer?: ReturnType<typeof setTimeout>;
   private readonly onScroll = () => this.measureEdges();
   private readonly onPlatformScroll = () => this.measureEdges('platform');
 
@@ -44,7 +45,10 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
   protected readonly featured = signal<Course | null>(null);
   protected readonly descriptionExpanded = signal(false);
   protected readonly descriptionHovered = signal(false);
-  protected readonly descriptionOpen = computed(() => this.descriptionExpanded() || this.descriptionHovered());
+  protected readonly cardDescriptionCourseId = signal<number | null>(null);
+  protected readonly cardDetails = signal<Record<number, CourseDetail>>({});
+  protected readonly descriptionMotion = signal<'closed' | 'opening' | 'open' | 'closing'>('closed');
+  protected readonly descriptionOpen = computed(() => this.descriptionMotion() !== 'closed');
   protected readonly featuredDetail = signal<CourseDetail | null>(null);
   protected readonly lessonsOpen = signal(false);
   protected readonly lessonsRevealed = signal(false);
@@ -146,6 +150,9 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
     if (this.pageExitTimer !== undefined) {
       clearTimeout(this.pageExitTimer);
     }
+    if (this.descriptionCloseTimer !== undefined) {
+      clearTimeout(this.descriptionCloseTimer);
+    }
   }
 
   protected scroll(direction: -1 | 1, kind: CarouselKind = 'trading'): void {
@@ -178,14 +185,60 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
   protected toggleDescription(): void {
     this.descriptionHovered.set(false);
     this.descriptionExpanded.update(open => !open);
+    this.syncDescriptionMotion();
   }
 
   protected openDescriptionOnHover(): void {
     this.descriptionHovered.set(true);
+    this.syncDescriptionMotion();
   }
 
   protected closeDescriptionOnHover(): void {
     this.descriptionHovered.set(false);
+    this.syncDescriptionMotion();
+  }
+
+  protected toggleCardDescription(course: Course, event: Event): void {
+    event.stopPropagation();
+    const opening = this.cardDescriptionCourseId() !== course.id;
+    this.cardDescriptionCourseId.set(opening ? course.id : null);
+    if (opening && course.id > 0 && !this.cardDetails()[course.id]) {
+      this.coursesService.getCourse(course.id).subscribe({
+        next: detail => this.cardDetails.update(details => ({ ...details, [course.id]: detail }))
+      });
+    }
+  }
+
+  protected cardDetailFor(course: Course): CourseDetail | null {
+    return this.cardDetails()[course.id] ?? null;
+  }
+
+  private syncDescriptionMotion(): void {
+    const requested = this.descriptionExpanded() || this.descriptionHovered();
+    if (requested) {
+      if (this.descriptionCloseTimer !== undefined) {
+        clearTimeout(this.descriptionCloseTimer);
+        this.descriptionCloseTimer = undefined;
+      }
+      if (this.descriptionMotion() === 'closed' || this.descriptionMotion() === 'closing') {
+        this.descriptionMotion.set('opening');
+        requestAnimationFrame(() => {
+          if (this.descriptionExpanded() || this.descriptionHovered()) {
+            this.descriptionMotion.set('open');
+          }
+        });
+      }
+      return;
+    }
+
+    if (this.descriptionMotion() === 'closed' || this.descriptionMotion() === 'closing') return;
+    this.descriptionMotion.set('closing');
+    this.descriptionCloseTimer = setTimeout(() => {
+      this.descriptionCloseTimer = undefined;
+      if (!this.descriptionExpanded() && !this.descriptionHovered()) {
+        this.descriptionMotion.set('closed');
+      }
+    }, 600);
   }
 
   protected startWatching(course: Course): void {
@@ -428,6 +481,7 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
   }
 
   protected onCardLeave(): void {
+    this.cardDescriptionCourseId.set(null);
     if (this.expandedCardCheck !== undefined) {
       clearTimeout(this.expandedCardCheck);
       this.expandedCardCheck = undefined;
