@@ -201,7 +201,7 @@
 }
 
 .detail__title {
-  font-family: var(--font-display);
+  font-family: 'Inter', sans-serif;
   font-size: clamp(2rem, 5vw, 3.5rem);
   font-weight: 400;
   line-height: 1.05;
@@ -357,7 +357,7 @@
 .detail__lessons-title {
   margin-top: 0;
   margin-bottom: 1.25rem;
-  font-family: var(--font-ui);
+  font-family: 'Inter', sans-serif;
   font-size: 28px;
   font-weight: 300;
   /* Fades/slides in right as the rows below it start their own stagger,
@@ -594,7 +594,7 @@
 .lesson-row__title {
   display: block;
   margin: 0;
-  font-family: var(--font-ui);
+  font-family: 'Inter', sans-serif;
   font-size: 0.9375rem;
   font-weight: 400;
   overflow: hidden;

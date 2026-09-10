@@ -23,10 +23,16 @@
       <img [src]="featuredImageUrl(course)" alt="" (error)="onFeaturedImageError($event)" />
     </div>
     <section class="style-featured" aria-labelledby="style-featured-title">
-      <p class="style-page__eyebrow">Featured Course</p>
-      <div class="style-featured__heading" (mouseenter)="openDescriptionOnHover()" (mouseleave)="closeDescriptionOnHover()">
+      <p class="style-page__eyebrow">{{ featuredLabel(course) }}</p>
+      <div class="style-featured__heading">
         <h1 id="style-featured-title" class="style-featured__title">{{ course.title }}</h1>
-        <button type="button" class="style-featured__info" [attr.aria-expanded]="descriptionOpen()" (click)="toggleDescription()">i</button>
+        <button
+          type="button"
+          class="style-featured__info"
+          [class.style-featured__info--active]="descriptionOpen()"
+          [attr.aria-expanded]="descriptionOpen()"
+          (click)="toggleDescription()"
+        >i</button>
       </div>
       <div
         class="style-featured__details"
@@ -56,9 +62,16 @@
         }
       </div>
       <div class="style-featured__meta">
-        <span>{{ courseTypeLabel(course) }}</span>
-        <span aria-hidden="true">•</span>
-        <span>{{ course.lesson_count }} lessons</span>
+        <div class="style-featured__meta-primary">
+          <span class="style-featured__meta-badge">{{ courseTypeLabel(course) }}</span>
+          <span class="style-featured__meta-dot" aria-hidden="true"></span>
+          <span class="style-featured__meta-badge">{{ course.lesson_count }} {{ isShow(course) ? 'episodes' : 'lessons' }}</span>
+        </div>
+        <div class="style-featured__meta-levels">
+          @for (level of courseLevelBadges(course); track level) {
+            <span class="style-featured__level-badge">{{ level }}</span>
+          }
+        </div>
       </div>
       <div class="style-featured__actions">
         <button type="button" class="style-featured__start" (click)="startWatching(course)">
@@ -67,18 +80,117 @@
           </svg>
           <span class="style-featured__start-label">Start Watching</span>
         </button>
+        @if (featured()?.trailer_link) {
+          <button type="button" class="style-featured__trailer" aria-label="Watch trailer" (click)="openTrailer()">
+            <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true">
+              <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
+            </svg>
+            <span>Trailer</span>
+          </button>
+        }
         <button
           type="button"
           class="style-featured__overview"
           [attr.aria-expanded]="lessonsOpen()"
           (click)="toggleLessons(course)"
-        >Lessons List</button>
-        <button type="button" class="style-featured__overview" (click)="openOverview(course)">Course Overview</button>
+        >{{ isShow(course) ? 'Episode List' : 'Lessons List' }}</button>
+        @if (!isShow(course)) {
+          <button type="button" class="style-featured__overview" (click)="openOverview(course)">Course Overview</button>
+        }
+        <div
+          class="style-featured__language"
+          [class.style-featured__language--open]="languageMenuOpen()"
+          (mouseleave)="closeLanguageMenu()"
+        >
+          <span class="style-featured__language-label">LANG</span>
+          <button
+            type="button"
+            class="style-featured__language-trigger"
+            [attr.aria-expanded]="languageMenuOpen()"
+            aria-haspopup="listbox"
+            (click)="toggleLanguageMenu()"
+          >
+            <span>{{ selectedLanguageLabel(course) }}</span>
+          </button>
+          @if (languageMenuOpen()) {
+            <div class="style-featured__language-menu" role="listbox" aria-label="Course language">
+              @for (language of courseLanguages(course); track language.slug) {
+                <button
+                  type="button"
+                  role="option"
+                  [attr.aria-selected]="selectedLanguage() === language.slug"
+                  (click)="chooseLanguage(language)"
+                >{{ language.label }}</button>
+              }
+            </div>
+          }
+        </div>
       </div>
     </section>
   }
 
-  <section class="style-row" aria-label="Courses">
+  @if (carouselShows().length > 0) {
+    <section class="style-row style-row--shows" aria-labelledby="shows-title">
+      <div class="style-carousel" #showsCarousel [class.style-carousel--at-start]="showsEdges().atStart">
+        <h2 id="shows-title" class="style-row__title">Shows</h2>
+        @if (!showsEdges().atStart) {
+          <button type="button" class="style-carousel__arrow style-carousel__arrow--prev" aria-label="Scroll shows left" (click)="scroll(-1, 'shows')">‹</button>
+        }
+        <div class="style-carousel__viewport">
+          <div class="style-carousel__track" #showsTrack [appRowScroll]="'animation-style-2-shows'">
+            @for (show of carouselShows(); track show.id; let index = $index) {
+              <article
+                class="style-card"
+                [attr.data-course-id]="show.id"
+                role="link"
+                tabindex="0"
+                (mouseenter)="onCardEnter($event, 'shows')"
+                (mouseleave)="onCardLeave()"
+                (click)="openCourse(show, $event)"
+                (keydown.enter)="openCourse(show, $event)"
+                (keydown.space)="openCourse(show, $event); $event.preventDefault()"
+              >
+                <div class="style-card__art" title="View Show">
+                  <img [src]="thumbnailUrl(show, index)" [alt]="show.title" loading="lazy" (error)="onImageError($event)" />
+                </div>
+                <div class="style-card__details">
+                  <div class="style-card__actions">
+                    <button type="button" class="style-card__play" aria-label="Start Watching" title="Start Watching" (click)="playCourse(show, $event)">
+                      <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true"><path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" /></svg>
+                    </button>
+                    @if (show.trailer_link) {
+                      <button type="button" class="style-card__trailer" aria-label="Watch trailer" title="Watch trailer" (click)="openTrailer(show, $event)">
+                        <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true"><path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" /></svg>
+                      </button>
+                    }
+                    <button type="button" class="style-card__list" aria-label="View Show" title="View Show" (click)="openCoursePreview(show, $event)">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="1.5" /><circle cx="6" cy="12" r="1.5" /><circle cx="6" cy="18" r="1.5" /><path d="M11 6h8M11 12h8M11 18h8" /></svg>
+                    </button>
+                  </div>
+                  <div class="style-card__title-row"><h3>{{ show.title }}</h3></div>
+                  <div class="style-card__meta">
+                    <div class="style-card__meta-primary">
+                      <span class="style-card__meta-badge">Show</span>
+                      <span class="style-card__meta-dot" aria-hidden="true"></span>
+                      <span class="style-card__meta-badge">{{ show.lesson_count }} episodes</span>
+                    </div>
+                    <div class="style-card__meta-levels">
+                      @for (level of courseLevelBadges(show); track level) { <span class="style-card__level-badge">{{ level }}</span> }
+                    </div>
+                  </div>
+                </div>
+              </article>
+            }
+          </div>
+        </div>
+        @if (!showsEdges().atEnd) {
+          <button type="button" class="style-carousel__arrow style-carousel__arrow--next" aria-label="Scroll shows right" (click)="scroll(1, 'shows')">›</button>
+        }
+      </div>
+    </section>
+  }
+
+  <section class="style-row style-row--trading" aria-label="Courses">
     <div class="style-carousel" #carousel [class.style-carousel--at-start]="edges().atStart">
       <h2 class="style-row__title">Trading Courses</h2>
       @if (!edges().atStart) {
@@ -91,7 +203,6 @@
             <article
               class="style-card"
               [attr.data-course-id]="course.id"
-              [class.style-card--description-open]="cardDescriptionCourseId() === course.id"
               role="link"
               tabindex="0"
               (mouseenter)="onCardEnter($event)"
@@ -110,7 +221,14 @@
                       <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
                     </svg>
                   </button>
-                  <button type="button" class="style-card__list" aria-label="View Course" title="View Course" (click)="$event.stopPropagation(); openCourse(course, $event)">
+                  @if (course.trailer_link) {
+                    <button type="button" class="style-card__trailer" aria-label="Watch trailer" title="Watch trailer" (click)="openTrailer(course, $event)">
+                      <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true">
+                        <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
+                      </svg>
+                    </button>
+                  }
+                  <button type="button" class="style-card__list" aria-label="View Course" title="View Course" (click)="openCoursePreview(course, $event)">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <circle cx="6" cy="6" r="1.5" />
                       <circle cx="6" cy="12" r="1.5" />
@@ -121,23 +239,18 @@
                 </div>
                 <div class="style-card__title-row">
                   <h3>{{ course.title }}</h3>
-                  <button type="button" class="style-card__add" aria-label="Show course description" title="Show course description" (click)="toggleCardDescription(course, $event)"><span class="style-card__add-symbol">+</span></button>
                 </div>
-                <p class="style-card__description">{{ course.excerpt }}</p>
-                @if (cardDetailFor(course); as detail) {
-                  <div class="style-card__people">
-                    @if (detail.instructor; as instructor) {
-                      <span class="style-card__person"><img [src]="personPhotoUrl(instructor)" [alt]="instructor.name" /><span class="style-card__person-label">Instructor:</span> {{ instructor.name }}</span>
-                    }
-                    @if (detail.guest; as guest) {
-                      <span class="style-card__person"><img [src]="personPhotoUrl(guest)" [alt]="guest.name" /><span class="style-card__person-label">Guest:</span> {{ guest.name }}</span>
+                <div class="style-card__meta">
+                  <div class="style-card__meta-primary">
+                    <span class="style-card__meta-badge">{{ course.course_types[0] || 'Trading Course' }}</span>
+                    <span class="style-card__meta-dot" aria-hidden="true"></span>
+                    <span class="style-card__meta-badge">{{ course.lesson_count }} lessons</span>
+                  </div>
+                  <div class="style-card__meta-levels">
+                    @for (level of courseLevelBadges(course); track level) {
+                      <span class="style-card__level-badge">{{ level }}</span>
                     }
                   </div>
-                }
-                <div class="style-card__meta">
-                  <span>{{ course.course_types[0] || 'Trading Course' }}</span>
-                  <span aria-hidden="true">•</span>
-                  <span>{{ course.lesson_count }} lessons</span>
                 </div>
               </div>
             </article>
@@ -164,7 +277,6 @@
             <article
               class="style-card"
               [attr.data-course-id]="course.id"
-              [class.style-card--description-open]="cardDescriptionCourseId() === course.id"
               (mouseenter)="onCardEnter($event, 'platform')"
               (mouseleave)="onCardLeave()"
             >
@@ -178,7 +290,14 @@
                       <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
                     </svg>
                   </button>
-                  <button type="button" class="style-card__list" aria-label="View Course" title="View Course" (click)="$event.stopPropagation(); openCourse(course, $event)">
+                  @if (course.trailer_link) {
+                    <button type="button" class="style-card__trailer" aria-label="Watch trailer" title="Watch trailer" (click)="openTrailer(course, $event)">
+                      <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true">
+                        <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
+                      </svg>
+                    </button>
+                  }
+                  <button type="button" class="style-card__list" aria-label="View Course" title="View Course" (click)="openCoursePreview(course, $event)">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <circle cx="6" cy="6" r="1.5" />
                       <circle cx="6" cy="12" r="1.5" />
@@ -189,23 +308,18 @@
                 </div>
                 <div class="style-card__title-row">
                   <h3>{{ course.title }}</h3>
-                  <button type="button" class="style-card__add" aria-label="Show course description" title="Show course description" (click)="toggleCardDescription(course, $event)"><span class="style-card__add-symbol">+</span></button>
                 </div>
-                <p class="style-card__description">{{ course.excerpt }}</p>
-                @if (cardDetailFor(course); as detail) {
-                  <div class="style-card__people">
-                    @if (detail.instructor; as instructor) {
-                      <span class="style-card__person"><img [src]="personPhotoUrl(instructor)" [alt]="instructor.name" /><span class="style-card__person-label">Instructor:</span> {{ instructor.name }}</span>
-                    }
-                    @if (detail.guest; as guest) {
-                      <span class="style-card__person"><img [src]="personPhotoUrl(guest)" [alt]="guest.name" /><span class="style-card__person-label">Guest:</span> {{ guest.name }}</span>
+                <div class="style-card__meta">
+                  <div class="style-card__meta-primary">
+                    <span class="style-card__meta-badge">Platform Course</span>
+                    <span class="style-card__meta-dot" aria-hidden="true"></span>
+                    <span class="style-card__meta-badge">{{ course.lesson_count }} lessons</span>
+                  </div>
+                  <div class="style-card__meta-levels">
+                    @for (level of courseLevelBadges(course); track level) {
+                      <span class="style-card__level-badge">{{ level }}</span>
                     }
                   </div>
-                }
-                <div class="style-card__meta">
-                  <span>Platform Course</span>
-                  <span aria-hidden="true">•</span>
-                  <span>{{ course.lesson_count }} lessons</span>
                 </div>
               </div>
             </article>
@@ -220,6 +334,39 @@
   </section>
 </main>
 
+@if (trailerOpen() || trailerClosing()) {
+  <div
+    class="style-trailer-backdrop"
+    [class.style-trailer-backdrop--open]="trailerOpen()"
+    [class.style-trailer-backdrop--closing]="trailerClosing()"
+    role="presentation"
+    (click)="closeTrailer()"
+  >
+    <section
+      class="style-trailer-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="style-trailer-title"
+      (click)="$event.stopPropagation()"
+    >
+      <button type="button" class="style-trailer-modal__close" aria-label="Close trailer" (click)="closeTrailer()">
+        <span aria-hidden="true">×</span>
+      </button>
+      @if (trailerVideoUrl(); as videoUrl) {
+        <video class="style-trailer-modal__video" [src]="videoUrl" autoplay controls playsinline></video>
+      } @else if (trailerEmbedUrl(); as embedUrl) {
+        <iframe
+          class="style-trailer-modal__video"
+          [src]="embedUrl"
+          title="{{ trailerCourse()?.title ?? 'TC Nexus' }} trailer"
+          allow="autoplay; fullscreen; picture-in-picture"
+          allowfullscreen
+        ></iframe>
+      }
+    </section>
+  </div>
+}
+
 <button
   type="button"
   class="episode-backdrop"
@@ -228,14 +375,123 @@
   (click)="closeLessons()"
 ></button>
 
-<aside class="episode-panel" [class.episode-panel--open]="lessonsOpen()" aria-label="Lessons list">
+@if (coursePreviewDetail(); as detail) {
+  <div
+    class="style-course-modal-backdrop"
+    [class.style-course-modal-backdrop--open]="coursePreviewOpen()"
+    [class.style-course-modal-backdrop--closing]="coursePreviewClosing()"
+    [attr.aria-hidden]="coursePreviewOpen() ? null : 'true'"
+    (click)="closeCoursePreview()"
+  >
+    <section
+      class="style-course-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="style-course-modal-title"
+      (click)="$event.stopPropagation()"
+    >
+      <button type="button" class="style-course-modal__close" aria-label="Close course preview" (click)="closeCoursePreview()"><span aria-hidden="true">×</span></button>
+      <div class="style-course-modal__hero">
+        <img [src]="coursePreviewImageUrl(detail)" [alt]="detail.title" (error)="onImageError($event)" />
+      </div>
+
+      <div class="style-course-modal__content">
+        <div class="style-course-modal__meta">
+          <span class="style-course-modal__meta-badge">{{ courseTypeLabelForDetail(detail) }}</span>
+          <span class="style-course-modal__meta-dot" aria-hidden="true">•</span>
+          <span class="style-course-modal__meta-badge">{{ detail.lessons.length }} Episodes</span>
+          @for (level of courseLevelBadges(detail); track level) {
+            <span class="style-course-modal__meta-dot" aria-hidden="true">•</span>
+            <span class="style-course-modal__level-badge">{{ level }}</span>
+          }
+        </div>
+        <h2 id="style-course-modal-title" class="style-course-modal__title">{{ detail.title }}</h2>
+        <div class="style-course-modal__description" [innerHTML]="detail.content"></div>
+
+        <div class="style-course-modal__people">
+          @if (detail.instructor; as instructor) {
+            <div class="style-course-modal__person">
+              <span class="style-course-modal__person-label">Instructor</span>
+              <div class="style-course-modal__person-row">
+                <img [src]="personPhotoUrl(instructor)" [alt]="instructor.name" />
+                <span>{{ instructor.name }}</span>
+              </div>
+            </div>
+          }
+          @if (detail.guest; as guest) {
+            <div class="style-course-modal__person">
+              <span class="style-course-modal__person-label">Guest</span>
+              <div class="style-course-modal__person-row">
+                <img [src]="personPhotoUrl(guest)" [alt]="guest.name" />
+                <span>{{ guest.name }}</span>
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="style-course-modal__lessons-heading">
+          <h3>Episodes</h3>
+          <span>{{ detail.lessons.length }} lessons</span>
+        </div>
+        <ol class="style-course-modal__lesson-list">
+          @for (lesson of detail.lessons; track lesson.id) {
+            <li
+              class="style-course-modal__lesson"
+              [class.style-course-modal__lesson--locked]="lesson.locked"
+              (click)="openPreviewLesson(detail, lesson, $event)"
+            >
+              <span class="style-course-modal__lesson-order">{{ lesson.order }}</span>
+              <span class="style-course-modal__lesson-thumb">
+                <img [src]="lessonThumbnailUrl(lesson)" alt="" (error)="onImageError($event)" />
+              </span>
+              <span class="style-course-modal__lesson-info">
+                <span class="style-course-modal__lesson-title">{{ lesson.title }}</span>
+                <span class="style-course-modal__lesson-excerpt">{{ lesson.excerpt }}</span>
+              </span>
+            </li>
+          }
+        </ol>
+      </div>
+    </section>
+  </div>
+}
+
+@if (overviewUrl(); as url) {
+  <div
+    class="style-course-modal-backdrop"
+    [class.style-course-modal-backdrop--open]="overviewOpen()"
+    [class.style-course-modal-backdrop--closing]="overviewClosing()"
+    [attr.aria-hidden]="overviewOpen() ? null : 'true'"
+    (click)="closeOverview()"
+  >
+    <section
+      class="style-course-modal style-overview-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="style-overview-modal-title"
+      (click)="$event.stopPropagation()"
+    >
+      <button type="button" class="style-course-modal__close" aria-label="Close course overview" (click)="closeOverview()"><span aria-hidden="true">×</span></button>
+        <div #overviewViewer class="style-overview-modal__viewer" aria-label="Course overview document">
+        @if (overviewPdfLoading()) {
+          <p class="style-overview-modal__loading">Loading course overview…</p>
+        }
+      </div>
+      <a class="style-overview-modal__fallback" [href]="url" target="_blank" rel="noopener noreferrer">
+        Open overview in a new tab
+      </a>
+    </section>
+  </div>
+}
+
+<aside class="episode-panel" [class.episode-panel--open]="lessonsOpen()" aria-label="Episodes list">
   <div class="episode-panel__header" [class.episode-panel__header--revealed]="lessonsRevealed()">
-    <button type="button" class="episode-panel__close" aria-label="Close lessons list" (click)="closeLessons()">
+    <button type="button" class="episode-panel__close" aria-label="Close episodes list" (click)="closeLessons()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M6 6l12 12M18 6 6 18"></path>
       </svg>
     </button>
-    <h2 class="episode-panel__title">Lessons</h2>
+    <h2 class="episode-panel__title">Episodes</h2>
   </div>
   @if (featuredDetail(); as detail) {
     <ol class="lesson-list" [class.lesson-list--revealed]="lessonsRevealed()">

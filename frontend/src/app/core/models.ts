@@ -1,4 +1,22 @@
 export type AccessTier = 'free' | 'registered' | 'paid';
+export type CourseLevelSlug = 'beginner' | 'intermediate' | 'advanced';
+
+export interface CourseLevelVersion {
+  enabled: boolean;
+  slug: CourseLevelSlug;
+  label: string;
+  title: string;
+  content?: string;
+  course_types: string[];
+  lesson_count: number;
+  lessons?: Lesson[];
+  thumbnail: string | null;
+  image: string | null;
+  overview_link: string | null;
+  trailer_link?: string | null;
+  instructor?: Person | null;
+  guest?: Person | null;
+}
 
 export interface Course {
   id: number;
@@ -10,6 +28,13 @@ export interface Course {
   course_types: string[];
   lesson_count: number;
   overview_link: string | null;
+  trailer_link?: string | null;
+  configured_levels?: CourseLevelSlug[];
+  levels?: Partial<Record<CourseLevelSlug, CourseLevelVersion>>;
+  languages?: Record<string, {
+    label: string;
+    levels?: Partial<Record<CourseLevelSlug, CourseLevelVersion>>;
+  }>;
 }
 
 export interface Lesson {
@@ -41,9 +66,16 @@ export interface CourseDetail {
   image: string | null;
   course_types: string[];
   overview_link: string | null;
+  trailer_link?: string | null;
   instructor: Person | null;
   guest: Person | null;
   lessons: Lesson[];
+  configured_levels?: CourseLevelSlug[];
+  levels?: Partial<Record<CourseLevelSlug, CourseLevelVersion>>;
+  languages?: Record<string, {
+    label: string;
+    levels?: Partial<Record<CourseLevelSlug, CourseLevelVersion>>;
+  }>;
 }
 
 export type AccessReason = 'ok' | 'requires_registration' | 'requires_payment';

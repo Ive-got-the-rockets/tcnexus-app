@@ -11,6 +11,7 @@ const PORT = process.env.MOCK_API_PORT || 8787;
 // Real test clip from the client's Vimeo account. Every lesson points at it
 // for now so the player wiring can be exercised end-to-end.
 const TEST_VIDEO_URL = 'https://vimeo.com/1068479580';
+const PRIMER_VIDEO_URL = '/video/the-primer-episode-1.m4v';
 
 const courses = [
   {
@@ -21,7 +22,8 @@ const courses = [
     image: 'http://localhost:8082/wp-content/uploads/2026/08/cropped-hero-course-image.jpg',
     course_types: ['Trading Course'],
     lesson_count: 3,
-    overview_link: 'https://gamma.app/docs/Market-Mavericks-s1zmj0f59xs70ex?mode=doc'
+    overview_link: 'https://gamma.app/docs/Market-Mavericks-s1zmj0f59xs70ex?mode=doc',
+    trailer_link: 'https://vimeo.com/1068479580'
   },
   {
     id: 55,
@@ -267,14 +269,84 @@ const courses = [
   }
 ];
 
+const shows = [
+  {
+    id: 382,
+    title: 'The Primer',
+    excerpt: 'Digital SIM that lets you switch carriers and use multiple mobile plans without swapping cards.',
+    thumbnail: 'https://picsum.photos/seed/tcnexus-the-primer/640/360',
+    image: 'https://picsum.photos/seed/tcnexus-the-primer-hero/1600/900',
+    course_types: ['Shows'],
+    lesson_count: 1,
+    trailer_link: PRIMER_VIDEO_URL,
+    episode_video_url: PRIMER_VIDEO_URL,
+    configured_levels: ['beginner']
+  },
+  {
+    id: 901,
+    title: 'Market Sessions',
+    excerpt: 'Live market conversations, trade reviews, and practical lessons from the TC Nexus desk.',
+    thumbnail: 'https://picsum.photos/seed/tcnexus-show-market-sessions/640/360',
+    image: 'https://picsum.photos/seed/tcnexus-show-market-sessions-hero/1600/900',
+    course_types: ['Shows'],
+    lesson_count: 6,
+    placeholder: true
+  },
+  {
+    id: 902,
+    title: 'Inside the Trade',
+    excerpt: 'A closer look at the decisions, risk, and execution behind real trading ideas.',
+    thumbnail: 'https://picsum.photos/seed/tcnexus-show-inside-the-trade/640/360',
+    image: 'https://picsum.photos/seed/tcnexus-show-inside-the-trade-hero/1600/900',
+    course_types: ['Shows'],
+    lesson_count: 8,
+    placeholder: true
+  },
+  {
+    id: 903,
+    title: 'The Opening Bell',
+    excerpt: 'A sharp start to the session with context, catalysts, and levels worth watching.',
+    thumbnail: 'https://picsum.photos/seed/tcnexus-show-opening-bell/640/360',
+    image: 'https://picsum.photos/seed/tcnexus-show-opening-bell-hero/1600/900',
+    course_types: ['Shows'],
+    lesson_count: 5,
+    placeholder: true
+  }
+];
+
 // The first demo records intentionally start without media so they can be
 // populated consistently for the carousel and course-detail placeholders.
-for (const course of courses) {
+for (const course of [...courses, ...shows]) {
   if (!course.thumbnail) {
     course.thumbnail = `https://picsum.photos/seed/tcnexus-placeholder-course-${course.id}/640/360`;
     course.image = `https://picsum.photos/seed/tcnexus-placeholder-hero-${course.id}/1600/900`;
     course.placeholder = true;
   }
+
+  // Mirror the structured level payload returned by the WordPress plugin.
+  // The mock data predates the level tabs, so the existing level-like tags
+  // are used to create the enabled level versions for local development.
+  const levelNames = { Beginner: 'beginner', Intermediate: 'intermediate', Advanced: 'advanced' };
+  const configuredLevels = course.course_types
+    .map((type) => levelNames[type])
+    .filter(Boolean);
+  if (configuredLevels.length === 0) configuredLevels.push('beginner');
+  course.configured_levels = [...new Set(configuredLevels)];
+  course.levels = Object.fromEntries(course.configured_levels.map((slug) => [slug, {
+    enabled: true,
+    slug,
+    label: slug[0].toUpperCase() + slug.slice(1),
+    title: course.title,
+    content: `<p>${course.excerpt}</p>`,
+    course_types: course.course_types.filter((type) => !levelNames[type]),
+    lesson_count: course.lesson_count,
+    thumbnail: course.thumbnail,
+    image: course.image,
+    overview_link: course.overview_link ?? null,
+    trailer_link: course.trailer_link ?? null,
+    instructor: { id: 1, name: 'Coco Blanco', photo: 'https://i.pravatar.cc/120?u=coco-blanco' },
+    guest: { id: 2, name: 'TC Nexus Guest', photo: 'https://i.pravatar.cc/120?u=tcnexus-guest' }
+  }]));
 }
 
 function buildLessons(course) {
@@ -290,19 +362,25 @@ function buildLessons(course) {
       thumbnail: course.placeholder ? `https://picsum.photos/seed/tcnexus-placeholder-lesson-${course.id}-${i}/320/180` : null,
       locked: tier === 'paid',
       excerpt: `Part ${i} of ${course.title.toLowerCase()} — a focused, worked walkthrough building directly on the previous lesson.`,
-      video_url: course.placeholder ? null : TEST_VIDEO_URL
+      video_url: course.episode_video_url ?? (course.placeholder ? null : TEST_VIDEO_URL)
     });
   }
   return lessons;
 }
 
 function buildCourseDetail(course) {
+  const lessons = buildLessons(course);
+  const levels = Object.fromEntries(Object.entries(course.levels ?? {}).map(([slug, level]) => [slug, {
+    ...level,
+    lessons
+  }]));
   return {
     id: course.id,
     title: course.title,
     content: `<p>${course.excerpt}</p><p>This course walks through the concepts step by step, with worked examples pulled from real charts and real trades — not theory slides.</p>`,
     thumbnail: course.thumbnail,
     image: course.image,
+    trailer_link: course.trailer_link ?? null,
     course_types: course.course_types,
     instructor: {
       id: 1,
@@ -314,14 +392,16 @@ function buildCourseDetail(course) {
       name: 'TC Nexus Guest',
       photo: 'https://i.pravatar.cc/120?u=tcnexus-guest'
     },
-    lessons: buildLessons(course)
+    lessons,
+    configured_levels: course.configured_levels,
+    levels
   };
 }
 
 // Lesson ids are course.id * 100 + order (see buildLessons), so a lesson's
 // course is recoverable from its id alone without a separate lookup table.
 function findLessonById(lessonId) {
-  const course = courses.find((c) => c.id === Math.floor(lessonId / 100));
+  const course = [...courses, ...shows].find((c) => c.id === Math.floor(lessonId / 100));
   if (!course) return null;
   return buildLessons(course).find((l) => l.id === lessonId) ?? null;
 }
@@ -479,9 +559,15 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (req.url === '/wp-json/tcnexus/v1/shows' && req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(shows));
+      return;
+    }
+
     const detailMatch = req.method === 'GET' && req.url.match(/^\/wp-json\/tcnexus\/v1\/courses\/(\d+)$/);
     if (detailMatch) {
-      const course = courses.find((c) => c.id === Number(detailMatch[1]));
+      const course = [...courses, ...shows].find((c) => c.id === Number(detailMatch[1]));
       if (!course) {
         res.writeHead(404);
         res.end();

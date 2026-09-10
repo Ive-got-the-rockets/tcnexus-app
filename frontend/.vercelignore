@@ -1,0 +1,11 @@
+node_modules
+dist
+.angular
+mock-api
+tests
+src/**/*.spec.ts
+src/**/*.test.ts
+public/video/trading-royal-promo.mp4
+.deploy-hold
+.deploy-static
+.deploy-static-source

@@ -88,6 +88,7 @@ export class CourseCatalog implements OnDestroy {
 
   protected readonly status = signal<CatalogStatus>('loading');
   protected readonly courses = signal<Course[]>([]);
+  protected readonly shows = signal<Course[]>([]);
   private readonly featuredCourseId = signal<number | null>(null);
   protected readonly failedImages = signal<ReadonlySet<number>>(new Set());
   protected readonly rowEdges = signal<ReadonlyMap<string, ScrollEdges>>(new Map());
@@ -269,6 +270,7 @@ export class CourseCatalog implements OnDestroy {
 
   protected load(): void {
     this.status.set('loading');
+    this.loadShows();
     this.coursesService.getCourses().subscribe({
       next: (courses) => {
         this.courses.set(courses);
@@ -280,6 +282,13 @@ export class CourseCatalog implements OnDestroy {
       error: () => {
         this.status.set('error');
       }
+    });
+  }
+
+  private loadShows(): void {
+    this.coursesService.getShows().subscribe({
+      next: (shows) => this.shows.set(shows),
+      error: () => this.shows.set([])
     });
   }
 

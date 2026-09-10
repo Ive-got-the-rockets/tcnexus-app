@@ -1,0 +1,13 @@
+release
+Test Video
+wordpress-plugin
+docs
+frontend/node_modules
+frontend/dist
+frontend/mock-api
+frontend/tests
+frontend/.angular
+frontend/.deploy-hold
+frontend/.deploy-static
+frontend/.deploy-static-source
+frontend/public/video/trading-royal-promo.mp4

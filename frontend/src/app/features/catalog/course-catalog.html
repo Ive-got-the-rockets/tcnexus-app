@@ -110,7 +110,7 @@
             <div class="hero__meta">
               <span class="tag">{{ courseTypeLabel(course) }}</span>
               <span class="hero__meta-dot" aria-hidden="true"></span>
-              <span class="tag">{{ course.lesson_count }} lessons</span>
+              <span class="tag">{{ course.lesson_count }} episodes</span>
             </div>
             <div class="hero__actions">
               <button type="button" class="btn btn--primary" (click)="playCourse(course, $event)">▶ Start Watching</button>
@@ -119,7 +119,7 @@
                 class="hero__overview-btn"
                 [attr.aria-expanded]="episodeListOpen()"
                 (click)="toggleEpisodeList(course, $event)"
-              >Lessons List</button>
+              >Episodes List</button>
               @if (course.overview_link) {
                 <button type="button" class="hero__overview-btn" (click)="openOverview(course, $event)">Course Overview</button>
               }
@@ -127,6 +127,61 @@
           </div>
         </section>
         </div>
+      }
+
+      @if (shows().length > 0) {
+        <section class="row row--shows" data-row-title="Shows">
+          <div class="row__head">
+            <h2 class="row__title">Shows</h2>
+            <span class="row__count">{{ shows().length }} shows · hover preview</span>
+          </div>
+          <div
+            class="row__viewport"
+            [class.at-start]="edgesFor('Shows').atStart"
+            [class.at-end]="edgesFor('Shows').atEnd"
+          >
+            @if (!edgesFor('Shows').atStart) {
+              <button
+                type="button"
+                class="row__nav row__nav--prev"
+                aria-label="Scroll left"
+                #showsPrevBtn
+                (click)="showsTrack.scrollBy({ left: -(showsTrack.clientWidth - showsPrevBtn.offsetWidth), behavior: 'smooth' })"
+              >‹</button>
+            }
+            <div class="row__track" #showsTrack [appRowScroll]="'Shows'" (edgesChange)="onRowEdges('Shows', $event)">
+              @for (show of shows(); track show.id) {
+                <article
+                  class="card card--show"
+                  #showCardEl
+                  [attr.data-course-id]="show.id"
+                  (mouseenter)="onCardEnter(show, 'Shows', $event)"
+                  (mouseleave)="scheduleHide()"
+                  (click)="goToCourse(show, 'Shows', showCardEl)"
+                >
+                  <div class="card__thumb">
+                    @if (!failedImages().has(show.id)) {
+                      <img [src]="thumbnailUrl(show)" [alt]="show.title" loading="lazy" (error)="onImageError(show.id)" />
+                    } @else {
+                      <span class="card__thumb-mark">{{ show.title.charAt(0) }}</span>
+                    }
+                    <div class="card__scrim"></div>
+                    <div class="card__info"><h3 class="card__title">{{ show.title }}</h3></div>
+                  </div>
+                </article>
+              }
+            </div>
+            @if (!edgesFor('Shows').atEnd) {
+              <button
+                type="button"
+                class="row__nav row__nav--next"
+                aria-label="Scroll right"
+                #showsNextBtn
+                (click)="showsTrack.scrollBy({ left: showsTrack.clientWidth - showsNextBtn.offsetWidth, behavior: 'smooth' })"
+              >›</button>
+            }
+          </div>
+        </section>
       }
 
       <div class="rows">
@@ -273,14 +328,14 @@
   (click)="closeEpisodeList()"
 ></button>
 
-<aside class="episode-panel" [class.episode-panel--open]="episodeListOpen()" aria-label="Lessons list">
+<aside class="episode-panel" [class.episode-panel--open]="episodeListOpen()" aria-label="Episodes list">
   <div class="episode-panel__header" [class.episode-panel__header--revealed]="episodeRowsRevealed()">
-    <button type="button" class="episode-panel__close" aria-label="Close lessons list" (click)="closeEpisodeList()">
+      <button type="button" class="episode-panel__close" aria-label="Close episodes list" (click)="closeEpisodeList()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M6 6l12 12M18 6 6 18"></path>
       </svg>
     </button>
-    <h2 class="episode-panel__title">Lessons</h2>
+    <h2 class="episode-panel__title">Episodes</h2>
   </div>
   @if (featuredDetail(); as detail) {
     <ol class="lesson-list" [class.lesson-list--revealed]="episodeRowsRevealed()">

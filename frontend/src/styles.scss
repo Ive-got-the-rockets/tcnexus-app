@@ -24,6 +24,19 @@
   box-sizing: border-box;
 }
 
+/* Keep every scroll surface usable while removing visible browser bars. */
+html,
+body,
+* {
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  display: none;
+}
+
 html,
 body {
   height: 100%;
@@ -537,6 +550,85 @@ button {
 
 .player-wrap.tcn-xray-open .tcn-xray-bottombar {
   transform: translateY(0);
+}
+
+/* PDF.js creates these nodes imperatively, so they must be global rather
+   than Angular component-scoped styles. */
+.style-overview-pdf-page {
+  position: relative;
+  flex: 0 0 auto;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+}
+
+.style-overview-pdf-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+}
+
+.style-overview-pdf-text-layer {
+  --min-font-size: 1;
+  --total-scale-factor: 1;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  color-scheme: only light;
+  line-height: 1;
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-align: initial;
+  pointer-events: auto;
+  caret-color: CanvasText;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.style-overview-pdf-text-layer :is(span, br) {
+  position: absolute;
+  color: transparent;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0 0;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.style-overview-pdf-text-layer > :not(.markedContent),
+.style-overview-pdf-text-layer .markedContent span:not(.markedContent) {
+  z-index: 1;
+  --font-height: 0;
+  font-size: calc(var(--total-scale-factor) * var(--font-height));
+  --scale-x: 1;
+  --rotate: 0deg;
+  transform: rotate(var(--rotate)) scaleX(var(--scale-x));
+}
+
+.style-overview-pdf-text-layer ::selection {
+  background: rgba(0, 100, 255, 0.25);
+  color: transparent;
+}
+
+.style-overview-pdf-link-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.style-overview-pdf-link {
+  position: absolute;
+  display: block;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.style-overview-pdf-link:hover {
+  outline: 2px solid color-mix(in srgb, var(--signal) 70%, transparent);
+  background: color-mix(in srgb, var(--signal) 8%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {

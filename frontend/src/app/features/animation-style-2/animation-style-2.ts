@@ -1,21 +1,76 @@
 import { AfterViewInit, Component, ElementRef, HostListener, Injector, OnDestroy, afterNextRender, computed, inject, signal, viewChild } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
-
-import { Course, CourseDetail, Lesson, Person } from '../../core/models';
+import type { PDFDocumentLoadingTask, PDFDocumentProxy } from 'pdfjs-dist';
+import { catchError, forkJoin, of } from 'rxjs';
+import { Course, CourseDetail, CourseLevelSlug, Lesson, Person } from '../../core/models';
 import { CoursesService } from '../../core/courses.service';
 import { CatalogScrollService } from '../../core/catalog-scroll.service';
 import { MorphRect, TransitionService } from '../../core/transition.service';
 import { RowScrollDirective, ScrollEdges } from '../catalog/row-scroll.directive';
+import { trailerEmbedUrl } from './trailer-embed-url';
 
 const EMPTY_EDGES: ScrollEdges = { atStart: true, atEnd: true };
-type CarouselKind = 'trading' | 'platform';
+type CarouselKind = 'shows' | 'trading' | 'platform';
 const PAGE_EXIT_DURATION = 280;
 const STYLE2_SCROLL_STORAGE_KEY = 'tcnexus-style2-trading-scroll';
-const STYLE2_FEATURED_STORAGE_KEY = 'tcnexus-style2-featured-id';
+const STYLE2_FEATURED_KIND_STORAGE_KEY = 'tcnexus-style2-featured-kind';
+const COURSE_OVERVIEW_PDF_URL = '/course-overviews/Market-Mavericks.pdf';
 
 interface ReturnOverlayState {
   thumbnailUrl: string;
 }
+
+const DEMO_SHOWS: Course[] = [
+  {
+    id: -101,
+    title: 'Demo Show 01',
+    excerpt: 'A sample show card for previewing the Shows carousel.',
+    thumbnail: 'https://picsum.photos/seed/tcnexus-demo-show-01/640/360',
+    image: null,
+    course_types: ['Shows'],
+    lesson_count: 6,
+    overview_link: null,
+    trailer_link: null,
+    configured_levels: ['beginner'],
+  },
+  {
+    id: -102,
+    title: 'Demo Show 02',
+    excerpt: 'A sample show card for previewing the Shows carousel.',
+    thumbnail: 'https://picsum.photos/seed/tcnexus-demo-show-02/640/360',
+    image: null,
+    course_types: ['Shows'],
+    lesson_count: 8,
+    overview_link: null,
+    trailer_link: null,
+    configured_levels: ['beginner', 'intermediate'],
+  },
+  {
+    id: -103,
+    title: 'Demo Show 03',
+    excerpt: 'A sample show card for previewing the Shows carousel.',
+    thumbnail: 'https://picsum.photos/seed/tcnexus-demo-show-03/640/360',
+    image: null,
+    course_types: ['Shows'],
+    lesson_count: 5,
+    overview_link: null,
+    trailer_link: null,
+    configured_levels: ['beginner', 'intermediate', 'advanced'],
+  },
+  {
+    id: -104,
+    title: 'Demo Show 04',
+    excerpt: 'A sample show card for previewing the Shows carousel.',
+    thumbnail: 'https://picsum.photos/seed/tcnexus-demo-show-04/640/360',
+    image: null,
+    course_types: ['Shows'],
+    lesson_count: 7,
+    overview_link: null,
+    trailer_link: null,
+    configured_levels: ['beginner'],
+  },
+];
 
 @Component({
   selector: 'app-animation-style-2',
@@ -30,34 +85,68 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly injector = inject(Injector);
   private readonly transition = inject(TransitionService);
+  private readonly sanitizer = inject(DomSanitizer);
   private readonly track = viewChild<ElementRef<HTMLElement>>('track');
   private readonly carousel = viewChild<ElementRef<HTMLElement>>('carousel');
   private readonly platformTrack = viewChild<ElementRef<HTMLElement>>('platformTrack');
   private readonly platformCarousel = viewChild<ElementRef<HTMLElement>>('platformCarousel');
+  private readonly showsTrack = viewChild<ElementRef<HTMLElement>>('showsTrack');
+  private readonly showsCarousel = viewChild<ElementRef<HTMLElement>>('showsCarousel');
+  private readonly overviewViewer = viewChild<ElementRef<HTMLElement>>('overviewViewer');
   private resizeObserver?: ResizeObserver;
   private expandedCardCheck?: ReturnType<typeof setTimeout>;
   private pageExitTimer?: ReturnType<typeof setTimeout>;
   private descriptionCloseTimer?: ReturnType<typeof setTimeout>;
+  private coursePreviewCloseTimer?: ReturnType<typeof setTimeout>;
+  private overviewCloseTimer?: ReturnType<typeof setTimeout>;
+  private trailerCloseTimer?: ReturnType<typeof setTimeout>;
   private readonly onScroll = () => this.measureEdges();
   private readonly onPlatformScroll = () => this.measureEdges('platform');
+  private readonly onShowsScroll = () => this.measureEdges('shows');
 
   protected readonly courses = signal<Course[]>([]);
+  protected readonly shows = signal<Course[]>([]);
   protected readonly featured = signal<Course | null>(null);
   protected readonly descriptionExpanded = signal(false);
-  protected readonly descriptionHovered = signal(false);
-  protected readonly cardDescriptionCourseId = signal<number | null>(null);
-  protected readonly cardDetails = signal<Record<number, CourseDetail>>({});
   protected readonly descriptionMotion = signal<'closed' | 'opening' | 'open' | 'closing'>('closed');
   protected readonly descriptionOpen = computed(() => this.descriptionMotion() !== 'closed');
   protected readonly featuredDetail = signal<CourseDetail | null>(null);
   protected readonly lessonsOpen = signal(false);
   protected readonly lessonsRevealed = signal(false);
+  protected readonly coursePreviewDetail = signal<CourseDetail | null>(null);
+  protected readonly coursePreviewOpen = signal(false);
+  protected readonly coursePreviewClosing = signal(false);
+  protected readonly overviewUrl = signal<string | null>(null);
+  protected readonly overviewOpen = signal(false);
+  protected readonly overviewClosing = signal(false);
+  protected readonly overviewPdfLoading = signal(true);
+  protected readonly trailerOpen = signal(false);
+  protected readonly trailerClosing = signal(false);
+  protected readonly trailerCourse = signal<Course | null>(null);
+  protected readonly trailerEmbedUrl = computed<SafeResourceUrl | null>(() => {
+    const url = trailerEmbedUrl(this.trailerCourse()?.trailer_link);
+    return url ? this.sanitizer.bypassSecurityTrustResourceUrl(url) : null;
+  });
+  protected readonly trailerVideoUrl = computed(() => {
+    const url = this.trailerCourse()?.trailer_link?.trim();
+    return url && !/vimeo\.com/i.test(url) ? url : null;
+  });
+  protected readonly languageMenuOpen = signal(false);
+  protected readonly selectedLanguage = signal('en');
+  private overviewLoadingTask?: PDFDocumentLoadingTask;
+  private overviewPdf?: PDFDocumentProxy;
+  private overviewRenderToken = 0;
   protected readonly carouselCourses = computed(() => {
     const featuredId = this.featured()?.id;
     return this.courses().filter(course => course.id !== featuredId);
   });
+  protected readonly carouselShows = computed(() => {
+    const featuredId = this.featured()?.id;
+    return this.shows().filter(show => show.id !== featuredId);
+  });
   protected readonly edges = signal<ScrollEdges>(EMPTY_EDGES);
   protected readonly platformEdges = signal<ScrollEdges>(EMPTY_EDGES);
+  protected readonly showsEdges = signal<ScrollEdges>(EMPTY_EDGES);
   protected readonly leaving = signal(false);
   protected readonly returning = signal(false);
   protected readonly returnRevealed = signal(false);
@@ -75,7 +164,42 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
     course_types: ['Platform'],
     lesson_count: 4 + (index % 4),
     overview_link: null,
+    configured_levels: index % 3 === 0
+      ? ['beginner', 'intermediate', 'advanced']
+      : index % 2 === 0
+        ? ['beginner', 'intermediate']
+        : ['beginner'],
   }));
+
+  protected courseLanguages(course: Course): Array<{ slug: string; label: string }> {
+    const configured = Object.entries(course.languages ?? {}).map(([slug, language]) => ({ slug, label: language.label }));
+    const defaults = [
+      { slug: 'en', label: 'English' },
+      { slug: 'es', label: 'Spanish' },
+      { slug: 'ko', label: 'Korean' },
+    ];
+    const options = [...configured, ...defaults];
+    return options.filter((language, index, all) => all.findIndex(item => item.slug === language.slug) === index);
+  }
+
+  protected selectedLanguageLabel(course: Course): string {
+    return this.courseLanguages(course).find(language => language.slug === this.selectedLanguage())?.label
+      ?? this.courseLanguages(course)[0]?.label
+      ?? 'English';
+  }
+
+  protected toggleLanguageMenu(): void {
+    this.languageMenuOpen.update(open => !open);
+  }
+
+  protected closeLanguageMenu(): void {
+    this.languageMenuOpen.set(false);
+  }
+
+  protected chooseLanguage(language: { slug: string; label: string }): void {
+    this.selectedLanguage.set(language.slug);
+    this.languageMenuOpen.set(false);
+  }
 
   constructor() {
     if (this.pendingReturn) {
@@ -84,21 +208,33 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
       this.returnOverlay.set({ thumbnailUrl: this.pendingReturn.thumbnailUrl });
     }
 
-    this.coursesService.getCourses().subscribe({
-      next: courses => {
-        const available = courses.filter(course => !course.course_types.includes('Platform'));
+    forkJoin({
+      courses: this.coursesService.getCourses(),
+      shows: this.coursesService.getShows().pipe(catchError(() => of([] as Course[]))),
+    }).subscribe({
+      next: ({ courses, shows }) => {
+        this.shows.set([...shows, ...DEMO_SHOWS].slice(0, 12));
+        const courseCandidates = courses.filter(course => !course.course_types.includes('Platform'));
+        const showCandidates = shows;
+        const available = [...courseCandidates, ...showCandidates];
         const queryFeaturedId = this.readQueryNumber('style2Featured');
-        const savedFeaturedId = this.pendingReturn
-          ? this.pendingReturn.style2State?.featuredId
-            ?? queryFeaturedId
-            ?? this.readSessionNumber(STYLE2_FEATURED_STORAGE_KEY)
-            ?? this.catalogScroll.get('animation-style-2-featured')
-          : this.catalogScroll.get('animation-style-2-featured');
-        const featured = available.find(course => course.id === savedFeaturedId)
-          ?? available[Math.floor(Math.random() * available.length)]
-          ?? courses[0]
+        // A return transition or an explicit query parameter may pin the
+        // hero, but normal refreshes must use the alternating type rotation.
+        const savedFeaturedId = this.pendingReturn?.style2State?.featuredId ?? queryFeaturedId;
+        const savedFeatured = available.find(course => course.id === savedFeaturedId);
+        const previousKind = this.readSessionValue(STYLE2_FEATURED_KIND_STORAGE_KEY);
+        const alternatingCandidates = previousKind === 'show'
+          ? courseCandidates
+          : previousKind === 'course'
+            ? showCandidates
+            : available;
+        const featured = savedFeatured
+          ?? alternatingCandidates[Math.floor(Math.random() * alternatingCandidates.length)]
+          ?? available[0]
           ?? null;
         this.featured.set(featured);
+        this.writeSessionValue(STYLE2_FEATURED_KIND_STORAGE_KEY, featured && showCandidates.some(show => show.id === featured.id) ? 'show' : 'course');
+        this.selectedLanguage.set(this.courseLanguages(featured)[0]?.slug ?? 'en');
         this.courses.set(courses.slice(0, 12));
         if (this.pendingReturn) {
           // Wait for Angular to commit the async course list to the DOM. The
@@ -123,17 +259,22 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     const track = this.track()?.nativeElement;
     const platformTrack = this.platformTrack()?.nativeElement;
-    if (!track && !platformTrack) return;
+    const showsTrack = this.showsTrack()?.nativeElement;
+    if (!track && !platformTrack && !showsTrack) return;
     track?.addEventListener('scroll', this.onScroll, { passive: true });
     platformTrack?.addEventListener('scroll', this.onPlatformScroll, { passive: true });
+    showsTrack?.addEventListener('scroll', this.onShowsScroll, { passive: true });
     this.resizeObserver = new ResizeObserver(() => {
       this.measureEdges('trading');
       this.measureEdges('platform');
     });
     if (track) this.resizeObserver.observe(track);
     if (platformTrack) this.resizeObserver.observe(platformTrack);
+    if (showsTrack) this.resizeObserver.observe(showsTrack);
+    this.updateArtworkHeight('shows');
     this.updateArtworkHeight('trading');
     this.updateArtworkHeight('platform');
+    this.measureEdges('shows');
     this.measureEdges();
     this.measureEdges('platform');
   }
@@ -141,8 +282,10 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     const track = this.track()?.nativeElement;
     const platformTrack = this.platformTrack()?.nativeElement;
+    const showsTrack = this.showsTrack()?.nativeElement;
     track?.removeEventListener('scroll', this.onScroll);
     platformTrack?.removeEventListener('scroll', this.onPlatformScroll);
+    showsTrack?.removeEventListener('scroll', this.onShowsScroll);
     this.resizeObserver?.disconnect();
     if (this.expandedCardCheck !== undefined) {
       clearTimeout(this.expandedCardCheck);
@@ -153,10 +296,21 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
     if (this.descriptionCloseTimer !== undefined) {
       clearTimeout(this.descriptionCloseTimer);
     }
+    if (this.coursePreviewCloseTimer !== undefined) {
+      clearTimeout(this.coursePreviewCloseTimer);
+    }
+    if (this.overviewCloseTimer !== undefined) {
+      clearTimeout(this.overviewCloseTimer);
+    }
+    if (this.trailerCloseTimer !== undefined) {
+      clearTimeout(this.trailerCloseTimer);
+    }
+    this.clearOverviewPdf();
+    document.body.style.overflow = '';
   }
 
   protected scroll(direction: -1 | 1, kind: CarouselKind = 'trading'): void {
-    const track = (kind === 'platform' ? this.platformTrack() : this.track())?.nativeElement;
+    const track = (kind === 'shows' ? this.showsTrack() : kind === 'platform' ? this.platformTrack() : this.track())?.nativeElement;
     if (!track) return;
 
     // Calculate page positions from the actual cards. Browser snapping can
@@ -179,42 +333,41 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
   }
 
   protected courseTypeLabel(course: Course): string {
+    if (this.isShow(course)) return 'Show';
     return course.course_types.includes('Platform') ? 'Platform Course' : 'Trading Course';
   }
 
+  protected featuredLabel(course: Course): string {
+    return this.isShow(course) ? 'Shows' : 'Featured Course';
+  }
+
+  protected isShow(course: Course): boolean {
+    return course.course_types.includes('Shows') || this.shows().some(show => show.id === course.id);
+  }
+
+  protected courseLevelBadges(course: Course | CourseDetail): string[] {
+    const labels: Record<CourseLevelSlug, string> = {
+      beginner: 'Beginner',
+      intermediate: 'Intermediate',
+      advanced: 'Advanced',
+    };
+    const configured = course.configured_levels?.length
+      ? course.configured_levels
+      : course.course_types
+        .map(type => type.toLowerCase())
+        .filter((level): level is CourseLevelSlug => level in labels);
+    return configured
+      .filter((level): level is CourseLevelSlug => level in labels)
+      .map(level => course.levels?.[level]?.label ?? labels[level]);
+  }
+
   protected toggleDescription(): void {
-    this.descriptionHovered.set(false);
     this.descriptionExpanded.update(open => !open);
     this.syncDescriptionMotion();
   }
 
-  protected openDescriptionOnHover(): void {
-    this.descriptionHovered.set(true);
-    this.syncDescriptionMotion();
-  }
-
-  protected closeDescriptionOnHover(): void {
-    this.descriptionHovered.set(false);
-    this.syncDescriptionMotion();
-  }
-
-  protected toggleCardDescription(course: Course, event: Event): void {
-    event.stopPropagation();
-    const opening = this.cardDescriptionCourseId() !== course.id;
-    this.cardDescriptionCourseId.set(opening ? course.id : null);
-    if (opening && course.id > 0 && !this.cardDetails()[course.id]) {
-      this.coursesService.getCourse(course.id).subscribe({
-        next: detail => this.cardDetails.update(details => ({ ...details, [course.id]: detail }))
-      });
-    }
-  }
-
-  protected cardDetailFor(course: Course): CourseDetail | null {
-    return this.cardDetails()[course.id] ?? null;
-  }
-
   private syncDescriptionMotion(): void {
-    const requested = this.descriptionExpanded() || this.descriptionHovered();
+    const requested = this.descriptionExpanded();
     if (requested) {
       if (this.descriptionCloseTimer !== undefined) {
         clearTimeout(this.descriptionCloseTimer);
@@ -223,7 +376,7 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
       if (this.descriptionMotion() === 'closed' || this.descriptionMotion() === 'closing') {
         this.descriptionMotion.set('opening');
         requestAnimationFrame(() => {
-          if (this.descriptionExpanded() || this.descriptionHovered()) {
+          if (this.descriptionExpanded()) {
             this.descriptionMotion.set('open');
           }
         });
@@ -235,7 +388,7 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
     this.descriptionMotion.set('closing');
     this.descriptionCloseTimer = setTimeout(() => {
       this.descriptionCloseTimer = undefined;
-      if (!this.descriptionExpanded() && !this.descriptionHovered()) {
+      if (!this.descriptionExpanded()) {
         this.descriptionMotion.set('closed');
       }
     }, 600);
@@ -245,11 +398,125 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
     this.router.navigate(['/courses', course.id]);
   }
 
+  protected openTrailer(course: Course | null = this.featured(), event?: Event): void {
+    event?.stopPropagation();
+    if (!course?.trailer_link) return;
+    if (this.trailerCloseTimer !== undefined) {
+      clearTimeout(this.trailerCloseTimer);
+      this.trailerCloseTimer = undefined;
+    }
+    this.trailerClosing.set(false);
+    this.trailerCourse.set(course);
+    document.body.style.overflow = 'hidden';
+    this.trailerOpen.set(false);
+    requestAnimationFrame(() => requestAnimationFrame(() => this.trailerOpen.set(true)));
+  }
+
+  protected closeTrailer(): void {
+    if (!this.trailerOpen()) return;
+    this.trailerClosing.set(true);
+    this.trailerOpen.set(false);
+    this.trailerCloseTimer = setTimeout(() => {
+      this.trailerClosing.set(false);
+      this.trailerCourse.set(null);
+      this.trailerCloseTimer = undefined;
+      document.body.style.overflow = '';
+    }, 650);
+  }
+
   protected openCourse(course: Course, event?: Event): void {
     const source = event?.currentTarget instanceof HTMLElement
       ? event.currentTarget.closest('.style-card') as HTMLElement | null
       : null;
     this.navigateToCourse(course, source?.getBoundingClientRect());
+  }
+
+  protected openCoursePreview(course: Course, event: Event): void {
+    event.stopPropagation();
+    if (this.coursePreviewCloseTimer !== undefined) {
+      clearTimeout(this.coursePreviewCloseTimer);
+      this.coursePreviewCloseTimer = undefined;
+    }
+    this.coursePreviewClosing.set(false);
+
+    if (course.id < 0) {
+      this.presentCoursePreview(this.syntheticCourseDetail(course));
+      return;
+    }
+
+    this.coursesService.getCourse(course.id).subscribe({
+      next: detail => this.presentCoursePreview(detail)
+    });
+  }
+
+  private presentCoursePreview(detail: CourseDetail): void {
+    this.coursePreviewDetail.set(detail);
+    this.coursePreviewOpen.set(false);
+    document.body.style.overflow = 'hidden';
+
+    // Let the browser paint the mounted sheet in its closed position first.
+    // Activating the open state in the next frame makes the transform animate
+    // instead of appearing at its final position on insertion.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (this.coursePreviewDetail() === detail) {
+        this.coursePreviewOpen.set(true);
+      }
+    }));
+  }
+
+  protected closeCoursePreview(): void {
+    if (!this.coursePreviewDetail()) return;
+    this.coursePreviewClosing.set(true);
+    this.coursePreviewOpen.set(false);
+    this.coursePreviewCloseTimer = setTimeout(() => {
+      this.coursePreviewDetail.set(null);
+      this.coursePreviewClosing.set(false);
+      this.coursePreviewCloseTimer = undefined;
+      document.body.style.overflow = '';
+    }, 650);
+  }
+
+  protected openPreviewLesson(course: CourseDetail, lesson: Lesson, event: Event): void {
+    event.stopPropagation();
+    this.closeCoursePreview();
+    this.router.navigate(['/courses', course.id, 'lessons', lesson.id]);
+  }
+
+  protected coursePreviewImageUrl(detail: CourseDetail): string {
+    return detail.image
+      ?? detail.thumbnail
+      ?? `https://picsum.photos/seed/tcnexus-preview-${detail.id}/1200/675`;
+  }
+
+  protected courseTypeLabelForDetail(detail: CourseDetail): string {
+    return detail.course_types.includes('Platform') ? 'Platform Course' : 'Trading Course';
+  }
+
+  private syntheticCourseDetail(course: Course): CourseDetail {
+    const lessons: Lesson[] = Array.from({ length: 4 }, (_, index) => ({
+      id: course.id * 100 - index,
+      title: `${course.title} · Lesson ${index + 1}`,
+      order: index + 1,
+      tier: index === 0 ? 'free' : 'registered',
+      course_id: course.id,
+      thumbnail: this.thumbnailUrl(course, index),
+      locked: false,
+      excerpt: 'A guided platform lesson for this course.',
+      video_url: null,
+    }));
+
+    return {
+      id: course.id,
+      title: course.title,
+      content: course.excerpt,
+      thumbnail: course.thumbnail,
+      image: course.image,
+      course_types: course.course_types,
+      overview_link: course.overview_link,
+      instructor: null,
+      guest: null,
+      lessons,
+    };
   }
 
   /** Starts playback at the course's first lesson instead of opening the detail page. */
@@ -310,12 +577,137 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
     requestAnimationFrame(() => requestAnimationFrame(() => this.lessonsRevealed.set(true)));
   }
 
-  protected openOverview(course: Course): void {
-    if (course.overview_link) {
-      window.open(course.overview_link, '_blank', 'noopener');
-      return;
+  protected openOverview(_course: Course): void {
+    const overviewUrl = COURSE_OVERVIEW_PDF_URL;
+    this.overviewUrl.set(overviewUrl);
+    this.overviewOpen.set(false);
+    this.overviewClosing.set(false);
+    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (this.overviewUrl() === overviewUrl) {
+        this.overviewOpen.set(true);
+        void this.renderOverviewPdf();
+      }
+    }));
+  }
+
+  protected closeOverview(): void {
+    if (!this.overviewUrl()) return;
+    this.overviewClosing.set(true);
+    this.overviewOpen.set(false);
+    this.overviewCloseTimer = setTimeout(() => {
+      this.clearOverviewPdf();
+      this.overviewUrl.set(null);
+      this.overviewClosing.set(false);
+      this.overviewCloseTimer = undefined;
+      document.body.style.overflow = '';
+    }, 650);
+  }
+
+  private async renderOverviewPdf(): Promise<void> {
+    const viewer = this.overviewViewer()?.nativeElement;
+    if (!viewer) return;
+
+    const token = ++this.overviewRenderToken;
+    this.overviewPdfLoading.set(true);
+    viewer.replaceChildren();
+
+    try {
+      const { getDocument, GlobalWorkerOptions, TextLayer } = await import('pdfjs-dist');
+      GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+      const loadingTask = getDocument({ url: COURSE_OVERVIEW_PDF_URL });
+      this.overviewLoadingTask = loadingTask;
+      const pdf = await loadingTask.promise;
+      if (token !== this.overviewRenderToken) {
+        await loadingTask.destroy();
+        return;
+      }
+      this.overviewPdf = pdf;
+
+      for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+        if (token !== this.overviewRenderToken) return;
+        const page = await pdf.getPage(pageNumber);
+        const baseViewport = page.getViewport({ scale: 1 });
+        const innerWidth = Math.max(320, (viewer.clientWidth || 900) - 28);
+        const scale = Math.min(1.45, Math.max(0.75, innerWidth / baseViewport.width));
+        const viewport = page.getViewport({ scale });
+        const deviceScale = Math.min(window.devicePixelRatio || 1, 2);
+
+        const pageElement = document.createElement('article');
+        pageElement.className = 'style-overview-pdf-page';
+        pageElement.style.width = `${viewport.width}px`;
+        pageElement.style.height = `${viewport.height}px`;
+        pageElement.setAttribute('aria-label', `Course overview page ${pageNumber}`);
+
+        const canvas = document.createElement('canvas');
+        canvas.className = 'style-overview-pdf-canvas';
+        canvas.width = Math.ceil(viewport.width * deviceScale);
+        canvas.height = Math.ceil(viewport.height * deviceScale);
+        canvas.style.width = `${viewport.width}px`;
+        canvas.style.height = `${viewport.height}px`;
+        const context = canvas.getContext('2d');
+        if (!context) continue;
+        pageElement.append(canvas);
+
+        const textLayerElement = document.createElement('div');
+        textLayerElement.className = 'style-overview-pdf-text-layer textLayer';
+        textLayerElement.style.setProperty('--total-scale-factor', String(scale));
+        pageElement.append(textLayerElement);
+
+        const linkLayerElement = document.createElement('div');
+        linkLayerElement.className = 'style-overview-pdf-link-layer annotationLayer';
+        pageElement.append(linkLayerElement);
+        viewer.append(pageElement);
+
+        await page.render({
+          canvasContext: context,
+          canvas,
+          viewport,
+          transform: [deviceScale, 0, 0, deviceScale, 0, 0],
+        }).promise;
+
+        const textContent = await page.getTextContent();
+        const textLayer = new TextLayer({
+          textContentSource: textContent,
+          container: textLayerElement,
+          viewport,
+        });
+        await textLayer.render();
+
+        const annotations = await page.getAnnotations({ intent: 'display' });
+        for (const annotation of annotations) {
+          const url = annotation.url ?? annotation.unsafeUrl;
+          if (!url || !annotation.rect) continue;
+          const [x1, y1] = viewport.convertToViewportPoint(annotation.rect[0], annotation.rect[1]);
+          const [x2, y2] = viewport.convertToViewportPoint(annotation.rect[2], annotation.rect[3]);
+          const link = document.createElement('a');
+          link.className = 'style-overview-pdf-link';
+          link.href = url;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          link.setAttribute('aria-label', 'Open linked resource');
+          link.style.left = `${Math.min(x1, x2)}px`;
+          link.style.top = `${Math.min(y1, y2)}px`;
+          link.style.width = `${Math.abs(x2 - x1)}px`;
+          link.style.height = `${Math.abs(y2 - y1)}px`;
+          linkLayerElement.append(link);
+        }
+      }
+      this.overviewPdfLoading.set(false);
+    } catch (error) {
+      console.error('Unable to render course overview PDF', error);
+      this.overviewPdfLoading.set(false);
     }
-    this.navigateToCourse(course);
+  }
+
+  private clearOverviewPdf(): void {
+    this.overviewRenderToken += 1;
+    void this.overviewLoadingTask?.destroy();
+    this.overviewLoadingTask = undefined;
+    void this.overviewPdf?.cleanup();
+    this.overviewPdf = undefined;
+    this.overviewViewer()?.nativeElement.replaceChildren();
+    this.overviewPdfLoading.set(true);
   }
 
   private navigateToCourse(course: Course, rect?: DOMRect): void {
@@ -327,7 +719,6 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
     const featuredId = this.featured()?.id;
     if (featuredId !== undefined) {
       this.catalogScroll.save('animation-style-2-featured', featuredId);
-      this.writeSessionNumber(STYLE2_FEATURED_STORAGE_KEY, featuredId);
     }
     if (rect) {
       this.transition.stage(
@@ -373,6 +764,22 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
     } catch {
       // Session storage can be unavailable in privacy-restricted browsers;
       // the in-memory CatalogScrollService remains the fallback.
+    }
+  }
+
+  private readSessionValue(key: string): string | undefined {
+    try {
+      return sessionStorage.getItem(key) ?? undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private writeSessionValue(key: string, value: string): void {
+    try {
+      sessionStorage.setItem(key, value);
+    } catch {
+      // Session storage can be unavailable in privacy-restricted browsers.
     }
   }
 
@@ -422,6 +829,18 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
 
   @HostListener('document:keydown.escape')
   protected onEscape(): void {
+    if (this.trailerOpen()) {
+      this.closeTrailer();
+      return;
+    }
+    if (this.overviewUrl()) {
+      this.closeOverview();
+      return;
+    }
+    if (this.coursePreviewDetail()) {
+      this.closeCoursePreview();
+      return;
+    }
     if (this.lessonsOpen()) this.closeLessons();
   }
 
@@ -457,7 +876,7 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
 
   protected onCardEnter(event: MouseEvent, kind: CarouselKind = 'trading'): void {
     const card = event.currentTarget as HTMLElement;
-    const viewport = (kind === 'platform' ? this.platformTrack() : this.track())?.nativeElement.getBoundingClientRect();
+    const viewport = (kind === 'shows' ? this.showsTrack() : kind === 'platform' ? this.platformTrack() : this.track())?.nativeElement.getBoundingClientRect();
     if (!viewport) return;
     card.classList.toggle('style-card--edge-left', card.getBoundingClientRect().left <= viewport.left + 64);
     card.classList.toggle('style-card--edge-right', card.getBoundingClientRect().right >= viewport.right - 64);
@@ -481,7 +900,6 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
   }
 
   protected onCardLeave(): void {
-    this.cardDescriptionCourseId.set(null);
     if (this.expandedCardCheck !== undefined) {
       clearTimeout(this.expandedCardCheck);
       this.expandedCardCheck = undefined;
@@ -491,20 +909,20 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
   }
 
   private measureEdges(kind: CarouselKind = 'trading'): void {
-    const track = (kind === 'platform' ? this.platformTrack() : this.track())?.nativeElement;
+    const track = (kind === 'shows' ? this.showsTrack() : kind === 'platform' ? this.platformTrack() : this.track())?.nativeElement;
     if (!track) return;
     const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
     const edges = {
       atStart: track.scrollLeft <= 1,
       atEnd: maxScroll <= 1 || track.scrollLeft >= maxScroll - 1,
     };
-    (kind === 'platform' ? this.platformEdges : this.edges).set(edges);
+    (kind === 'shows' ? this.showsEdges : kind === 'platform' ? this.platformEdges : this.edges).set(edges);
     this.updateArtworkHeight(kind);
   }
 
   private updateArtworkHeight(kind: CarouselKind = 'trading'): void {
-    const carousel = (kind === 'platform' ? this.platformCarousel() : this.carousel())?.nativeElement;
-    const track = (kind === 'platform' ? this.platformTrack() : this.track())?.nativeElement;
+    const carousel = (kind === 'shows' ? this.showsCarousel() : kind === 'platform' ? this.platformCarousel() : this.carousel())?.nativeElement;
+    const track = (kind === 'shows' ? this.showsTrack() : kind === 'platform' ? this.platformTrack() : this.track())?.nativeElement;
     const art = track?.querySelector<HTMLElement>('.style-card__art');
     if (carousel && art) {
       // Use layout height rather than the transformed visual bounds. The
