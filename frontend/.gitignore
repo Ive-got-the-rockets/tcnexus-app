@@ -45,3 +45,6 @@ Thumbs.db
 
 # Local test media (large binary, not for source control)
 /public/video/
+.deploy-hold/
+.deploy-static/
+.deploy-static-source/
