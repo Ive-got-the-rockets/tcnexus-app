@@ -1,0 +1,575 @@
+@if (returnOverlay(); as overlay) {
+  <div
+    class="style-return-overlay"
+    [class.style-return-overlay--settled]="returnSettled()"
+    [style.top.px]="returnRect()?.top"
+    [style.left.px]="returnRect()?.left"
+    [style.width.px]="returnRect()?.width"
+    [style.height.px]="returnRect()?.height"
+    (transitionend)="onReturnTransitionEnd($event)"
+  >
+    <img [src]="overlay.thumbnailUrl" alt="" />
+  </div>
+}
+
+<main
+  class="style-page"
+  [class.style-page--leaving]="leaving()"
+  [class.style-page--returning]="returning()"
+  [class.style-page--return-revealed]="returnRevealed()"
+>
+  @if (featuredPaginationItems().length > 1) {
+    <nav class="style-featured-pagination" aria-label="Featured content">
+      @for (entry of featuredPaginationItems(); track entry.item.id) {
+        <button
+          type="button"
+          class="style-featured-pagination__item"
+          [class.style-featured-pagination__item--active]="featuredIndex() === entry.index"
+          [style.--featured-distance]="entry.distance"
+          [attr.aria-label]="'Featured content: ' + entry.item.title"
+          [attr.aria-current]="featuredIndex() === entry.index ? 'true' : null"
+        (click)="selectFeatured(entry.distance)"
+        ></button>
+      }
+    </nav>
+  }
+
+  @if (featured(); as course) {
+    <div class="style-featured__background" aria-hidden="true">
+      <img [src]="featuredImageUrl(course)" alt="" (error)="onFeaturedImageError($event)" />
+    </div>
+    <section class="style-featured" aria-labelledby="style-featured-title">
+      <p class="style-page__eyebrow">{{ featuredLabel(course) }}</p>
+      <div class="style-featured__heading">
+        <h1 id="style-featured-title" class="style-featured__title">{{ course.title }}</h1>
+      </div>
+      <div class="style-featured__details style-featured__details--expanded">
+        <p class="style-featured__description">{{ course.excerpt }}</p>
+        @if (isShow(course)) {
+          <div class="style-featured__person style-featured__characters">
+            <p class="style-featured__person-label">Characters</p>
+            <div class="style-featured__person-row style-featured__character-row">
+              @for (character of featuredCharacters.slice(0, 3); track character.id) {
+                <div class="style-featured__character">
+                  <img class="style-featured__person-avatar" [src]="personPhotoUrl(character)" [alt]="character.name" />
+                  <span>{{ character.name }}</span>
+                </div>
+              }
+              <button type="button" class="style-featured__character-more" aria-label="View all characters" (click)="openCharacters()">
+                <span>View</span>
+                <span>All</span>
+              </button>
+            </div>
+          </div>
+        }
+        @if (featuredDetail(); as detail) {
+          @if (detail.instructor; as instructor) {
+            <div class="style-featured__person">
+              <p class="style-featured__person-label">Instructor</p>
+              <div class="style-featured__person-row">
+                <img class="style-featured__person-avatar" [src]="personPhotoUrl(instructor)" [alt]="instructor.name" />
+                <span>{{ instructor.name }}</span>
+              </div>
+            </div>
+          }
+          @if (detail.guest; as guest) {
+            <div class="style-featured__person">
+              <p class="style-featured__person-label">Guest</p>
+              <div class="style-featured__person-row">
+                <img class="style-featured__person-avatar" [src]="personPhotoUrl(guest)" [alt]="guest.name" />
+                <span>{{ guest.name }}</span>
+              </div>
+            </div>
+          }
+        }
+      </div>
+      <div class="style-featured__meta">
+        <div class="style-featured__meta-primary">
+          <span class="style-featured__meta-badge">{{ courseTypeLabel(course) }}</span>
+          <span class="style-featured__meta-dot" aria-hidden="true"></span>
+          <span class="style-featured__meta-badge">{{ course.lesson_count }} {{ isShow(course) ? 'episodes' : 'lessons' }}</span>
+        </div>
+        <div class="style-featured__meta-levels">
+          @for (level of courseLevelBadges(course); track level) {
+            <span class="style-featured__level-badge">{{ level }}</span>
+          }
+        </div>
+      </div>
+      <div class="style-featured__actions">
+        <button type="button" class="style-featured__start" (click)="startWatching(course)">
+          <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true">
+            <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
+          </svg>
+          <span class="style-featured__start-label">Start Watching</span>
+        </button>
+        @if (featured()?.trailer_link) {
+          <button type="button" class="style-featured__trailer" aria-label="Watch trailer" (click)="openTrailer()">
+            <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true">
+              <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
+            </svg>
+            <span>Trailer</span>
+          </button>
+        }
+        <button
+          type="button"
+          class="style-featured__overview"
+          [attr.aria-expanded]="lessonsOpen()"
+          (click)="toggleLessons(course)"
+        >{{ isShow(course) ? 'Episode List' : 'Lessons List' }}</button>
+        @if (!isShow(course)) {
+          <button type="button" class="style-featured__overview" (click)="openOverview(course)">Course Overview</button>
+        }
+        <div
+          class="style-featured__language"
+          [class.style-featured__language--open]="languageMenuOpen()"
+          (mouseleave)="closeLanguageMenu()"
+        >
+          <button
+            type="button"
+            class="style-featured__language-trigger"
+            [attr.aria-expanded]="languageMenuOpen()"
+            aria-haspopup="listbox"
+            (click)="toggleLanguageMenu()"
+          >
+            <span>{{ selectedLanguageLabel(course) }}</span>
+            <svg class="style-featured__language-icon" viewBox="0 0 18 18" aria-hidden="true">
+              <path d="M3 5h12M3 9h12M3 13h12" />
+            </svg>
+          </button>
+          @if (languageMenuOpen()) {
+            <div class="style-featured__language-menu" role="listbox" aria-label="Course language">
+              @for (language of courseLanguages(course); track language.slug) {
+                <button
+                  type="button"
+                  role="option"
+                  [attr.aria-selected]="selectedLanguage() === language.slug"
+                  (click)="chooseLanguage(language)"
+                >{{ language.label }}</button>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+  }
+
+  @if (carouselShows().length > 0) {
+    <section class="style-row style-row--shows" aria-labelledby="shows-title">
+      <div class="style-carousel" #showsCarousel [class.style-carousel--at-start]="showsEdges().atStart" [class.style-carousel--at-end]="showsEdges().atEnd">
+        <h2 id="shows-title" class="style-row__title">Shows</h2>
+        @if (carouselShows().length > 0) {
+          <div class="style-carousel__pages" aria-label="Shows pages">
+            @for (page of pageRange(pageCount('shows')); track page) {
+              <button type="button" class="style-carousel__page" [class.style-carousel__page--active]="pageIndex.shows() === page" [attr.aria-label]="'Go to Shows page ' + (page + 1)" [attr.aria-current]="pageIndex.shows() === page ? 'page' : null" (click)="goToPage('shows', page)"></button>
+            }
+          </div>
+        }
+        @if (!showsEdges().atStart) {
+          <button type="button" class="style-carousel__arrow style-carousel__arrow--prev" aria-label="Scroll shows left" (click)="scroll(-1, 'shows')">‹</button>
+        }
+        <div class="style-carousel__viewport">
+          <div class="style-carousel__track" #showsTrack [appRowScroll]="'animation-style-2-shows'">
+            @for (show of carouselShows(); track show.id; let index = $index) {
+              <article
+                class="style-card"
+                [attr.data-course-id]="show.id"
+                role="link"
+                tabindex="0"
+                (mouseenter)="onCardEnter($event, 'shows')"
+                (mouseleave)="onCardLeave()"
+                (click)="openCourse(show, $event)"
+                (keydown.enter)="openCourse(show, $event)"
+                (keydown.space)="openCourse(show, $event); $event.preventDefault()"
+              >
+                <div class="style-card__art" title="View Show">
+                  <img [src]="thumbnailUrl(show, index)" [alt]="show.title" loading="lazy" (error)="onImageError($event)" />
+                </div>
+                <div class="style-card__details">
+                  <div class="style-card__actions">
+                    <button type="button" class="style-card__play" aria-label="Start Watching" title="Start Watching" (click)="playCourse(show, $event)">
+                      <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true"><path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" /></svg>
+                    </button>
+                    @if (show.trailer_link) {
+                      <button type="button" class="style-card__trailer" aria-label="Watch trailer" title="Watch trailer" (click)="openTrailer(show, $event)">
+                        <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true"><path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" /></svg>
+                      </button>
+                    }
+                    <button type="button" class="style-card__list" aria-label="View Show" title="View Show" (click)="openCoursePreview(show, $event)">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="1.5" /><circle cx="6" cy="12" r="1.5" /><circle cx="6" cy="18" r="1.5" /><path d="M11 6h8M11 12h8M11 18h8" /></svg>
+                    </button>
+                  </div>
+                  <div class="style-card__title-row"><h3>{{ show.title }}</h3></div>
+                  <div class="style-card__meta">
+                    <div class="style-card__meta-primary">
+                      <span class="style-card__meta-badge">Show</span>
+                      <span class="style-card__meta-dot" aria-hidden="true"></span>
+                      <span class="style-card__meta-badge">{{ show.lesson_count }} episodes</span>
+                    </div>
+                    <div class="style-card__meta-levels">
+                      @for (level of courseLevelBadges(show); track level) { <span class="style-card__level-badge">{{ level }}</span> }
+                    </div>
+                  </div>
+                </div>
+              </article>
+            }
+          </div>
+        </div>
+        @if (!showsEdges().atEnd) {
+          <button type="button" class="style-carousel__arrow style-carousel__arrow--next" aria-label="Scroll shows right" (click)="scroll(1, 'shows')">›</button>
+        }
+      </div>
+    </section>
+  }
+
+  <section class="style-row style-row--trading" aria-label="Courses">
+    <div class="style-carousel" #carousel [class.style-carousel--at-start]="edges().atStart" [class.style-carousel--at-end]="edges().atEnd">
+      <h2 class="style-row__title">Trading Courses</h2>
+      @if (carouselCourses().length > 0) {
+        <div class="style-carousel__pages" aria-label="Trading course pages">
+          @for (page of pageRange(pageCount('trading')); track page) {
+            <button type="button" class="style-carousel__page" [class.style-carousel__page--active]="pageIndex.trading() === page" [attr.aria-label]="'Go to Trading Courses page ' + (page + 1)" [attr.aria-current]="pageIndex.trading() === page ? 'page' : null" (click)="goToPage('trading', page)"></button>
+          }
+        </div>
+      }
+      @if (!edges().atStart) {
+        <button type="button" class="style-carousel__arrow style-carousel__arrow--prev" aria-label="Scroll left" (click)="scroll(-1)">‹</button>
+      }
+
+      <div class="style-carousel__viewport">
+        <div class="style-carousel__track" #track [appRowScroll]="'animation-style-2'">
+          @for (course of carouselCourses(); track course.id; let index = $index) {
+            <article
+              class="style-card"
+              [attr.data-course-id]="course.id"
+              role="link"
+              tabindex="0"
+              (mouseenter)="onCardEnter($event)"
+              (mouseleave)="onCardLeave()"
+              (click)="openCourse(course, $event)"
+              (keydown.enter)="openCourse(course, $event)"
+              (keydown.space)="openCourse(course, $event); $event.preventDefault()"
+            >
+              <div class="style-card__art" title="View Course">
+                <img [src]="thumbnailUrl(course, index)" [alt]="course.title" loading="lazy" (error)="onImageError($event)" />
+              </div>
+              <div class="style-card__details">
+                <div class="style-card__actions">
+                  <button type="button" class="style-card__play" aria-label="Start Watching" title="Start Watching" (click)="playCourse(course, $event)">
+                    <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true">
+                      <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
+                    </svg>
+                  </button>
+                  @if (course.trailer_link) {
+                    <button type="button" class="style-card__trailer" aria-label="Watch trailer" title="Watch trailer" (click)="openTrailer(course, $event)">
+                      <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true">
+                        <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
+                      </svg>
+                    </button>
+                  }
+                  <button type="button" class="style-card__list" aria-label="View Course" title="View Course" (click)="openCoursePreview(course, $event)">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <circle cx="6" cy="6" r="1.5" />
+                      <circle cx="6" cy="12" r="1.5" />
+                      <circle cx="6" cy="18" r="1.5" />
+                      <path d="M11 6h8M11 12h8M11 18h8" />
+                    </svg>
+                  </button>
+                </div>
+                <div class="style-card__title-row">
+                  <h3>{{ course.title }}</h3>
+                </div>
+                <div class="style-card__meta">
+                  <div class="style-card__meta-primary">
+                    <span class="style-card__meta-badge">{{ course.course_types[0] || 'Trading Course' }}</span>
+                    <span class="style-card__meta-dot" aria-hidden="true"></span>
+                    <span class="style-card__meta-badge">{{ course.lesson_count }} lessons</span>
+                  </div>
+                  <div class="style-card__meta-levels">
+                    @for (level of courseLevelBadges(course); track level) {
+                      <span class="style-card__level-badge">{{ level }}</span>
+                    }
+                  </div>
+                </div>
+              </div>
+            </article>
+          }
+        </div>
+      </div>
+
+      @if (!edges().atEnd) {
+        <button type="button" class="style-carousel__arrow style-carousel__arrow--next" aria-label="Scroll right" (click)="scroll(1)">›</button>
+      }
+    </div>
+  </section>
+
+  <section class="style-row style-row--platform" aria-labelledby="platform-courses-title">
+    <div class="style-carousel" #platformCarousel [class.style-carousel--at-start]="platformEdges().atStart" [class.style-carousel--at-end]="platformEdges().atEnd">
+      <h2 id="platform-courses-title" class="style-row__title">Platform Courses</h2>
+      @if (platformCourses.length > 0) {
+        <div class="style-carousel__pages" aria-label="Platform course pages">
+          @for (page of pageRange(pageCount('platform')); track page) {
+            <button type="button" class="style-carousel__page" [class.style-carousel__page--active]="pageIndex.platform() === page" [attr.aria-label]="'Go to Platform Courses page ' + (page + 1)" [attr.aria-current]="pageIndex.platform() === page ? 'page' : null" (click)="goToPage('platform', page)"></button>
+          }
+        </div>
+      }
+      @if (!platformEdges().atStart) {
+        <button type="button" class="style-carousel__arrow style-carousel__arrow--prev" aria-label="Scroll left" (click)="scroll(-1, 'platform')">‹</button>
+      }
+
+      <div class="style-carousel__viewport">
+        <div class="style-carousel__track" #platformTrack [appRowScroll]="'animation-style-2-platform'">
+          @for (course of platformCourses; track course.id; let index = $index) {
+            <article
+              class="style-card"
+              [attr.data-course-id]="course.id"
+              (mouseenter)="onCardEnter($event, 'platform')"
+              (mouseleave)="onCardLeave()"
+            >
+              <div class="style-card__art" title="View Course">
+                <img [src]="thumbnailUrl(course, index)" [alt]="course.title" loading="lazy" (error)="onImageError($event)" />
+              </div>
+              <div class="style-card__details">
+                <div class="style-card__actions">
+                  <button type="button" class="style-card__play" aria-label="Start Watching" title="Start Watching" (click)="playCourse(course, $event)">
+                    <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true">
+                      <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
+                    </svg>
+                  </button>
+                  @if (course.trailer_link) {
+                    <button type="button" class="style-card__trailer" aria-label="Watch trailer" title="Watch trailer" (click)="openTrailer(course, $event)">
+                      <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true">
+                        <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
+                      </svg>
+                    </button>
+                  }
+                  <button type="button" class="style-card__list" aria-label="View Course" title="View Course" (click)="openCoursePreview(course, $event)">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <circle cx="6" cy="6" r="1.5" />
+                      <circle cx="6" cy="12" r="1.5" />
+                      <circle cx="6" cy="18" r="1.5" />
+                      <path d="M11 6h8M11 12h8M11 18h8" />
+                    </svg>
+                  </button>
+                </div>
+                <div class="style-card__title-row">
+                  <h3>{{ course.title }}</h3>
+                </div>
+                <div class="style-card__meta">
+                  <div class="style-card__meta-primary">
+                    <span class="style-card__meta-badge">Platform Course</span>
+                    <span class="style-card__meta-dot" aria-hidden="true"></span>
+                    <span class="style-card__meta-badge">{{ course.lesson_count }} lessons</span>
+                  </div>
+                  <div class="style-card__meta-levels">
+                    @for (level of courseLevelBadges(course); track level) {
+                      <span class="style-card__level-badge">{{ level }}</span>
+                    }
+                  </div>
+                </div>
+              </div>
+            </article>
+          }
+        </div>
+      </div>
+
+      @if (!platformEdges().atEnd) {
+        <button type="button" class="style-carousel__arrow style-carousel__arrow--next" aria-label="Scroll right" (click)="scroll(1, 'platform')">›</button>
+      }
+    </div>
+  </section>
+</main>
+
+@if (charactersOpen()) {
+  <div class="style-characters-modal-backdrop" role="presentation" (click)="closeCharacters()">
+    <section class="style-characters-modal" role="dialog" aria-modal="true" aria-labelledby="style-characters-title" (click)="$event.stopPropagation()">
+      <button type="button" class="style-characters-modal__close" aria-label="Close characters" (click)="closeCharacters()"><span aria-hidden="true">×</span></button>
+      <p class="style-page__eyebrow">The Primer</p>
+      <h2 id="style-characters-title">Characters</h2>
+      <div class="style-characters-modal__grid">
+        @for (character of featuredCharacters; track character.id) {
+          <div class="style-characters-modal__character">
+            <img [src]="personPhotoUrl(character)" [alt]="character.name" />
+            <span>{{ character.name }}</span>
+          </div>
+        }
+      </div>
+    </section>
+  </div>
+}
+
+@if (trailerOpen() || trailerClosing()) {
+  <div
+    class="style-trailer-backdrop"
+    [class.style-trailer-backdrop--open]="trailerOpen()"
+    [class.style-trailer-backdrop--closing]="trailerClosing()"
+    role="presentation"
+    (click)="closeTrailer()"
+  >
+    <section
+      class="style-trailer-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="style-trailer-title"
+      (click)="$event.stopPropagation()"
+    >
+      <button type="button" class="style-trailer-modal__close" aria-label="Close trailer" (click)="closeTrailer()">
+        <span aria-hidden="true">×</span>
+      </button>
+      @if (trailerVideoUrl(); as videoUrl) {
+        <video class="style-trailer-modal__video" [src]="videoUrl" autoplay controls playsinline></video>
+      } @else if (trailerEmbedUrl(); as embedUrl) {
+        <iframe
+          class="style-trailer-modal__video"
+          [src]="embedUrl"
+          title="{{ trailerCourse()?.title ?? 'TC Nexus' }} trailer"
+          allow="autoplay; fullscreen; picture-in-picture"
+          allowfullscreen
+        ></iframe>
+      }
+    </section>
+  </div>
+}
+
+<button
+  type="button"
+  class="episode-backdrop"
+  [class.episode-backdrop--open]="lessonsOpen()"
+  aria-label="Close lessons list"
+  (click)="closeLessons()"
+></button>
+
+@if (coursePreviewDetail(); as detail) {
+  <div
+    class="style-course-modal-backdrop"
+    [class.style-course-modal-backdrop--open]="coursePreviewOpen()"
+    [class.style-course-modal-backdrop--closing]="coursePreviewClosing()"
+    [attr.aria-hidden]="coursePreviewOpen() ? null : 'true'"
+    (click)="closeCoursePreview()"
+  >
+    <section
+      class="style-course-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="style-course-modal-title"
+      (click)="$event.stopPropagation()"
+    >
+      <button type="button" class="style-course-modal__close" aria-label="Close course preview" (click)="closeCoursePreview()"><span aria-hidden="true">×</span></button>
+      <div class="style-course-modal__hero">
+        <img [src]="coursePreviewImageUrl(detail)" [alt]="detail.title" (error)="onImageError($event)" />
+      </div>
+
+      <div class="style-course-modal__content">
+        <div class="style-course-modal__meta">
+          <span class="style-course-modal__meta-badge">{{ courseTypeLabelForDetail(detail) }}</span>
+          <span class="style-course-modal__meta-dot" aria-hidden="true">•</span>
+          <span class="style-course-modal__meta-badge">{{ detail.lessons.length }} Episodes</span>
+          @for (level of courseLevelBadges(detail); track level) {
+            <span class="style-course-modal__meta-dot" aria-hidden="true">•</span>
+            <span class="style-course-modal__level-badge">{{ level }}</span>
+          }
+        </div>
+        <h2 id="style-course-modal-title" class="style-course-modal__title">{{ detail.title }}</h2>
+        <div class="style-course-modal__description" [innerHTML]="detail.content"></div>
+
+        <div class="style-course-modal__people">
+          @if (detail.instructor; as instructor) {
+            <div class="style-course-modal__person">
+              <span class="style-course-modal__person-label">Instructor</span>
+              <div class="style-course-modal__person-row">
+                <img [src]="personPhotoUrl(instructor)" [alt]="instructor.name" />
+                <span>{{ instructor.name }}</span>
+              </div>
+            </div>
+          }
+          @if (detail.guest; as guest) {
+            <div class="style-course-modal__person">
+              <span class="style-course-modal__person-label">Guest</span>
+              <div class="style-course-modal__person-row">
+                <img [src]="personPhotoUrl(guest)" [alt]="guest.name" />
+                <span>{{ guest.name }}</span>
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="style-course-modal__lessons-heading">
+          <h3>Episodes</h3>
+          <span>{{ detail.lessons.length }} lessons</span>
+        </div>
+        <ol class="style-course-modal__lesson-list">
+          @for (lesson of detail.lessons; track lesson.id) {
+            <li
+              class="style-course-modal__lesson"
+              [class.style-course-modal__lesson--locked]="lesson.locked"
+              (click)="openPreviewLesson(detail, lesson, $event)"
+            >
+              <span class="style-course-modal__lesson-order">{{ lesson.order }}</span>
+              <span class="style-course-modal__lesson-thumb">
+                <img [src]="lessonThumbnailUrl(lesson)" alt="" (error)="onImageError($event)" />
+              </span>
+              <span class="style-course-modal__lesson-info">
+                <span class="style-course-modal__lesson-title">{{ lesson.title }}</span>
+                <span class="style-course-modal__lesson-excerpt">{{ lesson.excerpt }}</span>
+              </span>
+            </li>
+          }
+        </ol>
+      </div>
+    </section>
+  </div>
+}
+
+@if (overviewUrl(); as url) {
+  <div
+    class="style-course-modal-backdrop"
+    [class.style-course-modal-backdrop--open]="overviewOpen()"
+    [class.style-course-modal-backdrop--closing]="overviewClosing()"
+    [attr.aria-hidden]="overviewOpen() ? null : 'true'"
+    (click)="closeOverview()"
+  >
+    <section
+      class="style-course-modal style-overview-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="style-overview-modal-title"
+      (click)="$event.stopPropagation()"
+    >
+      <button type="button" class="style-course-modal__close" aria-label="Close course overview" (click)="closeOverview()"><span aria-hidden="true">×</span></button>
+        <div #overviewViewer class="style-overview-modal__viewer" aria-label="Course overview document">
+        @if (overviewPdfLoading()) {
+          <p class="style-overview-modal__loading">Loading course overview…</p>
+        }
+      </div>
+      <a class="style-overview-modal__fallback" [href]="url" target="_blank" rel="noopener noreferrer">
+        Open overview in a new tab
+      </a>
+    </section>
+  </div>
+}
+
+<aside class="episode-panel" [class.episode-panel--open]="lessonsOpen()" aria-label="Episodes list">
+  <div class="episode-panel__header" [class.episode-panel__header--revealed]="lessonsRevealed()">
+    <button type="button" class="episode-panel__close" aria-label="Close episodes list" (click)="closeLessons()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M6 6l12 12M18 6 6 18"></path>
+      </svg>
+    </button>
+    <h2 class="episode-panel__title">Episodes</h2>
+  </div>
+  @if (featuredDetail(); as detail) {
+    <ol class="lesson-list" [class.lesson-list--revealed]="lessonsRevealed()">
+      @for (lesson of detail.lessons; track lesson.id; let index = $index) {
+        <li class="lesson-row" [style.transition-delay]="(index * 35) + 'ms'" (click)="openLesson(lesson)">
+          <span class="lesson-row__order">{{ lesson.order }}</span>
+          <span class="lesson-row__thumb"><img [src]="lessonThumbnailUrl(lesson)" alt="" /></span>
+          <div class="lesson-row__info">
+            <span class="lesson-row__title">{{ lesson.title }}</span>
+            <p class="lesson-row__excerpt">{{ lesson.excerpt }}</p>
+          </div>
+        </li>
+      }
+    </ol>
+  } @else if (lessonsOpen()) {
+    <p class="style-lessons-panel__loading">Loading lessons…</p>
+  }
+</aside>

@@ -10,7 +10,7 @@
   align-items: center;
   gap: 1.5rem;
   padding-inline: clamp(1.25rem, 4vw, 3rem);
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.45);
   transform: translateY(0);
   transition: transform 0.3s ease;
 }
@@ -170,13 +170,28 @@
   }
 }
 
+:host {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+}
+
+:host > :not(.site-footer) {
+  flex: 1 0 auto;
+}
+
 .site-footer {
-  height: 80px;
+  position: relative;
+  z-index: 0;
+  margin: 0;
+  height: auto;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1.5rem;
-  padding-inline: clamp(1.25rem, 4vw, 3rem);
+  padding: 15px 20px;
+  box-sizing: border-box;
   border-top: 1px solid var(--rule);
 }
 

@@ -25,6 +25,8 @@ export interface Course {
   thumbnail: string | null;
   /** The course's own "Course Image" (Course Builder's Media tab) — much higher-res than thumbnail, used for the featured hero banner. */
   image: string | null;
+  /** Desktop landing-page background image (8:3), when configured in the builder. */
+  landing_background?: string | null;
   course_types: string[];
   lesson_count: number;
   overview_link: string | null;
@@ -47,6 +49,7 @@ export interface Lesson {
   locked: boolean;
   excerpt: string;
   content?: string;
+  guests?: Person[];
   /** A Vimeo URL, or just the bare id (optionally "id/hash" for an unlisted share link). */
   video_url: string | null;
 }
@@ -64,6 +67,8 @@ export interface CourseDetail {
   thumbnail: string | null;
   /** The course's own "Course Image" (Course Builder's Media tab) — the main image for this page, distinct from thumbnail (used for catalog cards). */
   image: string | null;
+  /** Desktop landing-page background image (8:3), when configured in the builder. */
+  landing_background?: string | null;
   course_types: string[];
   overview_link: string | null;
   trailer_link?: string | null;
