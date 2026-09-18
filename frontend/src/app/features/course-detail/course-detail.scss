@@ -74,11 +74,11 @@
   top: 0;
   min-height: 92vh;
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   background-color: var(--ink-raised);
   background-size: cover;
   background-position: center top;
-  padding: 0 clamp(1.25rem, 5vw, 4rem) clamp(2.5rem, 6vw, 4rem);
+  padding: 300px clamp(1.25rem, 5vw, 4rem) clamp(2.5rem, 6vw, 4rem);
 }
 
 .detail__hero--skeleton {
@@ -103,9 +103,9 @@
   background:
     linear-gradient(
       90deg,
-      rgba(11, 13, 12, 0.9) 0px,
-      rgba(11, 13, 12, 0.3) 520px,
-      transparent 900px
+      rgba(11, 13, 12, 1) 0px,
+      rgba(11, 13, 12, 0.4) 879px,
+      transparent 1521px
     ),
     linear-gradient(
       to top,
@@ -166,20 +166,20 @@
   align-items: center;
   gap: 0.6rem;
   margin-bottom: 1.5rem;
-  font-family: var(--font-mono);
+  font-family: 'Inter', sans-serif;
   font-size: 0.8125rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--paper-dim);
+  font-weight: 600;
+  color: var(--paper);
   text-decoration: none;
-  transition: color 0.2s ease;
+  padding: 0.55rem 1rem;
+  border: none;
+  border-radius: var(--button-radius);
+  background: rgba(51, 55, 61, 0.4);
+  transition: color 0.2s ease, background-color 0.2s ease;
 
   &:hover {
-    color: var(--signal);
-
-    .detail__back-icon {
-      border-color: var(--signal);
-    }
+    color: #33373D;
+    background: #fff;
   }
 }
 
@@ -187,16 +187,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--paper) 35%, transparent);
-  transition: border-color 0.2s ease;
+  border-radius: 0;
+  border: none;
+  background: transparent;
 
   svg {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
   }
 }
 
@@ -208,6 +208,14 @@
   letter-spacing: -0.01em;
   text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
   text-wrap: balance;
+}
+
+.detail__title-image {
+  display: block;
+  width: min(600px, 100%);
+  height: 160px;
+  object-fit: contain;
+  object-position: left center;
 }
 
 .detail__meta {
@@ -248,21 +256,26 @@
 }
 
 .detail__overview-btn {
-  font-family: var(--font-body);
+  font-family: 'Inter', sans-serif;
   font-size: 0.8125rem;
+  font-weight: 600;
   color: var(--paper);
-  background: transparent;
-  border: 1px solid color-mix(in srgb, var(--paper) 35%, transparent);
+  background: rgba(51, 55, 61, 0.4);
+  border: none;
   border-radius: var(--button-radius);
-  padding: 0.35rem 0.9rem;
+  padding: 0.55rem 1rem;
   cursor: pointer;
-  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
 
   &:hover {
-    color: var(--signal);
-    border-color: var(--signal);
-    background: color-mix(in srgb, var(--paper) 8%, transparent);
+    color: #33373D;
+    background: #fff;
   }
+}
+
+.detail__overview {
+  display: flex;
+  margin-top: 0.75rem;
 }
 
 .detail__hero .detail__description {
@@ -286,7 +299,7 @@
   max-width: calc(100% - clamp(1.25rem, 5vw, 4rem) - 100px);
   margin-left: auto;
   margin-right: clamp(1.25rem, 8vw, 100px);
-  margin-top: -400px;
+  margin-top: calc(-92vh + 300px);
   padding-block: 0 clamp(4rem, 8vw, 6rem);
 }
 
@@ -318,10 +331,11 @@
 }
 
 .detail__instructor-label,
-.detail__guests-label {
+.detail__guests-label,
+.detail__characters-label {
   font-family: var(--font-ui);
   font-size: 14px;
-  font-weight: 400;
+  font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--paper);
@@ -330,6 +344,44 @@
 
 .detail__guests-label {
   margin-bottom: 0;
+}
+
+.detail__characters {
+  margin-top: 20px;
+}
+
+.detail__character-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.detail__character {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6rem;
+  color: #F2F0E8;
+  font-weight: 600;
+}
+
+.detail__people-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 2rem;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.detail__people-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail__person-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.6rem;
 }
 
 .detail__instructor-row {
@@ -349,14 +401,19 @@
 .detail__instructor-name {
   font-family: var(--font-ui);
   font-size: 0.875rem;
-  font-weight: 300;
-  color: var(--paper-dim);
+  font-weight: 600;
+  color: #F2F0E8;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
 }
 
 .detail__lessons-title {
+  box-sizing: border-box;
+  width: 100%;
   margin-top: 0;
-  margin-bottom: 1.25rem;
+  margin-bottom: 0.5rem;
+  padding: 3px 8px 9px;
+  border-radius: var(--button-radius);
+  background: rgba(12, 13, 13, 0.7);
   font-family: 'Inter', sans-serif;
   font-size: 28px;
   font-weight: 300;
@@ -364,7 +421,7 @@
      same treatment as the hero-content elements on the left. */
   opacity: 0;
   transform: translateX(100vw);
-  transition: opacity 0.7s ease-out 0.18s, transform 0.7s ease-out 0.18s;
+  transition: opacity 0.4s ease-out 0.18s, transform 0.4s ease-out 0.18s;
 }
 
 .detail__lessons-title--revealed {
@@ -390,36 +447,20 @@
   gap: 1rem;
   padding: 0.6rem;
   border-radius: 0.3rem;
-  background: color-mix(in srgb, var(--ink-raised) 75%, transparent);
-  border: 1px solid #404040;
+  background: rgba(12, 13, 13, 0.8);
+  border: none;
   overflow: hidden;
   /* Starts off-screen-right and invisible; .detail--visible (set the moment
      the entry morph finishes) flips both back, and each row's own
      transition-delay (bound per-index in the template) staggers the reveal. */
   opacity: 0;
   transform: translateX(100vw);
-  transition: opacity 0.7s ease-out, transform 0.7s ease-out, border-color 0.2s ease-in;
+  transition: opacity 0.4s ease-out, transform 0.4s ease-out, background-color 0.2s ease-in;
   /* The row (and its thumbnail) stay a plain cursor — only the play and
      restart icons below get cursor: pointer, even though the whole row is
      still clickable via openLesson(). */
   cursor: default;
 
-  /* Green glow that fades in from the right edge on hover — z-index:0 (with
-     the thumb/order/info content below explicitly bumped to z-index:1) so
-     it actually sits behind that content instead of painting over the text,
-     which position:absolute here would otherwise do regardless of source
-     order (positioned elements paint after static ones by default). */
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    border-radius: inherit;
-    background: linear-gradient(to left, color-mix(in srgb, var(--signal) 40%, transparent), transparent 65%);
-    opacity: 0;
-    transition: opacity 0.3s ease-in;
-    pointer-events: none;
-  }
 }
 
 /* Style 2 uses the same right-to-left entrance as the regular course page.
@@ -436,22 +477,14 @@
 .lesson-list--revealed .lesson-row:hover {
   transform: scale(1.05);
   z-index: 2;
-  border-color: var(--signal);
-
-  &::after {
-    opacity: 1;
-  }
+  background: #0C0D0D;
 }
 
 .lesson-row--locked {
   cursor: default;
 
   &:hover {
-    border-color: #404040;
-
-    &::after {
-      opacity: 0;
-    }
+    background: #0C0D0D;
   }
 }
 
@@ -461,7 +494,7 @@
   /* Once settled, the hover scale animates at its own (faster) speed —
      separate from the 0.4s entrance-stagger transition on the base
      .lesson-row rule, which this overrides for both hover in and out. */
-  transition: transform 0.7s ease-out, border-color 0.2s ease-in;
+  transition: transform 0.1s ease-out, background-color 0.1s ease-in;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -476,11 +509,12 @@
 .lesson-row__order {
   position: relative;
   z-index: 1;
-  width: 1.5rem;
+  width: 2.5rem;
   flex-shrink: 0;
   text-align: center;
-  font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-family: Inter, sans-serif;
+  font-size: 2rem;
+  font-weight: 500;
   color: var(--paper-dim);
 }
 
@@ -529,8 +563,9 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  background: rgba(12, 13, 13, 0.62);
   opacity: 0;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.18s ease;
   pointer-events: none;
 }
 
@@ -545,13 +580,20 @@
 .lesson-row__play svg,
 .lesson-row__restart svg {
   display: block;
-  width: 34px;
-  height: 34px;
+  width: 51px;
+  height: 51px;
   padding: 0.4rem;
   border-radius: var(--button-radius);
-  background: rgba(0, 0, 0, 0.55);
-  border: 1.5px solid var(--signal);
-  color: var(--signal);
+  background: rgba(51, 55, 61, 0.4);
+  border: none;
+  color: var(--paper);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.lesson-row__play:hover svg,
+.lesson-row__restart:hover svg {
+  background: #fff;
+  color: #33373D;
 }
 
 .lesson-row__restart {
@@ -565,6 +607,31 @@
   &:hover {
     transform: scale(1.08);
   }
+}
+
+.lesson-row__title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.lesson-row__title-row .lesson-row__title {
+  min-width: 0;
+  flex: 1;
+}
+
+.lesson-row__title-row .lesson-row__restart {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  margin-left: auto;
+}
+
+.lesson-row__title-row .lesson-row__restart svg {
+  width: 28px;
+  height: 28px;
+  padding: 0.32rem;
 }
 
 /* Reflects actual watch progress from the lesson player (see

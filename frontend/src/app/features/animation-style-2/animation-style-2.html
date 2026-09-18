@@ -45,8 +45,8 @@
             <div class="style-featured__person">
               <p class="style-featured__person-label">Instructor</p>
               <div class="style-featured__person-row">
-                <img class="style-featured__person-avatar" [src]="personPhotoUrl(instructor)" [alt]="instructor.name" />
-                <span>{{ instructor.name }}</span>
+                <img class="style-featured__person-avatar" [src]="personPhotoUrl(firstPerson(instructor))" [alt]="firstPerson(instructor).name" />
+                <span>{{ firstPerson(instructor).name }}</span>
               </div>
             </div>
           }
@@ -54,8 +54,8 @@
             <div class="style-featured__person">
               <p class="style-featured__person-label">Guest</p>
               <div class="style-featured__person-row">
-                <img class="style-featured__person-avatar" [src]="personPhotoUrl(guest)" [alt]="guest.name" />
-                <span>{{ guest.name }}</span>
+                <img class="style-featured__person-avatar" [src]="personPhotoUrl(firstPerson(guest))" [alt]="firstPerson(guest).name" />
+                <span>{{ firstPerson(guest).name }}</span>
               </div>
             </div>
           }
@@ -413,8 +413,8 @@
             <div class="style-course-modal__person">
               <span class="style-course-modal__person-label">Instructor</span>
               <div class="style-course-modal__person-row">
-                <img [src]="personPhotoUrl(instructor)" [alt]="instructor.name" />
-                <span>{{ instructor.name }}</span>
+                <img [src]="personPhotoUrl(firstPerson(instructor))" [alt]="firstPerson(instructor).name" />
+                <span>{{ firstPerson(instructor).name }}</span>
               </div>
             </div>
           }
@@ -422,8 +422,8 @@
             <div class="style-course-modal__person">
               <span class="style-course-modal__person-label">Guest</span>
               <div class="style-course-modal__person-row">
-                <img [src]="personPhotoUrl(guest)" [alt]="guest.name" />
-                <span>{{ guest.name }}</span>
+                <img [src]="personPhotoUrl(firstPerson(guest))" [alt]="firstPerson(guest).name" />
+                <span>{{ firstPerson(guest).name }}</span>
               </div>
             </div>
           }

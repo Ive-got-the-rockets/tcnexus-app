@@ -5,9 +5,15 @@
     </a>
 
     <nav class="site-header__nav">
-      <a class="site-header__nav-link" routerLink="/">Home</a>
-      <a class="site-header__nav-link" routerLink="/trading-courses">Trading Courses</a>
-      <a class="site-header__nav-link" routerLink="/platform-courses">Platform Courses</a>
+      <a
+        class="site-header__nav-link"
+        routerLink="/"
+        routerLinkActive="site-header__nav-link--active"
+        [routerLinkActiveOptions]="{ exact: true }"
+      >Home</a>
+      <a class="site-header__nav-link" routerLink="/trading-courses" routerLinkActive="site-header__nav-link--active" [routerLinkActiveOptions]="{ exact: true }">Trading Courses</a>
+      <a class="site-header__nav-link" routerLink="/platform-courses" routerLinkActive="site-header__nav-link--active" [routerLinkActiveOptions]="{ exact: true }">Platform Courses</a>
+      <a class="site-header__nav-link" routerLink="/shows" routerLinkActive="site-header__nav-link--active" [routerLinkActiveOptions]="{ exact: true }">Shows</a>
       <span>Store</span>
     </nav>
 

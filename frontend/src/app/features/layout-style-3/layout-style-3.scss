@@ -111,7 +111,7 @@
 }
 
 .style-return-overlay--settled {
-  border-radius: var(--button-radius);
+  border-radius: 999px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -133,6 +133,19 @@
   overflow: hidden;
   pointer-events: none;
   background: var(--ink);
+
+  .style-featured__background-link {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    pointer-events: auto;
+  }
 
   &::after {
     position: absolute;
@@ -191,6 +204,14 @@
   font-size: clamp(2rem, 4vw, 3rem);
   font-weight: 700;
   line-height: 1.5;
+}
+
+.style-featured__title-image {
+  display: block;
+  width: min(600px, 100%);
+  height: 160px;
+  object-fit: contain;
+  object-position: left center;
 }
 
 .style-featured__heading {
@@ -264,7 +285,7 @@
   color: var(--paper);
   font-family: var(--font-ui);
   font-size: 14px;
-  font-weight: 400;
+  font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -276,8 +297,27 @@
   color: var(--paper-dim);
   font-family: var(--font-ui);
   font-size: 0.875rem;
-  font-weight: 300;
+  font-weight: 600;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.style-featured__people-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.style-featured__person-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.style-featured__people-row .style-featured__person-avatar {
+  width: 41px;
+  height: 41px;
 }
 
 .style-featured__character-row {
@@ -294,6 +334,7 @@
 
 .style-featured__character span {
   max-width: 52px;
+  font-weight: 600;
   text-align: left;
   line-height: 1.15;
 }
@@ -314,7 +355,7 @@
   border: 1px solid color-mix(in srgb, var(--paper) 35%, transparent);
   border-radius: var(--button-radius);
   background: color-mix(in srgb, var(--ink) 55%, transparent);
-  color: var(--paper-dim);
+  color: #F2F0E8;
   cursor: pointer;
   font-family: var(--font-mono);
   font-size: 0.62rem;
@@ -579,7 +620,11 @@
   display: flex;
   align-items: center;
   gap: 20px;
-  margin-bottom: 1.25rem;
+  margin-bottom: 0.5rem;
+  box-sizing: border-box;
+  padding: 3px 8px 9px;
+  border-radius: var(--button-radius);
+  background: rgba(12, 13, 13, 0.7);
   opacity: 0;
   transform: translateY(16px);
   transition: opacity 0.4s ease-in, transform 0.4s ease-in;
@@ -605,11 +650,12 @@
   height: 28px;
   flex-shrink: 0;
   padding: 0;
-  border: 1px solid color-mix(in srgb, var(--paper) 35%, transparent);
+  border: none;
   border-radius: 999px;
-  background: transparent;
+  background: rgba(51, 55, 61, 0.4);
   color: var(--paper);
   cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
 
   svg {
     width: 16px;
@@ -617,8 +663,8 @@
   }
 
   &:hover {
-    color: var(--signal);
-    border-color: var(--signal);
+    color: #33373D;
+    background: #fff;
 
     svg {
       animation: episode-close-spin 0.45s cubic-bezier(0.22, 1, 0.36, 1);
@@ -652,51 +698,36 @@
   gap: 1rem;
   padding: 0.6rem;
   border-radius: 0.3rem;
-  background: color-mix(in srgb, var(--ink-raised) 75%, transparent);
-  border: 1px solid #404040;
+  background: rgba(12, 13, 13, 0.8);
+  border: none;
   overflow: hidden;
   cursor: default;
   opacity: 0;
   transform: translateX(40px);
-  transition: opacity 0.4s ease-in, transform 0.4s ease-in, border-color 0.2s ease-in;
-
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    border-radius: inherit;
-    background: linear-gradient(to left, color-mix(in srgb, var(--signal) 40%, transparent), transparent 65%);
-    opacity: 0;
-    transition: opacity 0.3s ease-in;
-    pointer-events: none;
-  }
+  transition: opacity 0.4s ease-in, transform 0.4s ease-in, background-color 0.2s ease-in;
 }
 
 .lesson-list--revealed .lesson-row {
   opacity: 1;
   transform: translateX(0);
-  transition: transform 0.2s ease-in, border-color 0.2s ease-in;
+  transition: transform 0.1s ease-in, background-color 0.1s ease-in;
 }
 
 .lesson-list--revealed .lesson-row:hover {
   transform: scale(1.05);
   z-index: 2;
-  border-color: var(--signal);
-
-  &::after {
-    opacity: 1;
-  }
+  background: #0C0D0D;
 }
 
 .lesson-row__order {
   position: relative;
   z-index: 1;
-  width: 1.5rem;
+  width: 2.5rem;
   flex-shrink: 0;
   text-align: center;
-  font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-family: Inter, sans-serif;
+  font-size: 2rem;
+  font-weight: 500;
   color: var(--paper-dim);
 }
 
@@ -716,6 +747,71 @@
   height: 100%;
   object-fit: cover;
   filter: saturate(0.85) contrast(1.05);
+}
+
+.lesson-row__actions {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(12, 13, 13, 0.62);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  pointer-events: none;
+}
+
+.lesson-row__thumb:hover .lesson-row__actions {
+  opacity: 1;
+}
+
+.lesson-row__play svg {
+  display: block;
+  width: 51px;
+  height: 51px;
+  padding: 0.4rem;
+  border-radius: var(--button-radius);
+  background: rgba(51, 55, 61, 0.4);
+  color: var(--paper);
+}
+
+.lesson-row__title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.lesson-row__title-row .lesson-row__title {
+  min-width: 0;
+  flex: 1;
+}
+
+.lesson-row__restart {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  border-radius: var(--button-radius);
+  background: rgba(51, 55, 61, 0.4);
+  color: var(--paper);
+  cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.lesson-row__restart svg {
+  width: 18px;
+  height: 18px;
+}
+
+.lesson-row__restart:hover {
+  background: #fff;
+  color: #33373D;
+  transform: scale(1.08);
 }
 
 .lesson-row__info {
@@ -796,6 +892,18 @@
 .style-row--trading {
   margin-top: -350px;
   z-index: 3;
+}
+
+/* The home page uses the overlap to stack Trading Courses beneath the two
+   rows above it. The Trading Courses landing page has no rows above it, so
+   keep this row in normal flow to preserve the home-page hero spacing. */
+.style-page--trading-only .style-row--trading {
+  margin-top: 0;
+}
+
+.style-page--platform-only .style-row--platform,
+.style-page--shows-only .style-row--shows {
+  margin-top: 0;
 }
 
 .style-row--shows {
@@ -1021,13 +1129,14 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 11.46px;
-  min-width: 11.46px;
-  height: 13.28px;
-  padding: 3px;
+  width: 10px;
+  min-width: 10px;
+  height: 10px;
+  padding: 0;
   border: 0 !important;
-  border-radius: 1px;
-  background: transparent;
+  border-radius: 50%;
+  background: transparent !important;
+  color: transparent;
   opacity: 1;
   pointer-events: auto;
   cursor: pointer;
@@ -1039,25 +1148,36 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 4.6px;
-    height: 6.2px;
-    border-radius: 1px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
     background: var(--paper);
     content: '';
+    opacity: 0.58;
     transform: translate(-50%, -50%);
     transition: transform 0.28s ease, background 0.2s ease, opacity 0.2s ease;
   }
 }
 
 .style-featured-pagination__item--active {
-  width: 15.1px;
-  min-width: 15.1px;
-
   &::before {
-    width: 7.7px;
-    height: 6.2px;
-    opacity: 0.95;
+    width: 7px;
+    height: 16px;
+    border-radius: 999px;
+    opacity: 1;
   }
+}
+
+.style-featured-pagination__item--near::before {
+  width: 6px;
+  height: 6px;
+  opacity: 0.68;
+}
+
+.style-featured-pagination__item--far::before {
+  width: 3px;
+  height: 3px;
+  opacity: 0.48;
 }
 
 .style-featured-pagination__item:hover,
@@ -1066,35 +1186,42 @@
   transform: translate(-50%, calc(-50% + (var(--featured-distance) * 18.2px)));
 
   &::before {
-    background: var(--signal);
+    background: var(--paper);
+    opacity: 1;
   }
 }
 
 .style-carousel__page {
-  width: 5px;
-  height: 5px;
-  min-width: 5px;
+  width: 3px;
+  height: 3px;
   padding: 0;
   border: 0 !important;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--paper) 32%, transparent);
-  opacity: 0.55;
+  background: var(--paper);
+  opacity: 0.48;
   cursor: pointer;
   transition: width 0.2s ease, opacity 0.2s ease, background 0.2s ease;
 }
 
+.style-carousel__page--near {
+  width: 6px;
+  height: 6px;
+  opacity: 0.68;
+}
+
 .style-carousel__page:hover,
 .style-carousel__page:focus-visible {
-  background: color-mix(in srgb, var(--paper) 70%, transparent);
-  opacity: 0.9;
+  background: var(--paper);
+  opacity: 1;
 }
 
 .style-carousel__page--active {
-  width: 7px;
-  min-width: 7px;
-  height: 7px;
+  width: 16px;
+  min-width: 16px;
+  height: 5px;
+  border-radius: 999px;
   background: var(--paper);
-  opacity: 0.95;
+  opacity: 1;
 }
 
 .style-carousel:hover {
@@ -1493,9 +1620,20 @@
   &:focus-visible {
     background: rgba(11, 13, 12, var(--nav-opacity));
     border: 1px solid var(--signal) !important;
-    border-right: 0 !important;
     color: var(--signal);
   }
+}
+
+.style-carousel__arrow--prev:hover,
+.style-carousel__arrow--prev:focus-visible {
+  border-left: 0 !important;
+  border-right: 1px solid var(--signal) !important;
+}
+
+.style-carousel__arrow--next:hover,
+.style-carousel__arrow--next:focus-visible {
+  border-left: 1px solid var(--signal) !important;
+  border-right: 0 !important;
 }
 
 .style-carousel__arrow--prev {
@@ -1600,15 +1738,23 @@
   width: 34px;
   height: 34px;
   place-items: center;
-  border: 1px solid rgba(242, 240, 232, 0.72);
-  border-radius: 50%;
-  background: rgba(11, 13, 12, 0.52);
+  border: none;
+  border-radius: 999px;
+  background: rgba(51, 55, 61, 0.4);
   color: var(--paper);
   cursor: pointer;
   font-family: var(--font-ui);
   font-size: 24px;
   font-weight: 300;
   line-height: 1;
+  transition: background-color 0.2s ease, color 0.2s ease;
+
+}
+
+.style-course-modal__close:hover,
+.style-course-modal__close:focus-visible {
+  background: #fff;
+  color: #33373D;
 }
 
 .style-course-modal__close > span {
@@ -1697,9 +1843,10 @@
   display: flex;
   align-items: center;
   gap: 9px;
-  color: var(--paper-dim);
+  color: #F2F0E8;
   font-family: 'Inter', sans-serif;
   font-size: 0.82rem;
+  font-weight: 600;
 }
 
 .style-course-modal__person-row img {
@@ -1752,8 +1899,15 @@
   padding: 8px 12px 8px 8px;
   border: 1px solid rgba(242, 240, 232, 0.1);
   border-radius: 6px;
-  background: rgba(11, 13, 12, 0.38);
+  background: rgba(12, 13, 13, 0.8);
   cursor: pointer;
+  transform-origin: center;
+  transition: transform 0.1s ease, background-color 0.1s ease;
+}
+
+.style-course-modal__lesson:hover {
+  transform: scale(1.03);
+  background: #0C0D0D;
 }
 
 .style-course-modal__lesson-order {
@@ -2281,4 +2435,29 @@
 .style-featured__language-menu button {
   border: 0;
   outline: 0;
+}
+
+.style-page button:not(.style-carousel__page):not(.style-carousel__arrow):not(.style-featured-pagination__item) {
+  border: 0 !important;
+  outline: 0 !important;
+  background: rgba(51, 55, 61, 0.4);
+  color: var(--paper);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.style-page button:not(.style-carousel__page):not(.style-carousel__arrow):not(.style-featured-pagination__item):hover,
+.style-page button:not(.style-carousel__page):not(.style-carousel__arrow):not(.style-featured-pagination__item):focus-visible {
+  border: 0 !important;
+  outline: 0 !important;
+  background: #fff;
+  color: #33373D;
+}
+
+/* The featured artwork click target is invisible so it never obscures the
+   image or inherits the visible button treatment above. */
+.style-page .style-featured__background-link,
+.style-page .style-featured__background-link:hover,
+.style-page .style-featured__background-link:focus-visible {
+  background: transparent !important;
+  color: transparent;
 }

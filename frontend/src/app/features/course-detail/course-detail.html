@@ -50,40 +50,70 @@
               </span>
               Back To Home
             </a>
-            <h1 class="detail__title">{{ c.title }}</h1>
+            @if (c.title_image) {
+              <img class="detail__title-image" [src]="c.title_image" [alt]="c.title" />
+            } @else {
+              <h1 class="detail__title">{{ c.title }}</h1>
+            }
+            <div class="detail__description" [innerHTML]="c.content"></div>
             <div class="detail__meta">
               <span class="detail__type-badge">{{ courseTypeLabel(c) }}</span>
               <span class="detail__meta-dot" aria-hidden="true"></span>
-              <span class="detail__type-badge">{{ c.lessons.length }} Episodes</span>
-              @if (c.overview_link) {
-                <span class="detail__meta-dot" aria-hidden="true"></span>
-                <button type="button" class="detail__overview-btn" (click)="openOverview()">Course Overview</button>
-              }
+              <span class="detail__type-badge">{{ c.lessons.length }} {{ c.course_types.includes('Shows') ? 'Episodes' : 'Lessons' }}</span>
             </div>
-            <div class="detail__description" [innerHTML]="c.content"></div>
-            @if (c.instructor; as instructor) {
-              <div class="detail__instructor">
-                <p class="detail__instructor-label">Instructor</p>
-                <div class="detail__instructor-row">
-                  <img class="detail__instructor-avatar" [src]="personPhotoUrl(instructor)" [alt]="instructor.name" />
-                  <span class="detail__instructor-name">{{ instructor.name }}</span>
+            @if (c.course_types.includes('Shows') && c.characters?.length) {
+              <div class="detail__characters">
+                <p class="detail__characters-label">Characters</p>
+                <div class="detail__character-row">
+                  @for (character of c.characters; track character.id) {
+                    <div class="detail__character">
+                      <img class="detail__instructor-avatar" [src]="personPhotoUrl(character)" [alt]="character.name" />
+                      <span class="detail__instructor-name">{{ character.name }}</span>
+                    </div>
+                  }
                 </div>
               </div>
             }
-            @if (c.guest; as guest) {
-              <div class="detail__guests">
-                <p class="detail__guests-label">Guest</p>
-                <div class="detail__instructor-row">
-                  <img class="detail__instructor-avatar" [src]="personPhotoUrl(guest)" [alt]="guest.name" />
-                  <span class="detail__instructor-name">{{ guest.name }}</span>
-                </div>
+            @if (c.overview_link) {
+              <div class="detail__overview">
+                <button type="button" class="detail__overview-btn" (click)="openOverview()">Course Overview</button>
+              </div>
+            }
+            @if (c.instructor || c.guest) {
+              <div class="detail__people-row">
+                @if (c.instructor; as instructors) {
+                  <div class="detail__people-group">
+                    <p class="detail__instructor-label">Instructor</p>
+                    <div class="detail__instructor-row">
+                      @for (instructor of people(instructors); track instructor.id) {
+                        <div class="detail__person-item">
+                          <img class="detail__instructor-avatar" [src]="personPhotoUrl(instructor)" [alt]="instructor.name" />
+                          <span class="detail__instructor-name">{{ instructor.name }}</span>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+                @if (c.guest; as guests) {
+                  <div class="detail__people-group">
+                    <p class="detail__guests-label">Guest</p>
+                    <div class="detail__instructor-row">
+                      @for (guest of people(guests); track guest.id) {
+                        <div class="detail__person-item">
+                          <img class="detail__instructor-avatar" [src]="personPhotoUrl(guest)" [alt]="guest.name" />
+                          <span class="detail__instructor-name">{{ guest.name }}</span>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
               </div>
             }
           </div>
         </section>
 
         <section class="detail__body">
-          <h2 class="detail__lessons-title" [class.detail__lessons-title--revealed]="rowsRevealed()" #lessonsTitleEl>Episodes</h2>
+          <h2 class="detail__lessons-title" [class.detail__lessons-title--revealed]="rowsRevealed()" #lessonsTitleEl>{{ lessonListLabel(c) }}</h2>
           <ol class="lesson-list" [class.lesson-list--revealed]="rowsRevealed()">
             @for (lesson of c.lessons; track lesson.id; let i = $index) {
               <li
@@ -107,19 +137,6 @@
                       <span class="lesson-row__play" aria-hidden="true">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M8 5.5v13l11-6.5z"></path></svg>
                       </span>
-                      <!-- TODO: swap for the picked icon once you choose from the 10 options. -->
-                      <button
-                        type="button"
-                        class="lesson-row__restart"
-                        aria-label="Restart from the beginning"
-                        (click)="restartLesson(lesson, $event)"
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M3 12a9 9 0 1 0 3-6.7" />
-                          <path d="M3 4v5h5" />
-                          <path d="M10.3 9.6v4.8l4-2.4z" fill="currentColor" stroke="none" />
-                        </svg>
-                      </button>
                     </span>
                   }
                   @if (watchedPercent(lesson) > 0) {
@@ -129,7 +146,24 @@
                   }
                 </span>
                 <div class="lesson-row__info">
-                  <span class="lesson-row__title">{{ lesson.title }}</span>
+                  <div class="lesson-row__title-row">
+                    <span class="lesson-row__title">{{ lesson.title }}</span>
+                    @if (!isLessonLocked(lesson)) {
+                      <button
+                        type="button"
+                        class="lesson-row__restart"
+                        aria-label="Restart from the beginning"
+                        title="Restart from the beginning"
+                        (click)="restartLesson(lesson, $event)"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M3 12a9 9 0 1 0 3-6.7" />
+                          <path d="M3 4v5h5" />
+                          <path d="M10.3 9.6v4.8l4-2.4z" fill="currentColor" stroke="none" />
+                        </svg>
+                      </button>
+                    }
+                  </div>
                   <p class="lesson-row__excerpt">{{ lesson.excerpt }}</p>
                 </div>
               </li>

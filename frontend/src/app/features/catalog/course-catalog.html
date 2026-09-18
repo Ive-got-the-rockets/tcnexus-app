@@ -97,12 +97,16 @@
             </h1>
             <div class="hero__details" [class.hero__details--expanded]="descriptionVisible()">
               <p class="hero__description">{{ course.excerpt }}</p>
-              @if (featuredDetail()?.instructor; as instructor) {
+              @if (featuredDetail()?.instructor; as instructors) {
                 <div class="hero__instructor">
                   <p class="hero__instructor-label">Instructor</p>
                   <div class="hero__instructor-row">
-                    <img class="hero__instructor-avatar" [src]="personPhotoUrl(instructor)" [alt]="instructor.name" />
-                    <span class="hero__instructor-name">{{ instructor.name }}</span>
+                    @for (instructor of people(instructors); track instructor.id) {
+                      <div class="hero__instructor-person">
+                        <img class="hero__instructor-avatar" [src]="personPhotoUrl(instructor)" [alt]="instructor.name" />
+                        <span class="hero__instructor-name">{{ instructor.name }}</span>
+                      </div>
+                    }
                   </div>
                 </div>
               }
@@ -312,8 +316,8 @@
       <div class="preview__instructor">
         <p class="preview__instructor-label">Instructor</p>
         <div class="preview__instructor-row">
-          <img class="preview__instructor-avatar" src="https://i.pravatar.cc/80?u=coco-blanco" alt="Coco Blanco" />
-          <span class="preview__instructor-name">Coco Blanco</span>
+          <img class="preview__instructor-avatar" [src]="personPhotoUrl(previewInstructor)" [alt]="previewInstructor.name" />
+          <span class="preview__instructor-name">{{ previewInstructor.name }}</span>
         </div>
       </div>
     </div>

@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import type { PDFDocumentLoadingTask, PDFDocumentProxy } from 'pdfjs-dist';
 import { catchError, forkJoin, of } from 'rxjs';
 import { Course, CourseDetail, CourseLevelSlug, Lesson, Person } from '../../core/models';
+import { profilePlaceholderUrl } from '../../core/profile-placeholders';
 import { CoursesService } from '../../core/courses.service';
 import { CatalogScrollService } from '../../core/catalog-scroll.service';
 import { MorphRect, TransitionService } from '../../core/transition.service';
@@ -13,6 +14,7 @@ import { nextFeaturedIndex } from './featured-pagination';
 
 const EMPTY_EDGES: ScrollEdges = { atStart: true, atEnd: true };
 type CarouselKind = 'shows' | 'trading' | 'platform';
+type LandingMode = 'home' | 'trading' | 'platform' | 'shows';
 const PAGE_EXIT_DURATION = 280;
 const STYLE2_SCROLL_STORAGE_KEY = 'tcnexus-style2-trading-scroll';
 const STYLE2_FEATURED_KIND_STORAGE_KEY = 'tcnexus-style2-featured-kind';
@@ -101,18 +103,26 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
   private coursePreviewCloseTimer?: ReturnType<typeof setTimeout>;
   private overviewCloseTimer?: ReturnType<typeof setTimeout>;
   private trailerCloseTimer?: ReturnType<typeof setTimeout>;
+  private featuredWheelLockUntil = 0;
   private readonly onScroll = () => this.measureEdges();
   private readonly onPlatformScroll = () => this.measureEdges('platform');
   private readonly onShowsScroll = () => this.measureEdges('shows');
 
   protected readonly courses = signal<Course[]>([]);
   protected readonly shows = signal<Course[]>([]);
+  protected readonly landingMode = signal<LandingMode>('home');
+  protected readonly tradingOnly = computed(() => this.landingMode() === 'trading');
+  protected readonly platformOnly = computed(() => this.landingMode() === 'platform');
+  protected readonly showsOnly = computed(() => this.landingMode() === 'shows');
   protected readonly featured = signal<Course | null>(null);
   protected readonly featuredItems = computed(() => {
-    const available = [
-      ...this.courses(),
-      ...this.shows(),
-    ];
+    const available = this.tradingOnly()
+      ? this.courses()
+      : this.platformOnly()
+        ? this.platformCourses
+        : this.showsOnly()
+          ? this.shows()
+          : [...this.courses(), ...this.shows()];
     return available.filter((item, index, all) => all.findIndex(candidate => candidate.id === item.id) === index);
   });
   protected readonly featuredIndex = signal(0);
@@ -160,11 +170,19 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
   private overviewRenderToken = 0;
   protected readonly carouselCourses = computed(() => {
     const featuredId = this.featured()?.id;
-    return this.courses().filter(course => course.id !== featuredId);
+    return this.platformOnly() || this.showsOnly()
+      ? []
+      : this.courses().filter(course => course.id !== featuredId);
   });
   protected readonly carouselShows = computed(() => {
     const featuredId = this.featured()?.id;
-    return this.shows().filter(show => show.id !== featuredId);
+    return this.tradingOnly() || this.platformOnly()
+      ? []
+      : this.shows().filter(show => show.id !== featuredId);
+  });
+  protected readonly carouselPlatformCourses = computed(() => {
+    const featuredId = this.featured()?.id;
+    return this.platformCourses.filter(course => course.id !== featuredId);
   });
   protected readonly edges = signal<ScrollEdges>(EMPTY_EDGES);
   protected readonly platformEdges = signal<ScrollEdges>(EMPTY_EDGES);
@@ -198,12 +216,12 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
         : ['beginner'],
   }));
   protected readonly featuredCharacters: Person[] = [
-    { id: 901, name: 'Mara Voss', photo: 'https://i.pravatar.cc/120?img=47' },
-    { id: 902, name: 'Julian Cross', photo: 'https://i.pravatar.cc/120?img=12' },
-    { id: 903, name: 'Nadia Vale', photo: 'https://i.pravatar.cc/120?img=32' },
-    { id: 904, name: 'Theo Grant', photo: 'https://i.pravatar.cc/120?img=5' },
-    { id: 905, name: 'Elise Hart', photo: 'https://i.pravatar.cc/120?img=44' },
-    { id: 906, name: 'Jonas Reed', photo: 'https://i.pravatar.cc/120?img=13' },
+    { id: 901, name: 'Mara Voss', photo: null },
+    { id: 902, name: 'Julian Cross', photo: null },
+    { id: 903, name: 'Nadia Vale', photo: null },
+    { id: 904, name: 'Theo Grant', photo: null },
+    { id: 905, name: 'Elise Hart', photo: null },
+    { id: 906, name: 'Jonas Reed', photo: null },
   ];
 
   protected openCharacters(): void {
@@ -220,13 +238,17 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
     const length = kind === 'shows'
       ? this.carouselShows().length
       : kind === 'platform'
-        ? this.platformCourses.length
+        ? this.carouselPlatformCourses().length
         : this.carouselCourses().length;
     return Math.max(1, Math.ceil(length / 5));
   }
 
   protected pageRange(count: number): number[] {
     return Array.from({ length: count }, (_, index) => index);
+  }
+
+  protected carouselPageDistance(page: number, activePage: number): number {
+    return Math.abs(page - activePage);
   }
 
   protected goToPage(kind: CarouselKind, page: number): void {
@@ -253,6 +275,16 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
         if (this.featured()?.id === detail.id) this.featuredDetail.set(detail);
       }
     });
+  }
+
+  protected onFeaturedPaginationWheel(event: WheelEvent): void {
+    event.preventDefault();
+    if (Math.abs(event.deltaY) < 1) return;
+
+    const now = performance.now();
+    if (now < this.featuredWheelLockUntil) return;
+    this.featuredWheelLockUntil = now + 320;
+    this.selectFeatured(event.deltaY > 0 ? 1 : -1);
   }
 
   protected courseLanguages(course: Course): Array<{ slug: string; label: string }> {
@@ -286,6 +318,13 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
   }
 
   constructor() {
+    const requestedLandingMode = this.route.snapshot.data['landingMode'];
+    this.landingMode.set(
+      requestedLandingMode === 'trading' || requestedLandingMode === 'platform' || requestedLandingMode === 'shows'
+        ? requestedLandingMode
+        : 'home'
+    );
+
     if (this.pendingReturn) {
       this.returning.set(true);
       this.returnRect.set({ top: 0, left: 0, width: window.innerWidth, height: window.innerHeight });
@@ -297,23 +336,41 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
       shows: this.coursesService.getShows().pipe(catchError(() => of([] as Course[]))),
     }).subscribe({
       next: ({ courses, shows }) => {
-        this.shows.set([...shows, ...DEMO_SHOWS].slice(0, 12));
-        const courseCandidates = courses;
-        const showCandidates = shows;
-        const available = [...courseCandidates, ...showCandidates];
+        const showItems = [...shows, ...DEMO_SHOWS].slice(0, 12);
+        this.shows.set(showItems);
+        const courseCandidates = this.tradingOnly()
+          ? courses.filter(course =>
+            !course.course_types.includes('Platform') && !course.course_types.includes('Shows'))
+          : this.platformOnly() || this.showsOnly()
+            ? []
+            : courses;
+        const showCandidates = this.showsOnly() ? showItems : shows;
+        const available = this.tradingOnly()
+          ? [...courseCandidates]
+          : this.platformOnly()
+            ? [...this.platformCourses]
+            : this.showsOnly()
+              ? [...showCandidates]
+              : [...courseCandidates, ...showCandidates];
         const featuredItems = available
           .filter((item, index, all) => all.findIndex(candidate => candidate.id === item.id) === index);
         const queryFeaturedId = this.readQueryNumber('style2Featured');
         // A return transition or an explicit query parameter may pin the
         // hero, but normal refreshes must use the alternating type rotation.
-        const savedFeaturedId = this.pendingReturn?.style2State?.featuredId ?? queryFeaturedId;
+        const savedFeaturedId = this.pendingReturn?.courseId ?? this.pendingReturn?.style2State?.featuredId ?? queryFeaturedId;
         const savedFeatured = available.find(course => course.id === savedFeaturedId);
         const previousKind = this.readSessionValue(STYLE2_FEATURED_KIND_STORAGE_KEY);
-        const alternatingCandidates = previousKind === 'show'
+        const alternatingCandidates = this.tradingOnly()
           ? courseCandidates
-          : previousKind === 'course'
-            ? showCandidates
-            : available;
+          : this.platformOnly()
+            ? this.platformCourses
+            : this.showsOnly()
+              ? showCandidates
+              : previousKind === 'show'
+                ? courseCandidates
+                : previousKind === 'course'
+                  ? showCandidates
+                  : available;
         const featured = savedFeatured
           ?? alternatingCandidates[Math.floor(Math.random() * alternatingCandidates.length)]
           ?? available[0]
@@ -323,7 +380,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
         this.featuredIndex.set(Math.max(0, initialFeaturedIndex));
         this.writeSessionValue(STYLE2_FEATURED_KIND_STORAGE_KEY, featured && showCandidates.some(show => show.id === featured.id) ? 'show' : 'course');
         this.selectedLanguage.set(this.courseLanguages(featured)[0]?.slug ?? 'en');
-        this.courses.set(courses.slice(0, 12));
+        this.courses.set(this.tradingOnly() ? courseCandidates.slice(0, 12) : this.platformOnly() || this.showsOnly() ? [] : courses.slice(0, 12));
         if (this.pendingReturn) {
           // Wait for Angular to commit the async course list to the DOM. The
           // track exists before the cards do, so restoring from rAF alone can
@@ -333,7 +390,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
             this.startReturnAnimation(this.pendingReturn!.courseId);
           }, { injector: this.injector });
         }
-        if (featured) {
+        if (featured && featured.id > 0) {
           this.coursesService.getCourse(featured.id).subscribe({
             next: detail => {
               if (this.featured()?.id === detail.id) this.featuredDetail.set(detail);
@@ -428,6 +485,13 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
 
   protected isShow(course: Course): boolean {
     return course.course_types.includes('Shows') || this.shows().some(show => show.id === course.id);
+  }
+
+  protected lessonListLabel(detail: CourseDetail | null = this.featuredDetail()): 'Episodes' | 'Lessons' {
+    if (!detail) return 'Lessons';
+    return detail.course_types.includes('Shows') || this.shows().some(show => show.id === detail.id)
+      ? 'Episodes'
+      : 'Lessons';
   }
 
   protected courseLevelBadges(course: Course | CourseDetail): string[] {
@@ -654,6 +718,15 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
     this.router.navigate(['/courses', course.id, 'lessons', lesson.id]);
   }
 
+  protected restartLesson(lesson: Lesson, event: Event): void {
+    event.stopPropagation();
+    const course = this.featuredDetail();
+    if (!course) return;
+    this.router.navigate(['/courses', course.id, 'lessons', lesson.id], {
+      queryParams: { restart: '1' }
+    });
+  }
+
   protected lessonThumbnailUrl(lesson: Lesson): string {
     return lesson.thumbnail ?? `https://picsum.photos/seed/tcnexus-lesson-${lesson.id}/640/360`;
   }
@@ -810,7 +883,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
         { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
         course.thumbnail ?? course.image ?? `https://picsum.photos/seed/tcnexus-style2-${course.id}/640/360`,
         'Trading Courses',
-        'style-2',
+        'catalog',
         { scrollLeft: track?.scrollLeft ?? 0, featuredId: this.featured()?.id ?? 0 }
       );
     }
@@ -948,7 +1021,11 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
   }
 
   protected personPhotoUrl(person: Person): string {
-    return person.photo ?? `https://i.pravatar.cc/120?u=tcnexus-${person.id}`;
+    return person.photo || profilePlaceholderUrl(person.id);
+  }
+
+  protected people(value: Person | Person[]): Person[] {
+    return Array.isArray(value) ? value : [value];
   }
 
   protected onImageError(event: Event): void {

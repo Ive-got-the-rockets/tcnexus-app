@@ -12,10 +12,11 @@ export interface CourseLevelVersion {
   lessons?: Lesson[];
   thumbnail: string | null;
   image: string | null;
+  title_image?: string | null;
   overview_link: string | null;
   trailer_link?: string | null;
-  instructor?: Person | null;
-  guest?: Person | null;
+  instructor?: Person | Person[] | null;
+  guest?: Person | Person[] | null;
 }
 
 export interface Course {
@@ -27,6 +28,8 @@ export interface Course {
   image: string | null;
   /** Desktop landing-page background image (8:3), when configured in the builder. */
   landing_background?: string | null;
+  /** Optional 600x160 title artwork used in featured and single-page hero areas. */
+  title_image?: string | null;
   course_types: string[];
   lesson_count: number;
   overview_link: string | null;
@@ -69,11 +72,14 @@ export interface CourseDetail {
   image: string | null;
   /** Desktop landing-page background image (8:3), when configured in the builder. */
   landing_background?: string | null;
+  /** Optional 600x160 title artwork used in featured and single-page hero areas. */
+  title_image?: string | null;
   course_types: string[];
   overview_link: string | null;
   trailer_link?: string | null;
-  instructor: Person | null;
-  guest: Person | null;
+  instructor: Person | Person[] | null;
+  guest: Person | Person[] | null;
+  characters?: Person[];
   lessons: Lesson[];
   configured_levels?: CourseLevelSlug[];
   levels?: Partial<Record<CourseLevelSlug, CourseLevelVersion>>;

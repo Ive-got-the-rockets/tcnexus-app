@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CoursesService } from '../../core/courses.service';
 import { MyListService } from '../../core/my-list.service';
 import { Course, CourseDetail, Lesson, Person, RegistrationSettings } from '../../core/models';
+import { profilePlaceholderUrl } from '../../core/profile-placeholders';
 import { DEFAULT_CARD_ANIMATION_SETTINGS, normalizeCardAnimationSettings } from '../../core/registration-settings';
 import { AccessService } from '../../core/access.service';
 import { MorphRect, TransitionService } from '../../core/transition.service';
@@ -47,6 +48,7 @@ const VIEWPORT_MARGIN = 8;
   styleUrl: './course-catalog.scss'
 })
 export class CourseCatalog implements OnDestroy {
+  protected readonly previewInstructor: Person = { id: -1001, name: 'Coco Blanco', photo: null };
   private readonly coursesService = inject(CoursesService);
   private readonly visitor = inject(VisitorService);
   private readonly myList = inject(MyListService);
@@ -156,7 +158,11 @@ export class CourseCatalog implements OnDestroy {
   }
 
   protected personPhotoUrl(person: Person): string {
-    return person.photo ?? `https://i.pravatar.cc/80?u=${person.id}`;
+    return person.photo || profilePlaceholderUrl(person.id);
+  }
+
+  protected people(value: Person | Person[]): Person[] {
+    return Array.isArray(value) ? value : [value];
   }
 
   /**

@@ -329,13 +329,27 @@ button {
   transform: translateY(0);
   transition: transform 0.3s ease;
 
-  --plyr-range-track-height: 1px;
-  --plyr-range-thumb-height: 5px;
-  --plyr-video-range-track-background: rgba(242, 242, 238, 0.6);
+  --plyr-range-track-height: 3px;
+  --plyr-range-thumb-height: 7px;
+  --plyr-video-range-track-background: transparent;
   /* The moving played-portion fill — the site's own green accent, not the
      static off-white track color it sits on top of. */
   --plyr-range-fill-background: var(--signal);
   --plyr-video-progress-buffered-background: rgba(242, 242, 238, 0.3);
+}
+
+/* Keep the unplayed rail thin while the range input's played fill stays 3px. */
+.player-wrap .tcn-progress .plyr__progress::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  height: 1px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: rgba(242, 242, 238, 0.6);
+  pointer-events: none;
+  z-index: 1;
 }
 
 /* Time readout */

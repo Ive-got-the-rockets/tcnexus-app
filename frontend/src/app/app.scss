@@ -67,6 +67,7 @@
 }
 
 .site-header__nav-link {
+  position: relative;
   color: inherit;
   text-decoration: none;
   transition: color 0.2s ease;
@@ -74,6 +75,51 @@
   &:hover,
   &:focus-visible {
     color: var(--signal);
+  }
+}
+
+/* Active Home cue: a thin illuminated shelf in the existing signal green. */
+.site-header__nav-link--active {
+  isolation: isolate;
+
+  &::before,
+  &::after {
+    content: '';
+    pointer-events: none;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    transform-origin: 50% 0;
+  }
+
+  &::before {
+    z-index: 1;
+    top: -19px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    transform: none;
+    background: var(--signal);
+    box-shadow: 0 0 7px 3px color-mix(in srgb, var(--signal) 45%, transparent);
+  }
+
+  &::after {
+    z-index: -1;
+    top: -17px;
+    left: 0;
+    width: 100%;
+    height: 42px;
+    transform: none;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--signal) 28%, transparent), transparent 82%);
+    filter: blur(5px);
+    opacity: 0.72;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-header__nav-link--active::before,
+  .site-header__nav-link--active::after {
+    animation: none;
   }
 }
 

@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
-import { ActivatedRoute, NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
+import { ActivatedRoute, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 
 import { AuthModalService } from './core/auth-modal.service';
@@ -9,7 +9,7 @@ import { RegisterModal } from './features/auth/register-modal';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RegisterModal],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, RegisterModal],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })

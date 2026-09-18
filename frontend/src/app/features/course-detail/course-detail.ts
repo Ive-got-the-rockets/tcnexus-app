@@ -1,4 +1,3 @@
-import { Location } from '@angular/common';
 import { Component, ElementRef, Injector, OnDestroy, afterNextRender, effect, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
@@ -6,6 +5,7 @@ import { CoursesService } from '../../core/courses.service';
 import { AccessService } from '../../core/access.service';
 import { AuthModalService } from '../../core/auth-modal.service';
 import { CourseDetail, Lesson, Person } from '../../core/models';
+import { profilePlaceholderUrl } from '../../core/profile-placeholders';
 import { isAnonymousFreeLimitReached } from '../../core/registration-settings';
 import { MorphHandoff, MorphRect, TransitionService } from '../../core/transition.service';
 import { VisitorService } from '../../core/visitor.service';
@@ -22,7 +22,6 @@ type PageStatus = 'loading' | 'error' | 'ready';
 export class CourseDetailPage implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly location = inject(Location);
   private readonly coursesService = inject(CoursesService);
   private readonly accessService = inject(AccessService);
   private readonly authModal = inject(AuthModalService);
@@ -199,24 +198,18 @@ export class CourseDetailPage implements OnDestroy {
 
     this.leaving.set(true);
     this.backNavigationTimer = setTimeout(() => {
-      if (this.morph?.source === 'style-2' && this.morph.style2State) {
-        this.router.navigate(['/animation-style-2'], {
-          queryParams: {
-            style2Scroll: this.morph.style2State.scrollLeft,
-            style2Featured: this.morph.style2State.featuredId,
-          }
-        });
-      } else if (this.morph) {
-        this.location.back();
-      } else {
-        this.router.navigate(['/']);
-      }
+      this.router.navigate(['/layout-style-3']);
     }, 240);
 
   }
 
   protected courseTypeLabel(course: CourseDetail): string {
+    if (course.course_types.includes('Shows')) return 'Show';
     return course.course_types.includes('Platform') ? 'Platform Course' : 'Trading Course';
+  }
+
+  protected lessonListLabel(course: CourseDetail | null = this.course()): 'Episodes' | 'Lessons' {
+    return course?.course_types.includes('Shows') ? 'Episodes' : 'Lessons';
   }
 
   /** "Course Image" (Course Builder's Media tab) is the intended hero image; thumbnail (the catalog-card image) and a placeholder are just fallbacks for a course that hasn't set one. */
@@ -236,7 +229,11 @@ export class CourseDetailPage implements OnDestroy {
   }
 
   protected personPhotoUrl(person: Person): string {
-    return person.photo ?? `https://i.pravatar.cc/80?u=${person.id}`;
+    return person.photo || profilePlaceholderUrl(person.id);
+  }
+
+  protected people(value: Person | Person[]): Person[] {
+    return Array.isArray(value) ? value : [value];
   }
 
   /** Locked (paid-tier) rows don't navigate yet — paywall gating is future work. */

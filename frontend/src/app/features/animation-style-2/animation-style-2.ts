@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import type { PDFDocumentLoadingTask, PDFDocumentProxy } from 'pdfjs-dist';
 import { catchError, forkJoin, of } from 'rxjs';
 import { Course, CourseDetail, CourseLevelSlug, Lesson, Person } from '../../core/models';
+import { profilePlaceholderUrl } from '../../core/profile-placeholders';
 import { CoursesService } from '../../core/courses.service';
 import { CatalogScrollService } from '../../core/catalog-scroll.service';
 import { MorphRect, TransitionService } from '../../core/transition.service';
@@ -857,7 +858,13 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
   }
 
   protected personPhotoUrl(person: Person): string {
-    return person.photo ?? `https://i.pravatar.cc/120?u=tcnexus-${person.id}`;
+    return person.photo || profilePlaceholderUrl(person.id);
+  }
+
+  /** Legacy Style 2 is no longer routed, but it must still compile with the
+   * shared model that now permits multiple instructors and guests. */
+  protected firstPerson(value: Person | Person[]): Person {
+    return Array.isArray(value) ? value[0] : value;
   }
 
   protected onImageError(event: Event): void {
