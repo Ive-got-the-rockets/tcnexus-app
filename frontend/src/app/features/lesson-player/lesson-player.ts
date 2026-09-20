@@ -10,6 +10,8 @@ import { AccessCheckResult, CourseDetail, Lesson } from '../../core/models';
 import { isAnonymousFreeLimitReached, isFinalFreeLesson } from '../../core/registration-settings';
 import { VisitorService } from '../../core/visitor.service';
 import { WatchProgressService } from '../../core/watch-progress.service';
+import { launchXrayPopup } from './xray-popup';
+import { hasExceededDragThreshold, resizeFloatingWindow, type ResizeDirection } from './xray-window-geometry';
 
 type PageStatus = 'loading' | 'error' | 'blocked' | 'ready';
 type PromptPhase = 'initial' | 'final_free';
@@ -42,6 +44,19 @@ interface FillRect {
   width: number;
   height: number;
 }
+
+interface XrayFloatGeometry {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+const XRAY_FLOAT_STORAGE_KEY = 'tcnexus-xray-float-geometry';
+const XRAY_FLOAT_MIN_WIDTH = 320;
+const XRAY_FLOAT_MIN_HEIGHT = 180;
+const XRAY_FLOAT_DEFAULT_WIDTH = 520;
+const XRAY_FLOAT_DEFAULT_HEIGHT = 292;
 
 function computeFillRect(reserveRight: number, reserveBottom: number, constrainHeight = true): FillRect {
   const vw = window.innerWidth - reserveRight;
@@ -189,9 +204,12 @@ export class LessonPlayerPage implements OnDestroy {
 
   /** Content inside the panel/bottom bar is still undefined in the reference too — see the XRAY_* constants' comment. */
   protected readonly xrayOpen = signal(false);
+  protected readonly xrayDetached = signal(false);
   private xrayPanel: HTMLElement | null = null;
   private xrayFrame: HTMLIFrameElement | null = null;
   private xrayBottomBar: HTMLElement | null = null;
+  private xrayResizeObserver: ResizeObserver | null = null;
+  private xrayDragCleanup: (() => void) | null = null;
   private readonly onResize = (): void => {
     if (this.xrayOpen()) {
       this.placeXray();
@@ -288,6 +306,8 @@ export class LessonPlayerPage implements OnDestroy {
   ngOnDestroy(): void {
     this.cancelCountdown();
     window.removeEventListener('resize', this.onResize);
+    this.xrayResizeObserver?.disconnect();
+    this.xrayDragCleanup?.();
     this.player?.destroy();
   }
 
@@ -633,6 +653,21 @@ export class LessonPlayerPage implements OnDestroy {
     const panel = document.createElement('div');
     panel.className = 'tcn-xray-panel';
 
+    const header = document.createElement('div');
+    header.className = 'tcn-xray-panel-header';
+
+    const title = document.createElement('span');
+    title.className = 'tcn-xray-panel-title';
+    title.textContent = 'TC-Lense';
+
+    const actions = document.createElement('div');
+    actions.className = 'tcn-xray-panel-actions';
+
+    actions.appendChild(this.createXrayPopupButton());
+    const detachButton = this.createXrayDetachButton();
+    actions.appendChild(detachButton);
+    header.append(title, actions);
+
     const closeButton = document.createElement('button');
     closeButton.type = 'button';
     closeButton.className = 'tcn-xray-panel-close';
@@ -645,7 +680,9 @@ export class LessonPlayerPage implements OnDestroy {
     frame.className = 'tcn-xray-frame';
     frame.setAttribute('frameborder', '0');
 
-    panel.append(closeButton, frame);
+    actions.appendChild(closeButton);
+    panel.append(header, frame);
+    this.addXrayResizeHandles(panel);
     const bottomBar = document.createElement('div');
     bottomBar.className = 'tcn-xray-bottombar';
 
@@ -654,6 +691,256 @@ export class LessonPlayerPage implements OnDestroy {
     this.xrayPanel = panel;
     this.xrayFrame = frame;
     this.xrayBottomBar = bottomBar;
+
+    this.xrayResizeObserver = new ResizeObserver(() => {
+      if (this.xrayDetached()) this.persistXrayGeometry();
+    });
+    this.xrayResizeObserver.observe(panel);
+    this.addXrayDragBehavior(header);
+  }
+
+  private addXrayResizeHandles(panel: HTMLElement): void {
+    const directions: ResizeDirection[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
+    directions.forEach((direction) => {
+      const handle = document.createElement('div');
+      handle.className = `tcn-xray-resize-handle tcn-xray-resize-handle--${direction}`;
+      handle.dataset['resizeDirection'] = direction;
+      handle.setAttribute('role', 'separator');
+      handle.setAttribute('aria-orientation', direction === 'e' || direction === 'w' ? 'vertical' : 'horizontal');
+      handle.setAttribute('aria-label', `Resize TC-Lense window from ${direction.toUpperCase()}`);
+      handle.tabIndex = 0;
+
+      handle.addEventListener('pointerdown', (event) => {
+        if (!this.xrayDetached()) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const start = this.readXrayGeometry();
+        const startX = event.clientX;
+        const startY = event.clientY;
+        const pointerId = event.pointerId;
+        handle.setPointerCapture(pointerId);
+
+        const onPointerMove = (move: PointerEvent): void => {
+          if (move.pointerId !== pointerId || !this.xrayPanel) return;
+          const geometry = resizeFloatingWindow(
+            start,
+            direction,
+            { x: move.clientX - startX, y: move.clientY - startY },
+            { width: window.innerWidth, height: window.innerHeight }
+          );
+          this.applyXrayGeometry(this.clampXrayGeometry(geometry));
+        };
+        const onPointerEnd = (end: PointerEvent): void => {
+          if (end.pointerId !== pointerId) return;
+          handle.removeEventListener('pointermove', onPointerMove);
+          handle.removeEventListener('pointerup', onPointerEnd);
+          handle.removeEventListener('pointercancel', onPointerEnd);
+          this.persistXrayGeometry();
+        };
+
+        handle.addEventListener('pointermove', onPointerMove);
+        handle.addEventListener('pointerup', onPointerEnd);
+        handle.addEventListener('pointercancel', onPointerEnd);
+      });
+
+      handle.addEventListener('keydown', (event: KeyboardEvent) => {
+        const step = event.shiftKey ? 40 : 10;
+        const delta = {
+          x: event.key === 'ArrowRight' ? step : event.key === 'ArrowLeft' ? -step : 0,
+          y: event.key === 'ArrowDown' ? step : event.key === 'ArrowUp' ? -step : 0
+        };
+        if (!delta.x && !delta.y) return;
+        event.preventDefault();
+        const geometry = resizeFloatingWindow(
+          this.readXrayGeometry(),
+          direction,
+          delta,
+          { width: window.innerWidth, height: window.innerHeight }
+        );
+        this.applyXrayGeometry(this.clampXrayGeometry(geometry));
+        this.persistXrayGeometry();
+      });
+
+      panel.appendChild(handle);
+    });
+  }
+
+  private applyXrayGeometry(geometry: XrayFloatGeometry): void {
+    if (!this.xrayPanel) return;
+    this.xrayPanel.style.left = `${geometry.left}px`;
+    this.xrayPanel.style.top = `${geometry.top}px`;
+    this.xrayPanel.style.width = `${geometry.width}px`;
+    this.xrayPanel.style.height = `${geometry.height}px`;
+  }
+
+  private createXrayDetachButton(): HTMLButtonElement {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'tcn-xray-panel-action tcn-xray-panel-action--detach';
+    button.setAttribute('aria-label', 'Detach TC-Lense');
+    button.innerHTML =
+      '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="6" y="8" width="18" height="17" rx="2"></rect><path d="M14 4h12v12M26 4 16 14"></path></svg>';
+    button.addEventListener('click', () => this.detachXray());
+    return button;
+  }
+
+  private createXrayPopupButton(): HTMLButtonElement {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'tcn-xray-panel-action tcn-xray-panel-action--popup';
+    button.setAttribute('aria-label', 'Open TC app in a separate window');
+    button.title = 'Open TC app in a separate window';
+    button.innerHTML =
+      '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="12" y="5" width="14" height="11" rx="1"></rect><rect x="6" y="12" width="14" height="12" rx="1"></rect></svg>';
+    button.addEventListener('click', () => this.openXrayPopup());
+    return button;
+  }
+
+  private openXrayPopup(): void {
+    // This call must stay synchronous inside the button's click handler so
+    // browsers recognize it as a user gesture and don't block the popup.
+    const popup = launchXrayPopup(XRAY_PANEL_URL, window.open.bind(window));
+    if (!popup) {
+      this.detachXray();
+      return;
+    }
+
+    // Hide the docked panel and restore the player's previous windowed or
+    // theater layout; the existing iframe remains mounted for later use.
+    this.setXrayOpen(false);
+  }
+
+  private createXrayDockButton(): HTMLButtonElement {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'tcn-xray-panel-action tcn-xray-panel-action--dock';
+    button.setAttribute('aria-label', 'Dock TC-Lense');
+    button.innerHTML =
+      '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="8" y="7" width="18" height="18" rx="2"></rect><path d="M4 11v14a3 3 0 0 0 3 3h14"></path></svg>';
+    button.addEventListener('click', () => this.dockXray());
+    return button;
+  }
+
+  private addXrayDragBehavior(header: HTMLElement): void {
+    const onPointerDown = (event: PointerEvent): void => {
+      if (!this.xrayOpen() || (event.target as HTMLElement).closest('button')) return;
+      const panel = this.xrayPanel;
+      if (!panel) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const dockedAtStart = !this.xrayDetached();
+      const start = this.readXrayGeometry();
+      const panelRect = panel.getBoundingClientRect();
+      const grabOffset = { x: event.clientX - panelRect.left, y: event.clientY - panelRect.top };
+      const startX = event.clientX;
+      const startY = event.clientY;
+      const pointerId = event.pointerId;
+      header.setPointerCapture(pointerId);
+
+      const onMove = (move: PointerEvent): void => {
+        if (move.pointerId !== pointerId) return;
+        if (dockedAtStart && !this.xrayDetached()) {
+          if (!hasExceededDragThreshold({ x: startX, y: startY }, { x: move.clientX, y: move.clientY })) return;
+          this.detachXray();
+        }
+
+        const geometry = dockedAtStart
+          ? this.clampXrayGeometry({
+              ...start,
+              left: move.clientX - grabOffset.x,
+              top: move.clientY - grabOffset.y
+            })
+          : this.clampXrayGeometry({
+              ...start,
+              left: start.left + move.clientX - startX,
+              top: start.top + move.clientY - startY
+            });
+        this.applyXrayGeometry(geometry);
+      };
+      const onUp = (end: PointerEvent): void => {
+        if (end.pointerId !== pointerId) return;
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointercancel', onUp);
+        if (this.xrayDetached()) this.persistXrayGeometry();
+      };
+      // Keep tracking at window level: detaching changes the panel's layout
+      // while the pointer is captured, and element-bound listeners can stop
+      // receiving the remainder of that same drag in some browsers.
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+      window.addEventListener('pointercancel', onUp);
+      this.xrayDragCleanup = () => {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointercancel', onUp);
+      };
+    };
+    header.addEventListener('pointerdown', onPointerDown);
+    this.xrayDragCleanup = () => header.removeEventListener('pointerdown', onPointerDown);
+  }
+
+  private readXrayGeometry(): XrayFloatGeometry {
+    const saved = window.sessionStorage.getItem(XRAY_FLOAT_STORAGE_KEY);
+    if (saved) {
+      try {
+        return this.clampXrayGeometry(JSON.parse(saved) as XrayFloatGeometry);
+      } catch {
+        window.sessionStorage.removeItem(XRAY_FLOAT_STORAGE_KEY);
+      }
+    }
+    const width = Math.min(XRAY_FLOAT_DEFAULT_WIDTH, Math.max(XRAY_FLOAT_MIN_WIDTH, window.innerWidth - 32));
+    const height = Math.min(XRAY_FLOAT_DEFAULT_HEIGHT, Math.max(XRAY_FLOAT_MIN_HEIGHT, window.innerHeight - 32));
+    return this.clampXrayGeometry({
+      left: Math.max(16, window.innerWidth - width - 24),
+      top: Math.max(16, window.innerHeight - height - 24),
+      width,
+      height
+    });
+  }
+
+  private clampXrayGeometry(geometry: XrayFloatGeometry): XrayFloatGeometry {
+    const maxWidth = Math.max(1, window.innerWidth - 16);
+    const maxHeight = Math.max(1, window.innerHeight - 16);
+    const minWidth = Math.min(XRAY_FLOAT_MIN_WIDTH, maxWidth);
+    const minHeight = Math.min(XRAY_FLOAT_MIN_HEIGHT, maxHeight);
+    const width = Math.min(Math.max(minWidth, geometry.width || XRAY_FLOAT_DEFAULT_WIDTH), maxWidth);
+    const height = Math.min(Math.max(minHeight, geometry.height || XRAY_FLOAT_DEFAULT_HEIGHT), maxHeight);
+    return {
+      left: Math.min(Math.max(8, geometry.left || 0), Math.max(8, window.innerWidth - width - 8)),
+      top: Math.min(Math.max(8, geometry.top || 0), Math.max(8, window.innerHeight - height - 8)),
+      width,
+      height
+    };
+  }
+
+  private persistXrayGeometry(): void {
+    if (!this.xrayPanel) return;
+    const rect = this.xrayPanel.getBoundingClientRect();
+    const geometry = this.clampXrayGeometry({ left: rect.left, top: rect.top, width: rect.width, height: rect.height });
+    window.sessionStorage.setItem(XRAY_FLOAT_STORAGE_KEY, JSON.stringify(geometry));
+  }
+
+  private detachXray(): void {
+    if (!this.xrayPanel) return;
+    this.xrayDetached.set(true);
+    this.playerWrap()?.nativeElement.classList.add('tcn-xray-detached');
+    this.xrayPanel.classList.add('tcn-xray-panel--detached');
+    const headerActions = this.xrayPanel.querySelector('.tcn-xray-panel-actions');
+    const detachButton = headerActions?.querySelector('.tcn-xray-panel-action--detach');
+    detachButton?.replaceWith(this.createXrayDockButton());
+    this.placeXray();
+  }
+
+  private dockXray(): void {
+    if (!this.xrayPanel) return;
+    this.xrayDetached.set(false);
+    this.playerWrap()?.nativeElement.classList.remove('tcn-xray-detached');
+    this.xrayPanel.classList.remove('tcn-xray-panel--detached');
+    const headerActions = this.xrayPanel.querySelector('.tcn-xray-panel-actions');
+    const dockButton = headerActions?.querySelector('.tcn-xray-panel-action--dock');
+    dockButton?.replaceWith(this.createXrayDetachButton());
+    this.placeXray();
   }
 
   /**
@@ -692,6 +979,7 @@ export class LessonPlayerPage implements OnDestroy {
   }
 
   protected setXrayOpen(open: boolean): void {
+    if (!open && this.xrayDetached()) this.dockXray();
     this.xrayOpen.set(open);
     this.playerWrap()?.nativeElement.classList.toggle('tcn-xray-open', open);
 
@@ -722,9 +1010,10 @@ export class LessonPlayerPage implements OnDestroy {
       !!this.player?.fullscreen?.active ||
       !!plyrElement?.classList.contains('plyr--fullscreen-active') ||
       document.fullscreenElement === plyrElement;
-    const rect = computeFillRect(open ? XRAY_PANEL_WIDTH : 0, 0, !open);
+    const docked = open && !this.xrayDetached();
+    const rect = computeFillRect(docked ? XRAY_PANEL_WIDTH : 0, 0, !docked);
 
-    if (open) {
+    if (docked) {
       // X-Ray keeps the player flush with the viewport's top-left corner.
       // Its width uses all space beside the fixed-width phone panel, while
       // the height is derived from that width to preserve a true 16:9 ratio.
@@ -743,7 +1032,7 @@ export class LessonPlayerPage implements OnDestroy {
       wrap.style.width = '';
       wrap.style.height = '';
 
-      if (open && videoWrapper) {
+      if (docked && videoWrapper) {
         // Native fullscreen keeps .plyr at the viewport size. Resize its
         // video wrapper instead so the X-Ray panel occupies the right side
         // rather than sitting on top of the video.
@@ -760,7 +1049,7 @@ export class LessonPlayerPage implements OnDestroy {
         videoWrapper.style.height = '';
       }
 
-      if (open && controlsRoot) {
+      if (docked && controlsRoot) {
         // The custom controls are a full-area overlay. Keep that overlay
         // aligned with the shrunken video column instead of the full native
         // fullscreen shell, so center/top/bottom controls stay on the video.
@@ -789,7 +1078,7 @@ export class LessonPlayerPage implements OnDestroy {
         controlsRoot.style.height = '';
       }
       if (videoEmbed) {
-        if (open) {
+        if (docked) {
           // Explicitly size the embed too. Plyr/Vimeo can otherwise retain
           // its own centered aspect-ratio box while the outer shell is
           // resizing, which creates the apparent top gap.
@@ -806,7 +1095,7 @@ export class LessonPlayerPage implements OnDestroy {
           videoEmbed.style.height = '';
         }
       }
-      if (open) {
+      if (docked) {
         wrap.style.position = 'fixed';
         wrap.style.left = `${rect.left}px`;
         wrap.style.top = `${rect.top}px`;
@@ -821,7 +1110,7 @@ export class LessonPlayerPage implements OnDestroy {
       }
     }
 
-    if (open) {
+    if (docked) {
       const panelWidth = Math.min(XRAY_PANEL_WIDTH, window.innerWidth);
       if (this.xrayPanel) this.xrayPanel.style.width = `${panelWidth}px`;
       if (this.xrayBottomBar) this.xrayBottomBar.style.right = `${panelWidth}px`;
@@ -832,6 +1121,21 @@ export class LessonPlayerPage implements OnDestroy {
       if (this.xrayPanel) this.xrayPanel.style.width = '';
       if (this.xrayBottomBar) this.xrayBottomBar.style.right = '';
       if (this.xrayBottomBar) this.xrayBottomBar.style.height = '';
+    }
+
+    if (this.xrayPanel) {
+      if (this.xrayDetached()) {
+        const geometry = this.readXrayGeometry();
+        this.xrayPanel.style.left = `${geometry.left}px`;
+        this.xrayPanel.style.top = `${geometry.top}px`;
+        this.xrayPanel.style.width = `${geometry.width}px`;
+        this.xrayPanel.style.height = `${geometry.height}px`;
+      } else {
+        this.xrayPanel.style.left = '';
+        this.xrayPanel.style.top = '';
+        this.xrayPanel.style.width = '';
+        this.xrayPanel.style.height = '';
+      }
     }
   }
 
