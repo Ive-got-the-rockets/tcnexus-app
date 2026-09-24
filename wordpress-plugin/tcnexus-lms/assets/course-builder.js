@@ -7,11 +7,228 @@
   // #tcnexus-builder wrapper of its own.
   var root = document.getElementById('tcnexus-builder');
 
+  function openOrganizedMediaLibrary(picker, onSelect) {
+    var modal = document.createElement('div');
+    modal.className = 'tcn-organized-media-modal';
+    modal.innerHTML = '<div class="tcn-organized-media-modal__panel" role="dialog" aria-modal="true" aria-label="Media Library"><button type="button" class="tcn-organized-media-modal__close" aria-label="Close">×</button><div class="tcn-organized-media-modal__body"><aside class="tcn-organized-media-modal__folders"></aside><main><h2>Media Library</h2><div class="tcn-organized-media-modal__grid"></div></main></div></div>';
+    document.body.appendChild(modal);
+    var foldersEl = modal.querySelector('.tcn-organized-media-modal__folders');
+    var gridEl = modal.querySelector('.tcn-organized-media-modal__grid');
+    var close = function () { modal.remove(); };
+    modal.querySelector('.tcn-organized-media-modal__close').addEventListener('click', close);
+    function load(folder) {
+      var body = new URLSearchParams({ action: 'tcnexus_media_library_items', nonce: window.tcnexusMedia.mediaLibraryNonce, folder: folder || 'unsorted' });
+      gridEl.innerHTML = '<p>Loading media…</p>';
+      fetch(window.tcnexusMedia.ajaxUrl, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString() }).then(function (response) { return response.json(); }).then(function (result) {
+        if (!result.success) { gridEl.innerHTML = '<p>Unable to load media.</p>'; return; }
+        foldersEl.innerHTML = result.data.folders.map(function (item) { return '<button type="button" class="tcn-organized-media-modal__folder ' + (item.key === result.data.selected ? 'is-active' : '') + '" data-folder="' + item.key + '">▰ ' + item.label + '</button>'; }).join('');
+        foldersEl.querySelectorAll('[data-folder]').forEach(function (button) { button.addEventListener('click', function () { load(button.dataset.folder); }); });
+        gridEl.innerHTML = result.data.items.length ? result.data.items.map(function (item) { return '<button type="button" class="tcn-organized-media-modal__item" data-id="' + item.id + '"><img src="' + (item.url || '') + '" alt=""><strong>' + item.title + '</strong><small>' + item.type + '</small></button>'; }).join('') : '<p>This folder is empty.</p>';
+        gridEl.querySelectorAll('[data-id]').forEach(function (button, index) { button.addEventListener('click', function () { onSelect({ id: result.data.items[index].id, url: result.data.items[index].url }); close(); }); });
+      }).catch(function () { gridEl.innerHTML = '<p>Unable to load media.</p>'; });
+    }
+    load('unsorted');
+  }
+
   // ---------- Tabs ----------
 
   if (root) {
     var tabs = root.querySelectorAll('.tcn-tab');
     var panels = root.querySelectorAll('.tcn-panel');
+    var levelTabs = root.querySelectorAll('.tcn-level-tab');
+    var levelPanels = root.querySelectorAll('.tcn-level-panel');
+    var levelIncludes = root.querySelectorAll('.tcn-level-include');
+    var activeLevelInput = document.getElementById('tcnexus-active-level');
+    var activeLanguageInput = document.getElementById('tcnexus-active-language');
+    var activeTabInput = document.getElementById('tcnexus-active-tab');
+    var currentLevel = activeLevelInput ? activeLevelInput.value : 'beginner';
+    var headerTitle = document.getElementById('course_title');
+    var headerSlug = document.getElementById('course_slug');
+    var levelLabels = { beginner: 'Beginner', intermediate: 'Intermediate', advanced: 'Advanced' };
+    var languageCodes = { en: 'eng', es: 'spa', pt: 'por', fr: 'fra', de: 'deu', other: 'oth' };
+    var filterLessonRows = null;
+
+    var languageAddButton = document.getElementById('tcnexus-add-course-language');
+    var languageModal = document.getElementById('tcn-course-language-modal');
+    var languageCancel = document.getElementById('tcn-course-language-cancel');
+    var languageContinue = document.getElementById('tcn-course-language-continue');
+    var languageSelect = document.getElementById('tcn-course-language-select');
+    var newLanguageInput = document.getElementById('tcnexus-new-language');
+    var newSeasonInput = document.getElementById('tcnexus-new-show-season');
+    var addSeasonButton = document.getElementById('tcnexus-add-show-season');
+    var removeLanguageInput = document.getElementById('tcnexus-remove-language');
+    var languageRemoveModal = document.getElementById('tcn-course-language-remove-modal');
+    var languageRemoveCancel = document.getElementById('tcn-course-language-remove-cancel');
+    var languageRemoveConfirm = document.getElementById('tcn-course-language-remove-confirm');
+    var languageRemoveMessage = document.getElementById('tcn-course-language-remove-message');
+    var pendingLanguage = '';
+    var newCourseInput = document.getElementById('tcnexus-new-course');
+    var courseForm = root.closest('form');
+    var builderModeInput = courseForm ? courseForm.querySelector('input[name="builder_mode"]') : null;
+    var isShowBuilder = !!(builderModeInput && builderModeInput.value === 'show');
+    var isNewCourse = root.dataset.newCourse === '1';
+
+    if (addSeasonButton && newSeasonInput && courseForm) {
+      addSeasonButton.addEventListener('click', function () {
+        newSeasonInput.value = '1';
+        courseForm.requestSubmit();
+      });
+    }
+
+    function closeLanguageModal() {
+      if (languageModal) languageModal.classList.remove('is-open');
+    }
+
+    function closeLanguageRemoveModal() {
+      if (languageRemoveModal) languageRemoveModal.classList.remove('is-open');
+      pendingLanguage = '';
+    }
+
+    if (languageAddButton && languageModal) {
+      languageAddButton.addEventListener('click', function () {
+        languageModal.classList.add('is-open');
+      });
+    }
+    if (isNewCourse && languageModal) {
+      languageModal.classList.add('is-open');
+    }
+    if (languageCancel) languageCancel.addEventListener('click', closeLanguageModal);
+    if (languageModal) {
+      languageModal.addEventListener('click', function (event) {
+        if (event.target === languageModal) closeLanguageModal();
+      });
+    }
+    if (languageRemoveCancel) languageRemoveCancel.addEventListener('click', closeLanguageRemoveModal);
+    if (languageRemoveModal) {
+      languageRemoveModal.addEventListener('click', function (event) {
+        if (event.target === languageRemoveModal) closeLanguageRemoveModal();
+      });
+    }
+    if (languageRemoveConfirm) {
+      languageRemoveConfirm.addEventListener('click', function () {
+        if (!pendingLanguage || !removeLanguageInput || !courseForm) return;
+        removeLanguageInput.value = pendingLanguage;
+        closeLanguageRemoveModal();
+        courseForm.requestSubmit();
+      });
+    }
+    if (languageContinue && languageSelect && courseForm) {
+      languageContinue.addEventListener('click', function () {
+        if (!languageSelect.value) return;
+        if (isNewCourse && languageSelect.value === 'en') {
+          closeLanguageModal();
+          return;
+        }
+        if (newLanguageInput) newLanguageInput.value = languageSelect.value;
+        courseForm.requestSubmit();
+      });
+    }
+    root.querySelectorAll('.tcn-course-language-tab__remove:not(.is-disabled)').forEach(function (removeButton) {
+      removeButton.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        var tab = removeButton.closest('[data-language]');
+        var languageLink = removeButton.closest('a[href]');
+        var language = languageLink ? new URL(languageLink.href, window.location.href).searchParams.get('language') : '';
+        if (language && languageRemoveModal) {
+          pendingLanguage = language;
+          if (languageRemoveMessage) {
+            var languageName = tab ? (tab.querySelector('span') ? tab.querySelector('span').textContent.trim() : '') : '';
+            var contentUnit = isShowBuilder ? 'Episodes' : 'lessons';
+            languageRemoveMessage.textContent = 'Everything under ' + (languageName || 'this language') + ' will be deleted, including its levels and ' + contentUnit + '.';
+          }
+          languageRemoveModal.classList.add('is-open');
+        }
+      });
+    });
+
+    function stripLevelSuffix(value) {
+      return String(value || '').replace(/\s-\s(?:Intermediate|Advanced)$/i, '');
+    }
+
+    function stripSlugSuffix(value) {
+      return String(value || '').replace(/-(?:intermediate|advanced)$/i, '');
+    }
+
+    function stripLanguagePrefix(value) {
+      return String(value || '').replace(/^(?:eng|spa|por|fra|deu|oth)-/i, '');
+    }
+
+    function syncHeaderToLevel(level) {
+      var titleInput = root.querySelector('[data-level-title="' + level + '"]');
+      var slugInput = root.querySelector('[data-level-slug="' + level + '"]');
+      if (titleInput && headerTitle && headerTitle.value) {
+        titleInput.value = headerTitle.value;
+      }
+      if (slugInput && headerSlug && headerSlug.value) {
+        slugInput.value = headerSlug.value;
+      }
+    }
+
+    function prepareLevelFields(level) {
+      var beginnerTitle = root.querySelector('[data-level-title="beginner"]');
+      var beginnerSlug = root.querySelector('[data-level-slug="beginner"]');
+      var titleInput = root.querySelector('[data-level-title="' + level + '"]');
+      var slugInput = root.querySelector('[data-level-slug="' + level + '"]');
+      var baseTitle = stripLevelSuffix(beginnerTitle && beginnerTitle.value ? beginnerTitle.value : headerTitle && headerTitle.value);
+      var baseSlug = stripLanguagePrefix(stripSlugSuffix(beginnerSlug && beginnerSlug.value ? beginnerSlug.value : headerSlug && headerSlug.value));
+      var languageCode = languageCodes[activeLanguageInput && activeLanguageInput.value ? activeLanguageInput.value : 'en'] || 'oth';
+
+      if (isShowBuilder) {
+        if (headerTitle && titleInput) headerTitle.value = titleInput.value;
+        if (headerSlug && slugInput) headerSlug.value = slugInput.value;
+        return;
+      }
+
+      if (titleInput && level !== 'beginner' && (!titleInput.value || titleInput.dataset.generated === '1')) {
+        titleInput.value = baseTitle ? baseTitle + ' - ' + levelLabels[level] : '';
+        titleInput.dataset.generated = '1';
+      }
+      if (slugInput && level !== 'beginner' && (!slugInput.value || slugInput.dataset.generated === '1')) {
+        slugInput.value = baseSlug ? languageCode + '-' + baseSlug + '-' + level : '';
+        slugInput.dataset.generated = '1';
+      }
+      if (headerTitle && titleInput) headerTitle.value = titleInput.value;
+      if (headerSlug && slugInput) headerSlug.value = slugInput.value;
+    }
+
+    function activateLevel(level) {
+      syncHeaderToLevel(currentLevel);
+      currentLevel = level;
+      if (activeLevelInput) activeLevelInput.value = level;
+      prepareLevelFields(level);
+      levelTabs.forEach(function (levelTab) {
+        var selected = levelTab.getAttribute('data-level') === level;
+        levelTab.classList.toggle('is-active', selected);
+        levelTab.setAttribute('aria-selected', selected ? 'true' : 'false');
+      });
+      levelPanels.forEach(function (levelPanel) {
+        var selected = levelPanel.getAttribute('data-level-panel') === level;
+        levelPanel.classList.toggle('is-active', selected);
+        levelPanel.hidden = !selected;
+      });
+      levelIncludes.forEach(function (levelInclude) {
+        levelInclude.hidden = levelInclude.getAttribute('data-level-include') !== level;
+      });
+      tabs.forEach(function (tab) {
+        tab.setAttribute('aria-controls', 'tcn-panel-' + level + '-' + tab.getAttribute('data-tab'));
+      });
+      if (filterLessonRows) filterLessonRows(level);
+    }
+
+    function updateLevelDot(level, enabled) {
+      var tab = root.querySelector('.tcn-level-tab[data-level="' + level + '"]');
+      if (!tab) return;
+      var dot = tab.querySelector('.tcn-level-tab__dot');
+      if (enabled && !dot) {
+        dot = document.createElement('span');
+        dot.className = 'tcn-level-tab__dot';
+        dot.setAttribute('aria-label', 'Active level');
+        tab.appendChild(dot);
+      } else if (!enabled && dot) {
+        dot.remove();
+      }
+    }
 
     tabs.forEach(function (tab) {
       tab.addEventListener('click', function () {
@@ -23,9 +240,56 @@
         if (panel) {
           panel.classList.add('is-active');
         }
+        if (activeTabInput) activeTabInput.value = tab.getAttribute('data-tab');
         window.location.hash = tab.getAttribute('data-tab');
       });
     });
+
+    levelTabs.forEach(function (levelTab) {
+      levelTab.addEventListener('click', function () {
+        activateLevel(levelTab.getAttribute('data-level') || 'beginner');
+      });
+    });
+
+    levelIncludes.forEach(function (levelInclude) {
+      var input = levelInclude.querySelector('input[type="checkbox"]');
+      if (input) {
+        input.addEventListener('change', function () {
+          updateLevelDot(levelInclude.getAttribute('data-level-include'), input.checked);
+        });
+      }
+    });
+
+    if (headerTitle) {
+      headerTitle.addEventListener('input', function () {
+        var titleInput = root.querySelector('[data-level-title="' + currentLevel + '"]');
+        if (titleInput) {
+          titleInput.value = headerTitle.value;
+          titleInput.dataset.generated = '0';
+        }
+      });
+    }
+
+    if (headerSlug) {
+      headerSlug.addEventListener('input', function () {
+        var slugInput = root.querySelector('[data-level-slug="' + currentLevel + '"]');
+        if (slugInput) {
+          slugInput.value = headerSlug.value;
+          slugInput.dataset.generated = '0';
+        }
+      });
+    }
+
+    root.querySelectorAll('[data-level-title]').forEach(function (titleInput) {
+      titleInput.addEventListener('input', function () {
+        titleInput.dataset.generated = '0';
+        if (titleInput.getAttribute('data-level-title') === currentLevel && headerTitle) {
+          headerTitle.value = titleInput.value;
+        }
+      });
+    });
+
+    activateLevel(currentLevel);
 
     var initialTab = window.location.hash ? window.location.hash.slice(1) : null;
     if (initialTab) {
@@ -43,19 +307,214 @@
   // header fields) means edits anywhere in the Lessons table count too,
   // since it all submits together (see the Lessons card's own comment).
   if (root) {
-    var saveCourseBtn = document.getElementById('tcnexus-save-course');
-    var courseForm = root.closest('form');
-    if (saveCourseBtn && courseForm) {
-      var courseFormDirty = false;
+      var saveCourseBtn = document.getElementById('tcnexus-save-course');
+      var courseForm = root.closest('form');
+      if (saveCourseBtn && courseForm) {
+        var courseFormDirty = root.dataset.newCourse === '1';
+      var newCourseDeleteUrl = root.dataset.newCourseDeleteUrl || '';
+      var allowCourseNavigation = false;
+      var pendingCourseHref = '';
+       var unsavedModal = document.getElementById('tcn-unsaved-modal');
+       var unsavedModalTitle = document.getElementById('tcn-unsaved-modal-title');
+       var unsavedModalMessage = document.getElementById('tcn-unsaved-modal-message');
+       var unsavedDiscardBtn = document.getElementById('tcn-unsaved-modal-discard');
+       var unsavedSaveBtn = document.getElementById('tcn-unsaved-modal-save');
+       var courseTypeCloseBtn = document.getElementById('tcn-unsaved-modal-course-type-close');
+       var courseEditorUrl = window.location.href;
+      var historyGuardArmed = false;
+       var pendingBackNavigation = false;
+
+       var courseTypeIsSet = function () {
+         if (isShowBuilder) return true;
+         return root.querySelectorAll('input[name="levels[beginner][course_types][]"]:checked').length > 0;
+       };
+
+       var mustSetCourseType = function () {
+         return !isShowBuilder && !courseTypeIsSet();
+       };
+
+      var armHistoryGuard = function () {
+        if (historyGuardArmed || allowCourseNavigation) {
+          return;
+        }
+        window.history.pushState({ tcnUnsavedCourseGuard: true }, '', courseEditorUrl);
+        historyGuardArmed = true;
+      };
+
       var markCourseFormDirty = function () {
         if (courseFormDirty) {
           return;
         }
         courseFormDirty = true;
         saveCourseBtn.textContent = 'Pending Save';
+        saveCourseBtn.classList.add('is-pending');
+        armHistoryGuard();
       };
+
+       var closeUnsavedModal = function () {
+        if (unsavedModal) {
+          unsavedModal.classList.remove('is-open');
+        }
+        pendingCourseHref = '';
+         pendingBackNavigation = false;
+         if (unsavedDiscardBtn) unsavedDiscardBtn.hidden = false;
+         if (unsavedSaveBtn) unsavedSaveBtn.hidden = false;
+         if (courseTypeCloseBtn) courseTypeCloseBtn.hidden = true;
+         if (unsavedModalTitle) unsavedModalTitle.textContent = 'You are leaving without saving changes';
+         if (unsavedModalMessage) unsavedModalMessage.textContent = 'The course you started has unsaved changes. Would you like to save it before leaving?';
+       };
+
+       var showCourseTypeWarning = function () {
+         if (unsavedModalTitle) unsavedModalTitle.textContent = 'Course type required';
+         if (unsavedModalMessage) unsavedModalMessage.textContent = 'You must set a course type before leaving the Course Builder.';
+         if (unsavedDiscardBtn) unsavedDiscardBtn.hidden = true;
+         if (unsavedSaveBtn) unsavedSaveBtn.hidden = true;
+         if (courseTypeCloseBtn) courseTypeCloseBtn.hidden = false;
+         if (unsavedModal) unsavedModal.classList.add('is-open');
+       };
+
+       var openUnsavedModal = function (href) {
+         if (mustSetCourseType()) {
+           showCourseTypeWarning();
+           return;
+         }
+         if (!courseFormDirty || allowCourseNavigation) {
+          window.location.href = href;
+          return;
+        }
+        pendingBackNavigation = false;
+        pendingCourseHref = href;
+        if (unsavedModal) {
+          unsavedModal.classList.add('is-open');
+        }
+      };
+
+      var discardCourseChanges = function () {
+        allowCourseNavigation = true;
+        if (newCourseDeleteUrl) {
+          closeUnsavedModal();
+          window.location.href = newCourseDeleteUrl;
+          return;
+        }
+        var href = pendingCourseHref;
+        var shouldGoBack = pendingBackNavigation;
+        pendingBackNavigation = false;
+        closeUnsavedModal();
+        if (shouldGoBack) {
+          window.history.go(-2);
+        } else if (href) {
+          window.location.href = href;
+        } else {
+          window.location.reload();
+        }
+      };
+
+      var saveCourseChanges = function () {
+        allowCourseNavigation = true;
+        pendingBackNavigation = false;
+        closeUnsavedModal();
+        if (newCourseInput) newCourseInput.value = '0';
+        courseForm.requestSubmit();
+      };
+
       courseForm.addEventListener('input', markCourseFormDirty);
       courseForm.addEventListener('change', markCourseFormDirty);
+       courseForm.addEventListener('submit', function (event) {
+         if (mustSetCourseType()) {
+           event.preventDefault();
+           showCourseTypeWarning();
+           return;
+         }
+         allowCourseNavigation = true;
+       });
+
+      if (saveCourseBtn && newCourseInput) {
+        saveCourseBtn.addEventListener('click', function () {
+          newCourseInput.value = '0';
+        });
+      }
+
+      if (unsavedDiscardBtn) {
+        unsavedDiscardBtn.addEventListener('click', discardCourseChanges);
+      }
+       if (unsavedSaveBtn) {
+         unsavedSaveBtn.addEventListener('click', saveCourseChanges);
+       }
+       if (courseTypeCloseBtn) {
+         courseTypeCloseBtn.addEventListener('click', closeUnsavedModal);
+       }
+      if (unsavedModal) {
+        unsavedModal.addEventListener('click', function (event) {
+          if (event.target === unsavedModal) {
+            closeUnsavedModal();
+          }
+        });
+      }
+
+      document.addEventListener('click', function (event) {
+         if (allowCourseNavigation || ((!courseFormDirty && !mustSetCourseType())) || !event.target) {
+          return;
+        }
+        // Tabs, language controls, and other controls inside the builder are
+        // not exits from the builder page and must never open this modal.
+        if (root.contains(event.target)) {
+          return;
+        }
+        var link = event.target.closest ? event.target.closest('a[href]') : null;
+        if (!link || link.target === '_blank' || link.hasAttribute('download')) {
+          return;
+        }
+        var href = link.href;
+        if (!href || href === window.location.href || href.indexOf('#') === href.length - 1) {
+          return;
+        }
+        if (root.contains(link) ||
+          (window.TCNexusNavigationGuard &&
+            window.TCNexusNavigationGuard.isInternalBuilderNavigation(href, window.location.href))) {
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        openUnsavedModal(href);
+      }, true);
+
+      window.addEventListener('beforeunload', function (event) {
+         if (!allowCourseNavigation && (courseFormDirty || mustSetCourseType())) {
+          event.preventDefault();
+          event.returnValue = '';
+        }
+      });
+
+      window.addEventListener('popstate', function () {
+         if (allowCourseNavigation || (!courseFormDirty && !mustSetCourseType())) {
+          return;
+        }
+
+        // Restore the editor entry immediately, then let the custom modal
+        // decide whether the original Back action should continue.
+        window.history.pushState({ tcnUnsavedCourseGuard: true }, '', courseEditorUrl);
+        historyGuardArmed = true;
+         pendingBackNavigation = true;
+         if (unsavedModal) {
+           if (mustSetCourseType()) {
+             showCourseTypeWarning();
+           } else {
+             unsavedModal.classList.add('is-open');
+           }
+         }
+      });
+
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && unsavedModal && unsavedModal.classList.contains('is-open')) {
+          closeUnsavedModal();
+        }
+      });
+
+       if (courseFormDirty || mustSetCourseType()) {
+         saveCourseBtn.textContent = 'Pending Save';
+        saveCourseBtn.classList.add('is-pending');
+        armHistoryGuard();
+      }
     }
 
     // ---------- Save Course: sticky button ----------
@@ -131,6 +590,11 @@
   // — hidden via display:none, which still submits its value with the form.
 
   function enhanceSelect(select) {
+    // Multi-select fields need the browser's native interaction so users can
+    // select several Characters with Ctrl/Cmd-click or Shift-click.
+    if (select.multiple) {
+      return;
+    }
     if (select.dataset.tcnEnhanced) {
       return;
     }
@@ -225,6 +689,60 @@
   // selects) sits outside #tcnexus-builder as its own sibling section.
   document.querySelectorAll('.tcn-select').forEach(enhanceSelect);
 
+  // Show characters: use the styled single-select dropdown to add reusable
+  // character profiles into a submitted list beneath it.
+  document.querySelectorAll('[data-character-picker="1"]').forEach(function (select) {
+    var field = select.closest('.tcn-field');
+    var list = field ? field.querySelector('.tcn-character-list__items') : null;
+    if (!list) return;
+
+    function refreshDropdown() {
+      if (select._tcnRefresh) select._tcnRefresh();
+    }
+
+    list.querySelectorAll('.tcn-character-list__item').forEach(function (item) {
+      var option = select.querySelector('option[value="' + item.getAttribute('data-character-id') + '"]');
+      if (option) option.disabled = true;
+    });
+    refreshDropdown();
+
+    function addCharacter() {
+      var id = select.value;
+      var option = select.options[select.selectedIndex];
+      if (!id || !option || list.querySelector('[data-character-id="' + id + '"]')) return;
+
+      var item = document.createElement('div');
+      item.className = 'tcn-character-list__item';
+      item.setAttribute('data-character-id', id);
+      item.innerHTML = '<span></span><input type="hidden" /><button type="button" class="tcn-character-list__remove" aria-label="Remove character">×</button>';
+      item.querySelector('span').textContent = option.textContent;
+      item.querySelector('input').name = select.getAttribute('data-character-input-name');
+      item.querySelector('input').value = id;
+      item.querySelector('button').setAttribute('aria-label', 'Remove ' + option.textContent);
+      option.disabled = true;
+      item.querySelector('button').addEventListener('click', function () {
+        option.disabled = false;
+        item.remove();
+        refreshDropdown();
+      });
+      list.appendChild(item);
+
+      select.value = '';
+      refreshDropdown();
+    }
+
+    select.addEventListener('change', addCharacter);
+    list.querySelectorAll('.tcn-character-list__remove').forEach(function (button) {
+      button.addEventListener('click', function () {
+        var item = button.closest('.tcn-character-list__item');
+        var option = item && select.querySelector('option[value="' + item.getAttribute('data-character-id') + '"]');
+        if (option) option.disabled = false;
+        if (item) item.remove();
+        refreshDropdown();
+      });
+    });
+  });
+
   // ---------- Generic media pickers ----------
   // Each .tcn-media-picker declares its own target ids via data attributes
   // so one function can drive every image field on the page — including
@@ -245,14 +763,17 @@
     }
     picker.dataset.tcnWired = '1';
 
-    var selectBtn = picker.querySelector('.tcn-media-select');
+    var addBtn = picker.querySelector('.tcn-media-add');
+    var menu = picker.querySelector('.tcn-media-picker__menu');
+    var libraryBtn = picker.querySelector('.tcn-media-library');
+    var fileBtn = picker.querySelector('.tcn-media-file');
     var removeBtn = picker.querySelector('.tcn-media-remove');
     var input = document.getElementById(picker.getAttribute('data-input-id'));
     var preview = picker.querySelector('.tcn-media-picker__preview');
     var cropWidth = parseInt(picker.getAttribute('data-crop-width'), 10) || 0;
     var cropHeight = parseInt(picker.getAttribute('data-crop-height'), 10) || 0;
 
-    if (!selectBtn || !input || !preview || !window.wp || !wp.Uploader) {
+    if (!addBtn || !menu || !libraryBtn || !fileBtn || !input || !preview || !window.wp) {
       return;
     }
 
@@ -261,9 +782,15 @@
         preview.innerHTML = '<img src="' + url + '" alt="" />';
         return;
       }
-      var empty = 'No image selected';
+      var empty = '';
       if (cropWidth && cropHeight) {
+        if (picker.dataset.device) {
+          empty += '<strong class="tcn-media-picker__device">' + picker.dataset.device + '</strong><br />';
+        }
+        empty += 'No image selected';
         empty += '<br />Recommended size: ' + cropWidth + ' × ' + cropHeight + 'px';
+      } else {
+        empty = 'No image selected';
       }
       empty += '<br />Drop image here';
       preview.innerHTML = '<span class="tcn-media-picker__empty">' + empty + '</span>';
@@ -295,28 +822,60 @@
       return attachment && typeof attachment.toJSON === 'function' ? attachment.toJSON() : attachment;
     }
 
-    var uploader = new wp.Uploader({
-      container: picker,
-      browser: selectBtn,
-      dropzone: picker,
-      success: function (attachment) {
-        var data = toPlainAttachment(attachment);
-        if (cropWidth && cropHeight && window.TCNexusCropper) {
-          window.TCNexusCropper.open(data, cropWidth, cropHeight, useAttachment);
-        } else {
-          useAttachment(data);
-        }
-      },
-      error: function (message) {
-        showUploadError(typeof message === 'string' ? message : 'Could not upload this image.');
+    function handleAttachment(attachment) {
+      var data = toPlainAttachment(attachment);
+      if (!data || !data.id || !data.url) {
+        showUploadError('Could not load this image.');
+        return;
       }
+      if (cropWidth && cropHeight && window.TCNexusCropper) {
+        window.TCNexusCropper.open(data, cropWidth, cropHeight, useAttachment);
+      } else {
+        useAttachment(data);
+      }
+    }
+
+    var uploader = null;
+    if (wp.Uploader) {
+      uploader = new wp.Uploader({
+        container: picker,
+        browser: fileBtn,
+        dropzone: picker,
+        success: handleAttachment,
+        error: function (message) {
+          showUploadError(typeof message === 'string' ? message : 'Could not upload this image.');
+        }
+      });
+    }
+
+    addBtn.addEventListener('click', function (event) {
+      event.preventDefault();
+      var isOpen = !menu.hidden;
+      menu.hidden = isOpen;
+      addBtn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+    });
+
+    libraryBtn.addEventListener('click', function (event) {
+      event.preventDefault();
+      menu.hidden = true;
+      addBtn.setAttribute('aria-expanded', 'false');
+      if (!window.tcnexusMedia || !tcnexusMedia.ajaxUrl || !tcnexusMedia.mediaLibraryNonce) {
+        showUploadError('The Media Library is unavailable.');
+        return;
+      }
+      openOrganizedMediaLibrary(picker, handleAttachment);
+    });
+
+    fileBtn.addEventListener('click', function () {
+      menu.hidden = true;
+      addBtn.setAttribute('aria-expanded', 'false');
     });
 
     // wp.Uploader wraps a raw Plupload instance at .uploader — its own
     // success/error callbacks above only fire once the whole upload has
     // finished, with nothing shown while it's still in flight, so the
     // progress bar hooks the lower-level Plupload events directly instead.
-    if (uploader.uploader && typeof uploader.uploader.bind === 'function') {
+    if (uploader && uploader.uploader && typeof uploader.uploader.bind === 'function') {
       uploader.uploader.bind('FilesAdded', function () {
         showUploadProgress(0);
       });
@@ -387,7 +946,9 @@
       button.addEventListener('click', function () {
         quickTargetSelect = root.querySelector('select[name="' + button.getAttribute('data-target-select') + '"]');
         quickRole = button.getAttribute('data-role') || 'instructor';
-        quickTitleEl.textContent = quickRole === 'guest' ? 'Add Guest' : 'Add Instructor';
+        quickTitleEl.textContent = quickRole === 'character'
+          ? 'Add Character'
+          : (quickRole === 'guest' ? 'Add Guest' : 'Add Instructor');
         resetQuickPersonModal();
         quickPersonModal.classList.add('is-open');
         quickNameInput.focus();
@@ -450,6 +1011,7 @@
             if (quickTargetSelect._tcnRefresh) {
               quickTargetSelect._tcnRefresh();
             }
+            quickTargetSelect.dispatchEvent(new Event('change', { bubbles: true }));
             closeQuickPersonModal();
           } else {
             quickErrorEl.textContent = (json && json.data && json.data.message) || 'Could not create this person.';
@@ -472,10 +1034,15 @@
   // the summary row toggles both open/closed; a handful of its fields are
   // mirrored back onto the summary row live so it never goes stale.
 
-  var lessonsList = document.getElementById('tcnexus-lessons-list');
+    var lessonsList = document.getElementById('tcnexus-lessons-list');
   if (lessonsList) {
     var newRowIndex = 0;
     var template = document.getElementById('tcnexus-lesson-row-template');
+    filterLessonRows = function (level) {
+      lessonsList.querySelectorAll('[data-lesson-level]').forEach(function (row) {
+        row.hidden = row.getAttribute('data-lesson-level') !== level;
+      });
+    };
 
     function wireLessonRow(summaryRow, expandRow) {
       var titleInput = expandRow.querySelector('.tcn-lesson-card__title input');
@@ -525,10 +1092,12 @@
       var panel = expandRow.querySelector('.tcn-lesson-expand__panel');
       if (panel) {
         if (expandRow.classList.contains('is-open')) {
+          panel.style.maxHeight = 'none';
           panel.classList.add('tcn-lesson-expand__panel--settled');
         }
         panel.addEventListener('transitionend', function (event) {
           if (event.propertyName === 'max-height' && expandRow.classList.contains('is-open')) {
+            panel.style.maxHeight = 'none';
             panel.classList.add('tcn-lesson-expand__panel--settled');
           }
         });
@@ -545,6 +1114,10 @@
       // is excluded here: it's going away on Save, so its order number
       // should free up for the remaining lessons right away.
       var orderSelects = Array.prototype.slice.call(lessonsList.querySelectorAll('.tcn-lesson-card__order select')).filter(function (select) {
+        var level = select.closest('[data-lesson-level]');
+        if (level && level.getAttribute('data-lesson-level') !== currentLevel) {
+          return false;
+        }
         var expandRow = select.closest('.tcn-lesson-expand');
         var flag = expandRow ? expandRow.querySelector('.tcn-lesson-delete-flag') : null;
         return !flag || !flag.checked;
@@ -569,7 +1142,7 @@
     // instead of always starting everyone at 01.
     function nextAvailableOrderValue() {
       var usedValues = Array.prototype.slice
-        .call(lessonsList.querySelectorAll('.tcn-lesson-card__order select'))
+        .call(lessonsList.querySelectorAll('[data-lesson-level="' + currentLevel + '"] .tcn-lesson-card__order select'))
         .map(function (select) { return select.value; });
       var n = 1;
       while (usedValues.indexOf(String(n)) !== -1) {
@@ -593,7 +1166,9 @@
         emptyRow.remove();
       }
 
-      var html = template.innerHTML.replace(/__INDEX__/g, String(newRowIndex++));
+      var html = template.innerHTML
+        .replace(/__LEVEL__/g, currentLevel)
+        .replace(/__INDEX__/g, String(newRowIndex++));
       var wrapper = document.createElement('tbody');
       wrapper.innerHTML = html;
       var summaryRow = wrapper.querySelector('.tcn-lesson-row');
@@ -610,12 +1185,16 @@
       }
 
       wireLessonRow(summaryRow, expandRow);
+      expandRow.querySelectorAll('.tcn-add-lesson-btn').forEach(function (btn) {
+        btn.addEventListener('click', addLessonRow);
+      });
       if (orderSelect) {
         orderSelect.dispatchEvent(new Event('change', { bubbles: true }));
       }
       expandRow.querySelectorAll('.tcn-media-picker').forEach(wireMediaPicker);
       expandRow.querySelectorAll('.tcn-select').forEach(enhanceSelect);
       updateLessonOrderAvailability();
+      filterLessonRows(currentLevel);
     }
 
     // Both the header's "+ Add Lesson" and the matching one in the table's
@@ -632,12 +1211,22 @@
       // per-course Lessons card supports adding new lessons at all — the
       // Global Lessons List only edits/deletes existing ones — so root
       // (Course Builder's own wrapper) is guaranteed present here.
-      if (root && root.getAttribute('data-add-lesson-row') === '1') {
+    if (root && root.getAttribute('data-add-lesson-row') === '1') {
         addLessonRow();
       }
     }
 
+    filterLessonRows(currentLevel);
+
     lessonsList.addEventListener('click', function (event) {
+      if (event.target.classList.contains('tcn-lesson-guest__remove')) {
+        var guestItem = event.target.closest('.tcn-lesson-guest');
+        if (guestItem) {
+          guestItem.remove();
+          if (typeof markCourseFormDirty === 'function') markCourseFormDirty();
+        }
+        return;
+      }
       if (event.target.classList.contains('tcn-remove-row')) {
         var expandRow = event.target.closest('.tcn-lesson-expand');
         var summaryRow = expandRow ? expandRow.previousElementSibling : null;
@@ -676,7 +1265,31 @@
       var willOpen = !row.classList.contains('is-open');
       row.classList.toggle('is-open', willOpen);
       expand.classList.toggle('is-open', willOpen);
-      if (!willOpen) {
+      var panel = expand.querySelector('.tcn-lesson-expand__panel');
+      if (panel) {
+        if (willOpen) {
+          panel.classList.remove('tcn-lesson-expand__panel--settled');
+          panel.style.maxHeight = '0px';
+          requestAnimationFrame(function () {
+            panel.style.maxHeight = panel.scrollHeight + 'px';
+          });
+        } else {
+          panel.classList.remove('tcn-lesson-expand__panel--settled');
+          panel.style.maxHeight = panel.scrollHeight + 'px';
+          requestAnimationFrame(function () {
+            panel.style.maxHeight = '0px';
+          });
+        }
+      }
+      if (!willOpen && panel) {
+        panel.addEventListener('transitionend', function resetClosedHeight(event) {
+          if (event.propertyName === 'max-height' && !expand.classList.contains('is-open')) {
+            panel.style.maxHeight = '0px';
+            panel.removeEventListener('transitionend', resetClosedHeight);
+          }
+        });
+      }
+      if (!willOpen && !panel) {
         var closingPanel = expand.querySelector('.tcn-lesson-expand__panel');
         if (closingPanel) {
           closingPanel.classList.remove('tcn-lesson-expand__panel--settled');
@@ -685,6 +1298,35 @@
     });
 
     lessonsList.addEventListener('change', function (event) {
+      if (event.target.matches('.tcn-lesson-guest-picker')) {
+        var picker = event.target;
+        var personId = picker.value;
+        var personKind = picker.getAttribute('data-person-kind') || 'guest';
+        var personGroup = picker.closest('.tcn-lesson-card__guests');
+        var personList = personGroup ? personGroup.querySelector('.tcn-lesson-guest-list') : null;
+        if (personId && personList && !personList.querySelector('[data-guest-id="' + personId + '"]')) {
+          var option = picker.options[picker.selectedIndex];
+          var item = document.createElement('div');
+          item.className = 'tcn-lesson-guest';
+          item.setAttribute('data-guest-id', personId);
+          item.innerHTML = '<span class="tcn-lesson-guest__avatar-wrap"></span>' +
+            '<span class="tcn-lesson-guest__name"></span>' +
+            '<input type="hidden" name="' + picker.getAttribute('data-person-input-name') + '" value="' + personId + '" />' +
+            '<button type="button" class="tcn-lesson-guest__remove" aria-label="Remove ' + (personKind === 'character' ? 'character' : 'guest') + '">×</button>';
+          item.querySelector('.tcn-lesson-guest__name').textContent = option ? option.textContent : (personKind === 'character' ? 'Character' : 'Guest');
+          if (option && option.getAttribute('data-photo')) {
+            var avatar = document.createElement('img');
+            avatar.className = 'tcn-lesson-guest__avatar';
+            avatar.src = option.getAttribute('data-photo');
+            avatar.alt = '';
+            item.querySelector('.tcn-lesson-guest__avatar-wrap').appendChild(avatar);
+          }
+          personList.appendChild(item);
+          if (typeof markCourseFormDirty === 'function') markCourseFormDirty();
+        }
+        picker.value = '';
+        if (picker._tcnRefresh) picker._tcnRefresh();
+      }
       if (event.target.matches('input[name*="[video_source]"]')) {
         var card = event.target.closest('.tcn-lesson-card');
         var videoInput = card.querySelector('.tcn-video-id-input');
@@ -725,6 +1367,71 @@
     enhanceSelect: enhanceSelect,
     wireMediaPicker: wireMediaPicker
   };
+})();
+
+(function () {
+  var switcher = document.querySelector('.tcn-course-view-switcher');
+  if (!switcher) {
+    return;
+  }
+
+  var buttons = switcher.querySelectorAll('[data-course-view]');
+  var panels = document.querySelectorAll('[data-course-view-panel]');
+  var storageKey = 'tcnexus-course-list-view';
+  var savedView = 'detail';
+  try {
+    savedView = localStorage.getItem(storageKey) || 'detail';
+  } catch (error) {
+    savedView = 'detail';
+  }
+
+  function activateView(view) {
+    if (['compact', 'detail', 'card'].indexOf(view) === -1) {
+      view = 'card';
+    }
+    buttons.forEach(function (button) {
+      var active = button.getAttribute('data-course-view') === view;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    panels.forEach(function (panel) {
+      panel.hidden = panel.getAttribute('data-course-view-panel') !== view;
+    });
+    try {
+      localStorage.setItem(storageKey, view);
+    } catch (error) {
+      // The view still works when browser storage is unavailable.
+    }
+  }
+
+  buttons.forEach(function (button) {
+    button.addEventListener('click', function () {
+      activateView(button.getAttribute('data-course-view'));
+    });
+  });
+  activateView(savedView);
+})();
+
+(function () {
+  // Each course card owns its own details panel. Expanding one card must not
+  // change the state of any neighboring card in the list.
+  document.querySelectorAll('.tcn-course-card__toggle').forEach(function (toggle) {
+    toggle.addEventListener('click', function () {
+      var card = toggle.closest('.tcn-course-card');
+      var detailsId = toggle.getAttribute('aria-controls');
+      var details = detailsId ? document.getElementById(detailsId) : null;
+      if (!card || !details) {
+        return;
+      }
+
+      card.classList.toggle('is-expanded');
+      var expanded = card.classList.contains('is-expanded');
+      details.hidden = !expanded;
+      toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      toggle.setAttribute('aria-label', expanded ? 'Hide language details' : 'Show language details');
+      toggle.setAttribute('title', expanded ? 'Hide language details' : 'Show language details');
+    });
+  });
 })();
 
 (function () {
@@ -928,10 +1635,16 @@ window.TCNexusCropper = (function () {
       return;
     }
 
-    var x = Math.round(state.frame.left / state.scale);
-    var y = Math.round(state.frame.top / state.scale);
-    var width = Math.round(state.frame.width / state.scale);
-    var height = Math.round(state.frame.height / state.scale);
+    // An exact-size upload already satisfies the requested crop. Keep the
+    // original attachment instead of asking the server to re-encode it; this
+    // also works on hosts without GD or Imagick enabled.
+    if (Math.round(state.naturalWidth) === state.cropWidth && Math.round(state.naturalHeight) === state.cropHeight) {
+      state.onDone({ id: state.attachmentId, url: state.attachmentUrl });
+      close();
+      return;
+    }
+
+    var cropRect = window.TCNexusCropRect.calculateCropRect(state);
 
     applyBtn.disabled = true;
     applyBtn.textContent = 'Cropping…';
@@ -941,10 +1654,10 @@ window.TCNexusCropper = (function () {
       action: 'tcnexus_crop_image',
       nonce: window.tcnexusMedia.nonce,
       attachment_id: state.attachmentId,
-      x: x,
-      y: y,
-      width: width,
-      height: height,
+      x: cropRect.x,
+      y: cropRect.y,
+      width: cropRect.width,
+      height: cropRect.height,
       dst_width: state.cropWidth,
       dst_height: state.cropHeight
     });
@@ -993,6 +1706,7 @@ window.TCNexusCropper = (function () {
 
     state = {
       attachmentId: attachment.id,
+      attachmentUrl: attachment.url,
       naturalWidth: attachment.width || cropWidth,
       naturalHeight: attachment.height || cropHeight,
       cropWidth: cropWidth,
@@ -1002,7 +1716,16 @@ window.TCNexusCropper = (function () {
 
     modal.classList.add('is-open');
 
-    img.onload = layout;
+    img.onload = function () {
+      // Use the dimensions of the actual uploaded image, not only the media
+      // model metadata. This keeps the exact-size fast path consistent for
+      // every picker, including uploads whose metadata is incomplete.
+      if (img.naturalWidth && img.naturalHeight) {
+        state.naturalWidth = img.naturalWidth;
+        state.naturalHeight = img.naturalHeight;
+      }
+      layout();
+    };
     img.src = attachment.url;
   }
 

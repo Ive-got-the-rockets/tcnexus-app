@@ -54,3 +54,67 @@
 .tcn-lessons-overview__course {
   width: 220px;
 }
+
+.tcn-global-tier-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tcn-global-tier-toggle {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  flex: 0 0 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--tcn-primary, #8bd8c8);
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.tcn-global-tier-toggle span {
+  position: absolute;
+  top: 3px;
+  left: 19px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fffdf9;
+  box-shadow: 0 1px 3px rgba(32, 31, 28, 0.2);
+  transition: left 0.15s ease;
+}
+
+.tcn-global-tier-toggle[data-tier='paid'] {
+  background: var(--tcn-border, #d8d4c9);
+}
+
+.tcn-global-tier-toggle[data-tier='paid'] span {
+  left: 3px;
+}
+
+.tcn-global-tier-toggle:hover,
+.tcn-global-tier-toggle:focus-visible {
+  opacity: 0.82;
+  outline: 2px solid var(--tcn-primary-strong, #4ba995);
+  outline-offset: 2px;
+}
+
+.tcn-global-tier-toggle:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+/* Match the expanded editor's Remove button, with the shared pending-save treatment. */
+.tcn-global-lesson-save {
+  font-size: 12.5px;
+  padding: 7px 14px;
+  border: 1px solid transparent;
+}
+
+.tcn-global-lesson-save.is-pending,
+.tcn-global-lesson-save.is-pending:hover {
+  background: #F09889;
+  color: #201f1c;
+}

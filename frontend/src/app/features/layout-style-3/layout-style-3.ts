@@ -500,14 +500,13 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
       intermediate: 'Intermediate',
       advanced: 'Advanced',
     };
-    const configured = course.configured_levels?.length
-      ? course.configured_levels
-      : course.course_types
-        .map(type => type.toLowerCase())
-        .filter((level): level is CourseLevelSlug => level in labels);
-    return configured
-      .filter((level): level is CourseLevelSlug => level in labels)
-      .map(level => course.levels?.[level]?.label ?? labels[level]);
+    const levelSlugs = (Object.keys(labels) as CourseLevelSlug[]).filter(level => {
+      const levelData = course.levels?.[level];
+      const configured = course.configured_levels ?? [];
+      return Boolean(levelData?.enabled)
+        || configured.some(slug => slug === level || slug.endsWith(`-${level}`));
+    });
+    return levelSlugs.map(level => course.levels?.[level]?.label ?? labels[level]);
   }
 
   protected toggleDescription(): void {

@@ -347,6 +347,31 @@ for (const course of [...courses, ...shows]) {
     instructor: { id: 1, name: 'Coco Blanco', photo: 'https://i.pravatar.cc/120?u=coco-blanco' },
     guest: { id: 2, name: 'TC Nexus Guest', photo: 'https://i.pravatar.cc/120?u=tcnexus-guest' }
   }]));
+
+  if (course.course_types.includes('Shows')) {
+    const episodes = buildLessons(course);
+    const split = course.id === 901 ? Math.ceil(episodes.length / 2) : episodes.length;
+    const seasonEntries = [['season-1', episodes.slice(0, split)]];
+    if (split < episodes.length) seasonEntries.push(['season-2', episodes.slice(split)]);
+    course.seasons = Object.fromEntries(seasonEntries.map(([key, seasonLessons]) => {
+      const number = Number(key.slice('season-'.length));
+      return [key, {
+        enabled: true,
+        season_key: key,
+        label: `Season ${number}`,
+        title: course.title,
+        content: `<p>${course.excerpt}</p>`,
+        lesson_count: seasonLessons.length,
+        lessons: seasonLessons,
+        thumbnail: course.thumbnail,
+        image: course.image,
+        title_image: null,
+        overview_link: course.overview_link ?? null,
+        trailer_link: course.trailer_link ?? null
+      }];
+    }));
+    course.configured_seasons = Object.keys(course.seasons);
+  }
 }
 
 function buildLessons(course) {
@@ -370,6 +395,10 @@ function buildLessons(course) {
 
 function buildCourseDetail(course) {
   const lessons = buildLessons(course);
+  const seasons = course.seasons ? Object.fromEntries(Object.entries(course.seasons).map(([key, season]) => [key, {
+    ...season,
+    lessons: season.lessons ?? lessons
+  }])) : undefined;
   const levels = Object.fromEntries(Object.entries(course.levels ?? {}).map(([slug, level]) => [slug, {
     ...level,
     lessons
@@ -392,9 +421,10 @@ function buildCourseDetail(course) {
       name: 'TC Nexus Guest',
       photo: 'https://i.pravatar.cc/120?u=tcnexus-guest'
     },
-    lessons,
+    lessons: seasons ? (seasons['season-1']?.lessons ?? lessons) : lessons,
     configured_levels: course.configured_levels,
-    levels
+    levels,
+    ...(seasons ? { seasons, configured_seasons: course.configured_seasons } : {})
   };
 }
 

@@ -25,6 +25,7 @@ class TCNexus_Media {
 		wp_localize_script( $handle, 'tcnexusMedia', array(
 			'ajaxUrl'           => admin_url( 'admin-ajax.php' ),
 			'nonce'             => wp_create_nonce( self::NONCE_ACTION ),
+			'mediaLibraryNonce' => wp_create_nonce( 'tcnexus_media_library' ),
 			'quickCreateNonce'  => wp_create_nonce( TCNexus_Instructor_Builder::QUICK_CREATE_NONCE_ACTION ),
 		) );
 	}
@@ -41,11 +42,14 @@ class TCNexus_Media {
 		$input_name = $input_name ? $input_name : $field_key;
 		$url      = $attachment_id ? wp_get_attachment_image_url( $attachment_id, 'medium' ) : '';
 		$has_crop = $crop_width && $crop_height;
+		$device_label = in_array( $label, array( 'Desktop', 'Mobile' ), true ) ? $label : '';
 		?>
 		<div
 			class="tcn-media-picker"
+			<?php if ( $has_crop ) : ?>style="--tcn-media-aspect: <?php echo esc_attr( $crop_width . ' / ' . $crop_height ); ?>"<?php endif; ?>
 			data-input-id="<?php echo esc_attr( $input_id ); ?>"
 			data-title="<?php echo esc_attr( $title ); ?>"
+			<?php if ( $device_label ) : ?>data-device="<?php echo esc_attr( $device_label ); ?>"<?php endif; ?>
 			<?php if ( $has_crop ) : ?>
 				data-crop-width="<?php echo esc_attr( $crop_width ); ?>"
 				data-crop-height="<?php echo esc_attr( $crop_height ); ?>"
@@ -56,9 +60,12 @@ class TCNexus_Media {
 					<img src="<?php echo esc_url( $url ); ?>" alt="" />
 				<?php else : ?>
 					<span class="tcn-media-picker__empty">
-						No image selected
 						<?php if ( $has_crop ) : ?>
+							<?php if ( $device_label ) : ?><strong class="tcn-media-picker__device"><?php echo esc_html( $device_label ); ?></strong><br /><?php endif; ?>
+							No image selected
 							<br />Recommended size: <?php echo (int) $crop_width; ?> &times; <?php echo (int) $crop_height; ?>px
+						<?php else : ?>
+							No image selected
 						<?php endif; ?>
 						<br />Drop image here
 					</span>
@@ -66,7 +73,13 @@ class TCNexus_Media {
 			</div>
 		<input type="hidden" id="<?php echo esc_attr( $input_id ); ?>" name="<?php echo esc_attr( $input_name ); ?>" value="<?php echo esc_attr( $attachment_id ); ?>" />
 			<div class="tcn-media-picker__actions">
-				<button type="button" class="tcn-btn-ghost tcn-media-select"><?php echo esc_html( $label ); ?></button>
+				<div class="tcn-media-picker__add-wrap">
+					<button type="button" class="tcn-btn-ghost tcn-media-add" aria-expanded="false">Add Image</button>
+					<div class="tcn-media-picker__menu" hidden>
+						<button type="button" class="tcn-btn-ghost tcn-media-library">From Media Library</button>
+						<button type="button" class="tcn-btn-ghost tcn-media-file">From File</button>
+					</div>
+				</div>
 				<button type="button" class="tcn-btn-ghost tcn-btn-ghost--danger tcn-media-remove">Remove</button>
 			</div>
 		</div>
@@ -93,10 +106,47 @@ class TCNexus_Media {
 			wp_send_json_error( array( 'message' => 'Invalid crop dimensions.' ) );
 		}
 
+		// The browser crop frame is displayed at a scaled size, so rounding can
+		// put the final edge one pixel outside the original image. Clamp it here
+		// as a second line of defense before handing it to the image editor.
+		$source_size = wp_getimagesize( get_attached_file( $attachment_id ) );
+		if ( ! $source_size || empty( $source_size[0] ) || empty( $source_size[1] ) ) {
+			wp_send_json_error( array( 'message' => 'The original image could not be read.' ) );
+		}
+		$x      = min( max( 0, $x ), $source_size[0] - 1 );
+		$y      = min( max( 0, $y ), $source_size[1] - 1 );
+		$width  = min( $width, $source_size[0] - $x );
+		$height = min( $height, $source_size[1] - $y );
+
 		$cropped = wp_crop_image( $attachment_id, $x, $y, $width, $height, $dst_width, $dst_height );
 
 		if ( ! $cropped || is_wp_error( $cropped ) ) {
-			wp_send_json_error( array( 'message' => 'Image could not be cropped.' ) );
+			if ( is_wp_error( $cropped ) ) {
+				error_log( sprintf(
+					'TCNexus crop failed: %s (%s); source=%s; crop=%d,%d %dx%d; destination=%dx%d',
+					$cropped->get_error_message(),
+					$cropped->get_error_code(),
+					get_attached_file( $attachment_id ),
+					$x,
+					$y,
+					$width,
+					$height,
+					$dst_width,
+					$dst_height
+				) );
+			}
+			// Some hosts cannot create a derivative for particular source formats
+			// or when their image editor is unavailable. Keep the upload usable in
+			// every shared picker instead of discarding it with a crop error.
+			$original_url = wp_get_attachment_image_url( $attachment_id, 'medium' );
+			if ( $original_url ) {
+				wp_send_json_success( array(
+					'id'       => $attachment_id,
+					'url'      => $original_url,
+					'fallback' => true,
+				) );
+			}
+			wp_send_json_error( array( 'message' => 'Image could not be cropped or loaded.' ) );
 		}
 
 		/** This filter is documented in wp-admin/includes/class-custom-image-header.php */
@@ -106,6 +156,9 @@ class TCNexus_Media {
 		$new_id        = wp_insert_attachment( $attachment, $cropped );
 		$metadata      = wp_generate_attachment_metadata( $new_id, $cropped );
 		wp_update_attachment_metadata( $new_id, $metadata );
+		// The cropped replacement is now complete, so permanently remove the
+		// source attachment and its original file to avoid Media Library buildup.
+		wp_delete_attachment( $attachment_id, true );
 
 		wp_send_json_success( array(
 			'id'  => $new_id,

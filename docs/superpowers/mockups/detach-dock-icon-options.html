@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TC-Lense detach and dock icon directions</title>
+<style>
+  :root { color-scheme: dark; --bg:#0b0d0c; --panel:#141715; --line:rgba(244,241,233,.14); --paper:#f4f1e9; --muted:#b9b6ad; --signal:#c7ff5c; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:40px; background:radial-gradient(circle at 50% -20%,#243d31 0,#0b0d0c 45%); color:var(--paper); font:15px/1.5 Inter,system-ui,sans-serif; }
+  header { max-width:980px; margin:0 auto 28px; }
+  .eyebrow { color:var(--signal); font:11px/1.2 ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; }
+  h1 { margin:8px 0 6px; font:400 clamp(28px,4vw,46px)/1.05 Georgia,serif; }
+  .intro { color:var(--muted); max-width:680px; margin:0; }
+  .grid { max-width:980px; margin:0 auto; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+  .card { display:grid; grid-template-columns:54px 1fr; gap:18px; align-items:center; min-height:132px; padding:22px; border:1px solid var(--line); border-radius:12px; background:linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.025)); }
+  .number { color:var(--signal); font:12px ui-monospace,monospace; align-self:start; }
+  .preview { display:flex; gap:28px; align-items:center; }
+  .icon { display:grid; justify-items:center; gap:8px; color:var(--paper); }
+  .icon svg { width:42px; height:42px; overflow:visible; }
+  .icon span { color:var(--muted); font:10px ui-monospace,monospace; text-transform:uppercase; letter-spacing:.08em; }
+  .card h2 { margin:0 0 5px; font-size:16px; font-weight:500; }
+  .card p { margin:0; color:var(--muted); font-size:13px; }
+  .stroke { fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+  .solid { fill:currentColor; }
+  .signal { color:var(--signal); }
+  @media (max-width:700px) { body { padding:24px 16px; } .grid { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<header><div class="eyebrow">TC-Lense / icon exploration</div><h1>Detach &amp; dock directions</h1><p class="intro">Ten paired directions for the TC app iframe controls. Left icon detaches the side panel into a floating window; right icon docks it back into the side panel.</p></header>
+<main class="grid">
+  <article class="card"><div class="number">01</div><div><h2>Classic corners</h2><p>Clear, familiar window controls.</p><div class="preview"><div class="icon"><svg viewBox="0 0 32 32"><path class="stroke" d="M12 5H5v7M5 5l9 9M20 27h7v-7M27 27l-9-9"/></svg><span>detach</span></div><div class="icon"><svg viewBox="0 0 32 32"><path class="stroke" d="M5 12V5h7M5 5l9 9M27 20v7h-7M27 27l-9-9"/></svg><span>dock</span></div></div></div></article>
+  <article class="card"><div class="number">02</div><div><h2>Window lift</h2><p>Suggests pulling the app out from its frame.</p><div class="preview"><div class="icon"><svg viewBox="0 0 32 32"><rect class="stroke" x="6" y="8" width="18" height="17" rx="2"/><path class="stroke" d="M14 4h12v12M26 4 16 14"/></svg><span>detach</span></div><div class="icon"><svg viewBox="0 0 32 32"><rect class="stroke" x="8" y="7" width="18" height="18" rx="2"/><path class="stroke" d="M4 11v14a3 3 0 0 0 3 3h14"/></svg><span>dock</span></div></div></div></article>
+  <article class="card"><div class="number">03</div><div><h2>Expand / collapse</h2><p>Minimal four-corner motion language.</p><div class="preview"><div class="icon"><svg viewBox="0 0 32 32"><path class="stroke" d="M13 4H4v9M4 4l9 9M19 28h9v-9M28 28l-9-9"/></svg><span>detach</span></div><div class="icon"><svg viewBox="0 0 32 32"><path class="stroke" d="M4 13V4h9M4 4l9 9M28 19v9h-9M28 28l-9-9"/></svg><span>dock</span></div></div></div></article>
+  <article class="card"><div class="number">04</div><div><h2>Panel with arrow</h2><p>Communicates direction more explicitly.</p><div class="preview"><div class="icon"><svg viewBox="0 0 32 32"><rect class="stroke" x="5" y="7" width="17" height="18" rx="2"/><path class="stroke" d="M18 14h9M23 10l4 4-4 4"/></svg><span>detach</span></div><div class="icon"><svg viewBox="0 0 32 32"><rect class="stroke" x="10" y="7" width="17" height="18" rx="2"/><path class="stroke" d="M14 14H5M9 10l-4 4 4 4"/></svg><span>dock</span></div></div></div></article>
+  <article class="card"><div class="number">05</div><div><h2>Floating tile</h2><p>Compact app-window silhouette.</p><div class="preview"><div class="icon"><svg viewBox="0 0 32 32"><rect class="stroke" x="6" y="6" width="20" height="20" rx="3"/><path class="stroke" d="M11 21V11h10M11 11l5 5M21 21V11h-5M21 11l-5 5"/></svg><span>detach</span></div><div class="icon"><svg viewBox="0 0 32 32"><rect class="stroke" x="6" y="6" width="20" height="20" rx="3"/><path class="stroke" d="M11 11v10h10M11 21l5-5M21 11v10h-5M21 21l-5-5"/></svg><span>dock</span></div></div></div></article>
+  <article class="card"><div class="number">06</div><div><h2>Corner split</h2><p>Simple diagonal movement, easy to scan.</p><div class="preview"><div class="icon"><svg viewBox="0 0 32 32"><path class="stroke" d="M5 13V5h8M5 5l8 8M27 19v8h-8M27 27l-8-8"/><path class="stroke" d="M16 16h.01"/></svg><span>detach</span></div><div class="icon"><svg viewBox="0 0 32 32"><path class="stroke" d="M5 19v8h8M5 27l8-8M27 13V5h-8M27 5l-8 8"/><path class="stroke" d="M16 16h.01"/></svg><span>dock</span></div></div></div></article>
+  <article class="card"><div class="number">07</div><div><h2>Pop-out chevron</h2><p>Strong affordance at small sizes.</p><div class="preview"><div class="icon"><svg viewBox="0 0 32 32"><rect class="stroke" x="5" y="7" width="16" height="18" rx="2"/><path class="stroke" d="m17 15 5-5 5 5M22 10v12"/></svg><span>detach</span></div><div class="icon"><svg viewBox="0 0 32 32"><rect class="stroke" x="11" y="7" width="16" height="18" rx="2"/><path class="stroke" d="m15 17-5 5-5-5M10 22V10"/></svg><span>dock</span></div></div></div></article>
+  <article class="card"><div class="number">08</div><div><h2>Layer shift</h2><p>Best fit if the app feels like a floating layer.</p><div class="preview"><div class="icon"><svg viewBox="0 0 32 32"><rect class="stroke" x="9" y="9" width="16" height="16" rx="2"/><path class="stroke" d="M5 21V5h16M5 5l7 7"/></svg><span>detach</span></div><div class="icon"><svg viewBox="0 0 32 32"><rect class="stroke" x="7" y="7" width="16" height="16" rx="2"/><path class="stroke" d="M27 11v16H11M27 27l-7-7"/></svg><span>dock</span></div></div></div></article>
+  <article class="card"><div class="number">09</div><div><h2>Signal arrows</h2><p>More expressive, with a tech-product feel.</p><div class="preview"><div class="icon"><svg viewBox="0 0 32 32"><rect class="stroke" x="5" y="7" width="17" height="18" rx="2"/><path class="stroke" d="M17 16h10M23 12l4 4-4 4"/><path class="stroke signal" d="M27 6v4M25 8h4"/></svg><span>detach</span></div><div class="icon"><svg viewBox="0 0 32 32"><rect class="stroke" x="10" y="7" width="17" height="18" rx="2"/><path class="stroke" d="M15 16H5M9 12l-4 4 4 4"/><path class="stroke signal" d="M5 26v-4M3 24h4"/></svg><span>dock</span></div></div></div></article>
+  <article class="card"><div class="number">10</div><div><h2>Single-line arrows</h2><p>Most compact option for a tight control bar.</p><div class="preview"><div class="icon"><svg viewBox="0 0 32 32"><path class="stroke" d="M7 16h18M18 9l7 7-7 7"/></svg><span>detach</span></div><div class="icon"><svg viewBox="0 0 32 32"><path class="stroke" d="M25 16H7M14 9l-7 7 7 7"/></svg><span>dock</span></div></div></div></article>
+</main>
+</body>
+</html>

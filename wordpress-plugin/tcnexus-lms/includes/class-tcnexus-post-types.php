@@ -23,6 +23,23 @@ class TCNexus_Post_Types {
 			'menu_icon'    => 'dashicons-video-alt3',
 		) );
 
+		register_post_type( 'tc_show', array(
+			'label'        => 'Shows',
+			'labels'       => array(
+				'name'          => 'Shows',
+				'singular_name' => 'Show',
+				'add_new_item'  => 'Add New Show',
+				'edit_item'     => 'Edit Show',
+			),
+			'public'       => false,
+			'show_ui'      => true,
+			'show_in_menu' => false,
+			'show_in_rest' => true,
+			'rest_base'    => 'tc_show',
+			'supports'     => array( 'title', 'editor', 'thumbnail' ),
+			'menu_icon'    => 'dashicons-format-video',
+		) );
+
 		register_post_type( 'tc_lesson', array(
 			'label'        => 'Episodes',
 			'labels'       => array(
@@ -60,7 +77,24 @@ class TCNexus_Post_Types {
 			'supports'     => array( 'title', 'editor', 'thumbnail' ),
 		) );
 
-		register_taxonomy( 'course_type', 'tc_course', array(
+		register_post_type( 'tc_character', array(
+			'label'        => 'Characters',
+			'labels'       => array(
+				'name'          => 'Characters',
+				'singular_name' => 'Character',
+				'add_new_item'  => 'Add New Character',
+				'edit_item'     => 'Edit Character',
+				'all_items'     => 'Characters',
+			),
+			'public'       => false,
+			'show_ui'      => false,
+			'show_in_menu' => false,
+			'show_in_rest' => true,
+			'rest_base'    => 'tc_character',
+			'supports'     => array( 'title', 'editor', 'thumbnail' ),
+		) );
+
+		register_taxonomy( 'course_type', array( 'tc_course', 'tc_show' ), array(
 			'label'             => 'Course Types',
 			'hierarchical'      => true,
 			'show_ui'           => true,

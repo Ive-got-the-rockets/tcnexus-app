@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Course level tabs mockup</title>
+  <style>
+    :root{--ink:#182126;--paper:#f5f4f0;--panel:#fffdfa;--line:#d9d6cd;--muted:#77736b;--mint:#a7e7d1;--green:#94e84b;--amber:#b68416}
+    *{box-sizing:border-box}body{margin:0;background:#e9e8e3;color:var(--ink);font-family:Inter,Arial,sans-serif}.frame{width:1120px;min-height:720px;margin:28px auto;background:var(--paper);border:1px solid #cbc8bf;box-shadow:0 18px 60px #26323822;overflow:hidden}.topbar{height:70px;padding:18px 34px;border-bottom:1px solid var(--line);display:flex;align-items:flex-end}.back{border:1px solid var(--line);border-radius:999px;padding:10px 17px;background:#fffdfa;font-size:14px}.tabs-wrap{height:76px;padding:0 34px;border-bottom:1px solid var(--line);display:flex;align-items:flex-end;gap:5px}.folder{position:relative;border:1px solid #cbc8bf;border-bottom:0;border-radius:12px 12px 0 0;background:#e8e6df;color:#59564f;padding:9px 25px 10px;font-size:15px;font-weight:700;min-width:145px;cursor:pointer}.folder.active{background:var(--panel);color:var(--ink);height:53px}.folder.active:after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--panel)}.dot{display:inline-block;width:8px;height:8px;margin-left:10px;border-radius:50%;background:#c6c3bb;vertical-align:1px}.dot.ready{background:var(--green);box-shadow:0 0 0 2px #94e84b33}.content{padding:28px 34px 60px;background:var(--panel)}.eyebrow{margin:0 0 9px;color:var(--muted);font-size:12px;letter-spacing:.18em;text-transform:uppercase}.title{width:640px;height:43px;border:1px solid #aaa69d;background:white;padding:5px 13px;font-family:Georgia,serif;font-size:28px}.slug{display:flex;gap:10px;margin:10px 0 30px;color:var(--muted);font-size:14px}.card{border-top:1px solid var(--line);padding-top:26px;max-width:850px}.switch-line{display:flex;align-items:center;gap:12px;margin:0 0 18px}.switch{width:42px;height:24px;border:0;border-radius:999px;background:#c4c1b9;position:relative}.switch:after{content:"";position:absolute;width:18px;height:18px;top:3px;left:3px;background:#fff;border-radius:50%;box-shadow:0 1px 3px #0003}.switch.on{background:var(--green)}.switch.on:after{left:21px}.switch-label{font-size:14px;font-weight:700}.hint{color:var(--muted);font-size:12px}.fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px}.field label{display:block;margin-bottom:8px;font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase}.readonly,.input{height:42px;padding:11px 13px;border:1px solid #cbc8bf;border-radius:4px;background:#fffdfa;font-size:15px}.readonly{background:#f0efe9;font-weight:700}.note{margin-top:30px;padding:14px 16px;border-left:3px solid var(--green);background:#f0f7e9;color:#596151;font-size:13px;max-width:650px}
+  </style>
+</head>
+<body>
+  <main class="frame">
+    <div class="topbar"><div class="back">←&nbsp; Back To All Courses</div></div>
+    <div class="tabs-wrap" aria-label="Course levels">
+      <button class="folder active">Beginner <span class="dot ready"></span></button>
+      <button class="folder">Intermediate <span class="dot"></span></button>
+      <button class="folder">Advanced <span class="dot"></span></button>
+    </div>
+    <section class="content">
+      <div class="switch-line"><button class="switch on" aria-label="Include Beginner level"></button><span class="switch-label">Include this level</span><span class="hint">This level appears on the front end.</span></div>
+      <p class="eyebrow">Course</p>
+      <div class="title">Mastering the Greeks</div>
+      <div class="slug"><span>/courses/</span><span>mastering-the-greeks</span></div>
+      <div class="card">
+        <div class="fields" style="grid-template-columns:1fr 1fr">
+          <div class="field"><label>Author</label><div class="input">Diego Cheetah</div></div>
+          <div class="field"><label>Course Language</label><div class="input">English</div></div>
+        </div>
+        <div class="note">The green dot appears only when the level is included with the toggle. This makes it immediately clear which levels are active on the front end.</div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -21,7 +21,7 @@ assert.match(layout3, /'catalog',\s*\{/);
 assert.doesNotMatch(layout3, /'style-2',\s*\{/);
 assert.match(models, /title_image\?:?\s*string \| null/);
 assert.match(layout3Template, /title_image/);
-assert.match(detailTemplate, /title_image/);
+assert.match(detailTemplate, /activeTitleImage\(c\)/);
 assert.match(detail, /if \(course\.course_types\.includes\('Shows'\)\) return 'Show';/);
 assert.match(detailStyles, /\.detail__hero[\s\S]*align-items: flex-start;/);
 assert.match(detailStyles, /\.detail__hero[\s\S]*padding: 300px /);

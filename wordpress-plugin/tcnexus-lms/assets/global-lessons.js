@@ -6,7 +6,7 @@
 
   // ---------- Filters ----------
   // Purely client-side — every row is already rendered with its course/
-  // instructor ids on it, so filtering just shows/hides row pairs instead
+  // instructor and parent ids on it, so filtering just shows/hides row pairs instead
   // of round-tripping to the server.
 
   var instructorFilter = document.getElementById('tcn-filter-instructor');
@@ -42,7 +42,7 @@
     });
 
     if (countEl) {
-      countEl.textContent = visible + ' lesson' + (visible === 1 ? '' : 's');
+      countEl.textContent = visible + ' item' + (visible === 1 ? '' : 's');
     }
   }
 
@@ -75,12 +75,80 @@
 
   // ---------- Expand / collapse + live summary sync ----------
 
+  function renderTier(row, tier) {
+    var badge = row.querySelector('[data-tier-badge]');
+    var toggle = row.querySelector('[data-tier-toggle]');
+    var expand = row.nextElementSibling;
+    if (badge) {
+      badge.textContent = tier === 'paid' ? 'Paid' : 'Free';
+      badge.className = 'tcn-level-chip tcn-level-chip--' + tier;
+    }
+    if (toggle) {
+      toggle.setAttribute('data-tier', tier);
+      toggle.setAttribute('aria-pressed', tier === 'free' ? 'true' : 'false');
+      toggle.setAttribute('aria-label', 'Make episode ' + (tier === 'free' ? 'paid' : 'free'));
+    }
+    if (expand) {
+      var radio = expand.querySelector('.tcn-lesson-card__row--meta input[type="radio"][value="' + tier + '"]');
+      if (radio) radio.checked = true;
+    }
+  }
+
+  function markPending(row) {
+    var expand = row ? row.nextElementSibling : null;
+    var saveBtn = expand ? expand.querySelector('.tcn-global-lesson-save') : null;
+    if (!saveBtn) return;
+    saveBtn.classList.add('is-pending');
+    saveBtn.textContent = 'Pending Save';
+  }
+
+  function saveInlineTier(toggle, row) {
+    if (!window.tcnexusGlobalLessons) return;
+    var previousTier = toggle.getAttribute('data-tier') === 'paid' ? 'paid' : 'free';
+    var nextTier = previousTier === 'free' ? 'paid' : 'free';
+    toggle.disabled = true;
+    renderTier(row, nextTier);
+
+    var body = new URLSearchParams({
+      action: 'tcnexus_set_global_lesson_tier',
+      nonce: window.tcnexusGlobalLessons.tierNonce,
+      lesson_id: row.getAttribute('data-lesson-id'),
+      tier: nextTier
+    });
+
+    fetch(window.tcnexusGlobalLessons.ajaxUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString()
+    })
+      .then(function (response) { return response.json(); })
+      .then(function (json) {
+        toggle.disabled = false;
+        if (json && json.success && json.data && json.data.tier) {
+          renderTier(row, json.data.tier);
+        } else {
+          renderTier(row, previousTier);
+          window.alert((json && json.data && json.data.message) || 'Could not update the episode tier.');
+        }
+      })
+      .catch(function () {
+        toggle.disabled = false;
+        renderTier(row, previousTier);
+        window.alert('Could not reach the server.');
+      });
+  }
+
   function wireLessonRow(row, expand) {
+    expand.querySelectorAll('input, select, textarea').forEach(function (field) {
+      field.addEventListener('input', function () { markPending(row); });
+      field.addEventListener('change', function () { markPending(row); });
+    });
+
     var titleInput = expand.querySelector('.tcn-lesson-card__title input');
     var titleSpan = row.querySelector('.tcn-lesson-row__title span');
     if (titleInput && titleSpan) {
       titleInput.addEventListener('input', function () {
-        titleSpan.textContent = titleInput.value.trim() || 'Untitled lesson';
+        titleSpan.textContent = titleInput.value.trim() || 'Untitled episode';
       });
     }
 
@@ -101,17 +169,11 @@
     }
 
     var tierRadios = expand.querySelectorAll('.tcn-lesson-card__row--meta input[type="radio"]');
-    var levelChip = row.querySelector('.tcn-level-chip');
-    if (levelChip) {
-      tierRadios.forEach(function (radio) {
-        radio.addEventListener('change', function () {
-          if (radio.checked) {
-            levelChip.textContent = radio.value === 'paid' ? 'Paid' : 'Free';
-            levelChip.className = 'tcn-level-chip tcn-level-chip--' + radio.value;
-          }
-        });
+    tierRadios.forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        if (radio.checked) renderTier(row, radio.value);
       });
-    }
+    });
 
     var videoSourceRadios = expand.querySelectorAll('.tcn-lesson-card__row--video input[type="radio"]');
     var videoIdInput = expand.querySelector('.tcn-video-id-input');
@@ -141,6 +203,7 @@
     }
 
     row.addEventListener('click', function () {
+      if (event.target.closest('[data-tier-toggle]')) return;
       var willOpen = !row.classList.contains('is-open');
       row.classList.toggle('is-open', willOpen);
       expand.classList.toggle('is-open', willOpen);
@@ -154,6 +217,57 @@
     if (pair.expand && pair.expand.classList.contains('tcn-lesson-expand')) {
       wireLessonRow(pair.row, pair.expand);
     }
+  });
+
+  list.addEventListener('click', function (event) {
+    var toggle = event.target.closest('[data-tier-toggle]');
+    if (!toggle) return;
+    event.preventDefault();
+    event.stopPropagation();
+    var row = toggle.closest('.tcn-lesson-row');
+    if (row) saveInlineTier(toggle, row);
+  });
+
+  list.addEventListener('click', function (event) {
+    if (event.target.classList.contains('tcn-lesson-guest__remove')) {
+      var guestItem = event.target.closest('.tcn-lesson-guest');
+      var expand = guestItem ? guestItem.closest('.tcn-lesson-expand') : null;
+      var row = expand ? expand.previousElementSibling : null;
+      if (guestItem) guestItem.remove();
+      if (row) markPending(row);
+    }
+  });
+
+  list.addEventListener('change', function (event) {
+    if (!event.target.matches('.tcn-lesson-guest-picker')) return;
+    var picker = event.target;
+    var guestId = picker.value;
+    var guestGroup = picker.closest('.tcn-lesson-card__guests');
+    var guestList = guestGroup ? guestGroup.querySelector('.tcn-lesson-guest-list') : null;
+    if (guestId && guestList && !guestList.querySelector('[data-guest-id="' + guestId + '"]')) {
+      var option = picker.options[picker.selectedIndex];
+      var item = document.createElement('div');
+      item.className = 'tcn-lesson-guest';
+      item.setAttribute('data-guest-id', guestId);
+      item.innerHTML = '<span class="tcn-lesson-guest__avatar-wrap"></span>' +
+        '<span class="tcn-lesson-guest__name"></span>' +
+        '<input type="hidden" name="guest_ids[]" value="' + guestId + '" />' +
+        '<button type="button" class="tcn-lesson-guest__remove" aria-label="Remove guest">×</button>';
+      item.querySelector('.tcn-lesson-guest__name').textContent = option ? option.textContent : 'Guest';
+      if (option && option.getAttribute('data-photo')) {
+        var avatar = document.createElement('img');
+        avatar.className = 'tcn-lesson-guest__avatar';
+        avatar.src = option.getAttribute('data-photo');
+        avatar.alt = '';
+        item.querySelector('.tcn-lesson-guest__avatar-wrap').appendChild(avatar);
+      }
+      guestList.appendChild(item);
+    }
+    picker.value = '';
+    if (picker._tcnRefresh) picker._tcnRefresh();
+    var expand = guestGroup ? guestGroup.closest('.tcn-lesson-expand') : null;
+    var row = expand ? expand.previousElementSibling : null;
+    if (row) markPending(row);
   });
 
   // ---------- Save (ajax, one lesson at a time) ----------
@@ -176,10 +290,11 @@
     var durationInput = expand.querySelector('.tcn-duration-input');
     var tierRadio = expand.querySelector('.tcn-lesson-card__row--meta input[type="radio"]:checked');
     var thumbnailInput = expand.querySelector('.tcn-lesson-card__media input[type="hidden"]');
+    var guestInputs = expand.querySelectorAll('.tcn-lesson-guest input[type="hidden"]');
     var saveBtn = event.target;
 
     saveBtn.disabled = true;
-    var originalLabel = saveBtn.textContent;
+    saveBtn.classList.remove('is-pending');
     saveBtn.textContent = 'Saving…';
 
     var body = new URLSearchParams({
@@ -194,6 +309,7 @@
       tier: tierRadio ? tierRadio.value : 'free',
       thumbnail_id: thumbnailInput ? thumbnailInput.value : ''
     });
+    guestInputs.forEach(function (input) { body.append('guest_ids[]', input.value); });
 
     fetch(window.tcnexusGlobalLessons.ajaxUrl, {
       method: 'POST',
@@ -205,15 +321,17 @@
         saveBtn.disabled = false;
         if (json && json.success) {
           saveBtn.textContent = 'Saved';
-          setTimeout(function () { saveBtn.textContent = originalLabel; }, 1500);
+          setTimeout(function () { saveBtn.textContent = 'Save'; }, 1500);
         } else {
-          saveBtn.textContent = originalLabel;
-          window.alert((json && json.data && json.data.message) || 'Could not save this lesson.');
+          saveBtn.classList.add('is-pending');
+          saveBtn.textContent = 'Pending Save';
+          window.alert((json && json.data && json.data.message) || 'Could not save this episode.');
         }
       })
       .catch(function () {
         saveBtn.disabled = false;
-        saveBtn.textContent = originalLabel;
+        saveBtn.classList.add('is-pending');
+        saveBtn.textContent = 'Pending Save';
         window.alert('Could not reach the server.');
       });
   });
@@ -244,7 +362,7 @@
         return;
       }
       var titleSpan = row.querySelector('.tcn-lesson-row__title span');
-      deleteMessage.textContent = 'Are you sure you want to delete "' + (titleSpan ? titleSpan.textContent : 'this lesson') + '"? This will move it to the trash.';
+      deleteMessage.textContent = 'Are you sure you want to delete "' + (titleSpan ? titleSpan.textContent : 'this episode') + '"? This will move it to the trash.';
       pendingDelete = { row: row, expand: expand };
       deleteModal.classList.add('is-open');
     });
@@ -292,7 +410,7 @@
             closeDeleteModal();
             applyFilters();
           } else {
-            window.alert((json && json.data && json.data.message) || 'Could not delete this lesson.');
+            window.alert((json && json.data && json.data.message) || 'Could not delete this episode.');
           }
         })
         .catch(function () {

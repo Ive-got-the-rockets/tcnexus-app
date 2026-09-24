@@ -41,12 +41,29 @@ export class App implements OnInit, OnDestroy {
 
   constructor() {
     this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe(() => {
+      // A route change should always bring the chrome back into view. Without
+      // this reset, navigating after scrolling leaves the header hidden and
+      // makes its active neon cue appear to have disappeared.
+      this.headerHidden.set(false);
+      this.lastScrollY = window.scrollY;
       let deepest = this.route;
       while (deepest.firstChild) {
         deepest = deepest.firstChild;
       }
       this.chromeHidden.set(!!deepest.snapshot.data['hideChrome']);
     });
+  }
+
+  protected activeNav(): 'home' | 'trading' | 'platform' | 'shows' {
+    const url = this.router.url.split('?')[0].split('#')[0];
+
+    if (url === '/trading-courses') return 'trading';
+    if (url === '/platform-courses') return 'platform';
+    if (url === '/shows') return 'shows';
+
+    // Single content pages, the profile page, and the home variants all keep
+    // the Home cue visible because they do not belong to another header tab.
+    return 'home';
   }
 
   protected openCreateProfile(): void {

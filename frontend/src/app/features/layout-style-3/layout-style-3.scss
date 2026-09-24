@@ -11,6 +11,7 @@
   --signal: #c4ff3f;
   --line: rgba(242, 240, 232, 0.14);
   --carousel-headroom: 150px;
+  --hero-content-top: calc(25vh + 90px);
   background: #0C0D0D;
 }
 
@@ -37,7 +38,7 @@
   min-height: calc(100vh - 140px);
   /* Keep the featured heading approximately 300px from the window top on a
      standard 1200px-tall display, while scaling naturally with the viewport. */
-  padding: calc(25vh + 180px) clamp(22px, 4vw, 42px) 0;
+  padding: var(--hero-content-top) clamp(22px, 4vw, 42px) 0;
   color: var(--paper);
   font-family: Arial, sans-serif;
 }
@@ -460,9 +461,9 @@
 
 .style-featured__meta {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: flex-start;
-  gap: 8px;
+  gap: 9px;
   margin-top: 16px;
   font-family: var(--font-mono);
 }
@@ -497,7 +498,7 @@
 .style-featured__actions {
   display: flex;
   gap: 10px;
-  margin-top: 20px;
+  margin-top: 40px;
 }
 
 .style-featured__overview {
@@ -624,7 +625,7 @@
   box-sizing: border-box;
   padding: 3px 8px 9px;
   border-radius: var(--button-radius);
-  background: rgba(12, 13, 13, 0.7);
+  background: rgba(12, 13, 13, 0.9);
   opacity: 0;
   transform: translateY(16px);
   transition: opacity 0.4s ease-in, transform 0.4s ease-in;
@@ -698,7 +699,7 @@
   gap: 1rem;
   padding: 0.6rem;
   border-radius: 0.3rem;
-  background: rgba(12, 13, 13, 0.8);
+  background: rgba(12, 13, 13, 0.9);
   border: none;
   overflow: hidden;
   cursor: default;
@@ -1559,9 +1560,9 @@
 
 .style-card__meta {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: flex-start;
-  gap: 8px;
+  gap: 9px;
   margin-top: 15px;
   font-family: var(--font-mono);
   transform-origin: left center;
@@ -1899,7 +1900,7 @@
   padding: 8px 12px 8px 8px;
   border: 1px solid rgba(242, 240, 232, 0.1);
   border-radius: 6px;
-  background: rgba(12, 13, 13, 0.8);
+  background: rgba(12, 13, 13, 0.9);
   cursor: pointer;
   transform-origin: center;
   transition: transform 0.1s ease, background-color 0.1s ease;
@@ -2319,7 +2320,7 @@
 /* Style 3 keeps the description in the open state and uses the unused hero
    space above the title so the rows below do not move down. */
 .style-page {
-  padding-top: calc(25vh + 90px);
+  padding-top: var(--hero-content-top);
 }
 
 /* Wide desktop refinement: move the hero content up without changing the
@@ -2338,34 +2339,34 @@
     width: calc((100cqw - var(--nav-w) - 4 * var(--card-gap)) / 5);
   }
 
-  .style-page {
-    padding-top: calc(25vh - 120px);
+  :host {
+    --hero-content-top: calc(25vh - 120px);
     background: #0C0D0D;
   }
 }
 
 @media (min-width: 1600px) {
-  .style-page {
-    padding-top: calc(25vh - 10px);
+  :host {
+    --hero-content-top: calc(25vh + 90px);
   }
 }
 
 @media (min-width: 1200px) and (max-width: 1499px) {
-  .style-page {
-    padding-top: calc(25vh - 150px);
+  :host {
+    --hero-content-top: calc(25vh - 150px);
   }
 }
 
 @media (min-width: 1200px) and (max-width: 1299px) {
-  .style-page {
-    padding-top: calc(25vh - 60px);
+  :host {
+    --hero-content-top: calc(25vh - 60px);
   }
 }
 
 /* Tablet landscape: lift only the 1024px hero composition. */
 @media (min-width: 1000px) and (max-width: 1199px) {
-  .style-page {
-    padding-top: calc(25vh - 60px);
+  :host {
+    --hero-content-top: calc(25vh - 60px);
   }
 }
 

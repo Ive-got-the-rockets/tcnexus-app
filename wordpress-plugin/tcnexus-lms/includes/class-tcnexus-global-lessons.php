@@ -4,8 +4,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * A single table of every lesson across every course, filterable by
- * Instructor and Course, so lessons don't have to be found one course at a
+ * A single table of every lesson across every course and show, filterable by
+ * Instructor and Course/Show, so lessons don't have to be found one course at a
  * time. Each row expands into the same image + fields editor the per-course
  * Lessons card uses (see TCNexus_Course_Builder) — but since rows here can
  * belong to any course, Save/Remove act on one lesson at a time over ajax
@@ -15,6 +15,7 @@ class TCNexus_Global_Lessons {
 
 	const PAGE_SLUG           = 'tcnexus-global-lessons';
 	const SAVE_NONCE_ACTION   = 'tcnexus_save_global_lesson';
+	const TIER_NONCE_ACTION   = 'tcnexus_set_global_lesson_tier';
 	const DELETE_NONCE_ACTION = 'tcnexus_delete_global_lesson';
 
 	private static $hook_suffix;
@@ -62,9 +63,16 @@ class TCNexus_Global_Lessons {
 		);
 
 		wp_enqueue_script(
+			'tcnexus-crop-rect',
+			TCNEXUS_LMS_URL . 'assets/crop-rect.js',
+			array(),
+			TCNEXUS_LMS_VERSION,
+			true
+		);
+		wp_enqueue_script(
 			'tcnexus-course-builder',
 			TCNEXUS_LMS_URL . 'assets/course-builder.js',
-			array(),
+			array( 'tcnexus-crop-rect' ),
 			TCNEXUS_LMS_VERSION,
 			true
 		);
@@ -81,6 +89,7 @@ class TCNexus_Global_Lessons {
 		wp_localize_script( 'tcnexus-global-lessons', 'tcnexusGlobalLessons', array(
 			'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
 			'saveNonce'    => wp_create_nonce( self::SAVE_NONCE_ACTION ),
+			'tierNonce'    => wp_create_nonce( self::TIER_NONCE_ACTION ),
 			'deleteNonce'  => wp_create_nonce( self::DELETE_NONCE_ACTION ),
 		) );
 	}
@@ -97,14 +106,33 @@ class TCNexus_Global_Lessons {
 			'orderby'        => 'title',
 			'order'          => 'ASC',
 		) );
+		$shows = get_posts( array(
+			'post_type'      => 'tc_show',
+			'posts_per_page' => -1,
+			'post_status'    => array( 'publish', 'draft' ),
+			'orderby'        => 'title',
+			'order'          => 'ASC',
+		) );
 
 		$course_map = array();
 		foreach ( $courses as $course ) {
 			$course_map[ $course->ID ] = array(
 				'title'         => $course->post_title ?: 'Untitled Course',
 				'instructor_id' => (int) get_post_meta( $course->ID, '_tcnexus_instructor_id', true ),
+				'post_type'     => 'tc_course',
 			);
 		}
+		foreach ( $shows as $show ) {
+			$course_map[ $show->ID ] = array(
+				'title'         => $show->post_title ?: 'Untitled Show',
+				'instructor_id' => 0,
+				'post_type'     => 'tc_show',
+			);
+		}
+		$catalog_items = array_merge( $courses, $shows );
+		usort( $catalog_items, function ( $a, $b ) {
+			return strcasecmp( $a->post_title, $b->post_title );
+		} );
 
 		$all_people  = get_posts( array(
 			'post_type'      => 'tc_instructor',
@@ -115,6 +143,9 @@ class TCNexus_Global_Lessons {
 		) );
 		$instructors = array_values( array_filter( $all_people, function ( $person ) {
 			return 'instructor' === TCNexus_Post_Types::get_person_role( $person->ID );
+		} ) );
+		$guests = array_values( array_filter( $all_people, function ( $person ) {
+			return 'guest' === TCNexus_Post_Types::get_person_role( $person->ID );
 		} ) );
 
 		$lessons = get_posts( array(
@@ -136,7 +167,7 @@ class TCNexus_Global_Lessons {
 		$lesson_views = TCNexus_Access_Control::count_views_for_lessons( wp_list_pluck( $lessons, 'ID' ) );
 		?>
 		<div class="wrap tcn-builder-wrap tcn-global-lessons-wrap">
-			<h1 class="tcn-global-lessons-title">Global Lessons List</h1>
+			<h1 class="tcn-global-lessons-title">Global Episodes List</h1>
 
 			<div class="tcn-filter-bar">
 				<div class="tcn-filter-field">
@@ -149,11 +180,11 @@ class TCNexus_Global_Lessons {
 					</select>
 				</div>
 				<div class="tcn-filter-field">
-					<label class="tcn-field__label" for="tcn-filter-course">Course</label>
+					<label class="tcn-field__label" for="tcn-filter-course">Courses &amp; Shows</label>
 					<select id="tcn-filter-course" class="tcn-select">
-						<option value="">All Courses</option>
-						<?php foreach ( $courses as $course ) : ?>
-							<option value="<?php echo esc_attr( $course->ID ); ?>"><?php echo esc_html( $course_map[ $course->ID ]['title'] ); ?></option>
+						<option value="">All Courses &amp; Shows</option>
+						<?php foreach ( $catalog_items as $catalog_item ) : ?>
+							<option value="<?php echo esc_attr( $catalog_item->ID ); ?>"><?php echo esc_html( $course_map[ $catalog_item->ID ]['title'] ); ?></option>
 						<?php endforeach; ?>
 					</select>
 				</div>
@@ -163,15 +194,16 @@ class TCNexus_Global_Lessons {
 
 			<div class="tcn-lessons-card">
 				<div class="tcn-lessons-card__header">
-					<h2 class="tcn-lessons-card__title">Lessons</h2>
+					<h2 class="tcn-lessons-card__title">Lessons &amp; Episodes List</h2>
 				</div>
 
 				<table class="tcn-lessons-overview">
 					<thead>
 						<tr>
-							<th class="tcn-lessons-overview__order">Lesson No.</th>
+							<th class="tcn-lessons-overview__order">Lesson / Episode No.</th>
 							<th>Title</th>
-							<th class="tcn-lessons-overview__course">Course</th>
+							<th class="tcn-lessons-overview__type">Type</th>
+							<th class="tcn-lessons-overview__course">Course / Show Name</th>
 							<th class="tcn-lessons-overview__level">Tier</th>
 							<th class="tcn-lessons-overview__duration">Duration</th>
 							<th class="tcn-lessons-overview__views">Views</th>
@@ -180,12 +212,13 @@ class TCNexus_Global_Lessons {
 					<tbody id="tcnexus-global-lessons-list">
 						<?php if ( empty( $lessons ) ) : ?>
 							<tr class="tcn-lessons-empty-row">
-								<td colspan="6">No lessons yet — add lessons from a course's own Lessons card.</td>
+								<td colspan="7">No lessons or episodes yet — add them from a course or show's builder.</td>
 							</tr>
 						<?php else : ?>
 							<?php foreach ( $lessons as $index => $lesson ) :
 								$course_id          = (int) get_post_meta( $lesson->ID, '_tcnexus_course_id', true );
-								$course_info        = $course_map[ $course_id ] ?? array( 'title' => 'Unknown Course', 'instructor_id' => 0 );
+								$course_info        = $course_map[ $course_id ] ?? array( 'title' => 'Unknown Course or Show', 'instructor_id' => 0, 'post_type' => 'tc_course' );
+								$content_type       = 'tc_show' === $course_info['post_type'] ? 'Episode' : 'Lesson';
 								$tier               = TCNexus_Post_Types::get_lesson_tier( $lesson->ID );
 								$video_id           = get_post_meta( $lesson->ID, '_tcnexus_vimeo_id', true );
 								$video_source       = get_post_meta( $lesson->ID, '_tcnexus_video_source', true ) ?: 'vimeo';
@@ -193,8 +226,9 @@ class TCNexus_Global_Lessons {
 								$thumbnail_id       = get_post_thumbnail_id( $lesson->ID );
 								$video_placeholder  = 'youtube' === $video_source ? 'YouTube Video ID' : 'Vimeo Video ID';
 								$views              = isset( $lesson_views[ $lesson->ID ] ) ? $lesson_views[ $lesson->ID ] : 0;
+								$lesson_guest_ids   = TCNexus_Course_Builder::get_lesson_guest_ids( $lesson->ID );
 							?>
-								<tr class="tcn-lesson-row" data-lesson-id="<?php echo esc_attr( $lesson->ID ); ?>" data-course-id="<?php echo esc_attr( $course_id ); ?>" data-instructor-id="<?php echo esc_attr( $course_info['instructor_id'] ); ?>">
+								<tr class="tcn-lesson-row" data-lesson-id="<?php echo esc_attr( $lesson->ID ); ?>" data-course-id="<?php echo esc_attr( $course_id ); ?>" data-instructor-id="<?php echo esc_attr( $course_info['instructor_id'] ); ?>" data-content-type="<?php echo esc_attr( $content_type ); ?>">
 									<td class="tcn-lessons-overview__order"><?php echo esc_html( sprintf( '%02d', $lesson->menu_order ?: ( $index + 1 ) ) ); ?></td>
 									<td>
 										<div class="tcn-lesson-row__title">
@@ -202,13 +236,21 @@ class TCNexus_Global_Lessons {
 											<span><?php echo esc_html( $lesson->post_title ); ?></span>
 										</div>
 									</td>
+									<td class="tcn-lessons-overview__type"><?php echo esc_html( $content_type ); ?></td>
 									<td class="tcn-lessons-overview__course"><?php echo esc_html( $course_info['title'] ); ?></td>
-									<td class="tcn-lessons-overview__level"><span class="tcn-level-chip tcn-level-chip--<?php echo esc_attr( $tier ); ?>"><?php echo esc_html( ucfirst( $tier ) ); ?></span></td>
+									<td class="tcn-lessons-overview__level">
+										<div class="tcn-global-tier-control">
+											<span class="tcn-level-chip tcn-level-chip--<?php echo esc_attr( $tier ); ?>" data-tier-badge><?php echo esc_html( ucfirst( $tier ) ); ?></span>
+											<button type="button" class="tcn-global-tier-toggle" data-tier-toggle data-tier="<?php echo esc_attr( $tier ); ?>" aria-pressed="<?php echo esc_attr( 'free' === $tier ? 'true' : 'false' ); ?>" aria-label="Make episode <?php echo esc_attr( 'free' === $tier ? 'paid' : 'free' ); ?>">
+												<span aria-hidden="true"></span>
+											</button>
+										</div>
+									</td>
 									<td class="tcn-lessons-overview__duration"><?php echo esc_html( $duration ?: '—' ); ?></td>
 									<td class="tcn-lessons-overview__views"><?php echo esc_html( number_format_i18n( $views ) ); ?></td>
 								</tr>
 								<tr class="tcn-lesson-expand">
-									<td colspan="6">
+									<td colspan="7">
 										<div class="tcn-lesson-expand__panel">
 											<div class="tcn-lesson-card">
 												<div class="tcn-lesson-card__media">
@@ -252,8 +294,9 @@ class TCNexus_Global_Lessons {
 																<label for="gl_tier_<?php echo esc_attr( $lesson->ID ); ?>_paid">Paid</label>
 															</div>
 														</div>
-													</div>
-													<div class="tcn-lesson-card__footer">
+															</div>
+										<?php TCNexus_Course_Builder::render_lesson_guest_field( 'guest_ids[]', $lesson_guest_ids, $guests, 'Lesson' ); ?>
+															<div class="tcn-lesson-card__footer">
 														<button type="button" class="tcn-btn-ghost tcn-btn-ghost--danger tcn-global-lesson-remove">Remove</button>
 														<button type="button" class="tcn-save-btn tcn-global-lesson-save">Save</button>
 													</div>
@@ -271,7 +314,7 @@ class TCNexus_Global_Lessons {
 			<div class="tcn-modal-backdrop" id="tcn-global-lesson-delete-modal">
 				<div class="tcn-modal" role="alertdialog" aria-modal="true" aria-labelledby="tcn-global-lesson-delete-title">
 					<h2 id="tcn-global-lesson-delete-title">Delete lesson?</h2>
-					<p id="tcn-global-lesson-delete-message">Are you sure you want to delete this lesson?</p>
+					<p id="tcn-global-lesson-delete-message">Are you sure you want to delete this episode?</p>
 					<div class="tcn-modal__actions">
 						<button type="button" class="tcn-btn-ghost" id="tcn-global-lesson-delete-cancel">Cancel</button>
 						<button type="button" class="tcn-btn-danger" id="tcn-global-lesson-delete-confirm">Delete</button>
@@ -298,6 +341,19 @@ class TCNexus_Global_Lessons {
 			'tier'     => TCNexus_Post_Types::get_lesson_tier( $lesson_id ),
 			'duration' => get_post_meta( $lesson_id, '_tcnexus_duration', true ),
 		) );
+	}
+
+	public static function ajax_set_lesson_tier() {
+		check_ajax_referer( self::TIER_NONCE_ACTION, 'nonce' );
+
+		$lesson_id = isset( $_POST['lesson_id'] ) ? absint( $_POST['lesson_id'] ) : 0;
+		$tier      = isset( $_POST['tier'] ) ? sanitize_key( wp_unslash( $_POST['tier'] ) ) : '';
+		if ( ! $lesson_id || 'tc_lesson' !== get_post_type( $lesson_id ) || ! current_user_can( 'edit_post', $lesson_id ) || ! in_array( $tier, array( 'free', 'paid' ), true ) ) {
+			wp_send_json_error( array( 'message' => 'Invalid lesson or tier.' ) );
+		}
+
+		TCNexus_Post_Types::set_lesson_tier( $lesson_id, $tier );
+		wp_send_json_success( array( 'tier' => TCNexus_Post_Types::get_lesson_tier( $lesson_id ) ) );
 	}
 
 	public static function ajax_delete_lesson() {

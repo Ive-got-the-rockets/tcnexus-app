@@ -57,6 +57,17 @@
           <h1 id="style-featured-title" class="style-featured__title">{{ course.title }}</h1>
         }
       </div>
+      <div class="style-featured__meta">
+        <div class="style-featured__meta-primary">
+          <span class="style-featured__meta-badge">{{ courseTypeLabel(course) }}</span>
+          <span class="style-featured__meta-dot" aria-hidden="true"></span>
+          <span class="style-featured__meta-badge">{{ course.lesson_count }} {{ isShow(course) ? 'episodes' : 'lessons' }}</span>
+          @for (level of courseLevelBadges(course); track level) {
+            <span class="style-featured__meta-dot" aria-hidden="true"></span>
+            <span class="style-featured__level-badge">{{ level }}</span>
+          }
+        </div>
+      </div>
       <div class="style-featured__details style-featured__details--expanded">
         <p class="style-featured__description">{{ course.excerpt }}</p>
         @if (isShow(course)) {
@@ -108,18 +119,6 @@
             </div>
           }
         }
-      </div>
-      <div class="style-featured__meta">
-        <div class="style-featured__meta-primary">
-          <span class="style-featured__meta-badge">{{ courseTypeLabel(course) }}</span>
-          <span class="style-featured__meta-dot" aria-hidden="true"></span>
-          <span class="style-featured__meta-badge">{{ course.lesson_count }} {{ isShow(course) ? 'episodes' : 'lessons' }}</span>
-        </div>
-        <div class="style-featured__meta-levels">
-          @for (level of courseLevelBadges(course); track level) {
-            <span class="style-featured__level-badge">{{ level }}</span>
-          }
-        </div>
       </div>
       <div class="style-featured__actions">
         <button type="button" class="style-featured__start" (click)="startWatching(course)">
@@ -230,9 +229,10 @@
                       <span class="style-card__meta-badge">Show</span>
                       <span class="style-card__meta-dot" aria-hidden="true"></span>
                       <span class="style-card__meta-badge">{{ show.lesson_count }} episodes</span>
-                    </div>
-                    <div class="style-card__meta-levels">
-                      @for (level of courseLevelBadges(show); track level) { <span class="style-card__level-badge">{{ level }}</span> }
+                      @for (level of courseLevelBadges(show); track level) {
+                        <span class="style-card__meta-dot" aria-hidden="true"></span>
+                        <span class="style-card__level-badge">{{ level }}</span>
+                      }
                     </div>
                   </div>
                 </div>
@@ -310,9 +310,8 @@
                     <span class="style-card__meta-badge">{{ course.course_types[0] || 'Trading Course' }}</span>
                     <span class="style-card__meta-dot" aria-hidden="true"></span>
                     <span class="style-card__meta-badge">{{ course.lesson_count }} lessons</span>
-                  </div>
-                  <div class="style-card__meta-levels">
                     @for (level of courseLevelBadges(course); track level) {
+                      <span class="style-card__meta-dot" aria-hidden="true"></span>
                       <span class="style-card__level-badge">{{ level }}</span>
                     }
                   </div>
@@ -388,9 +387,8 @@
                     <span class="style-card__meta-badge">Platform Course</span>
                     <span class="style-card__meta-dot" aria-hidden="true"></span>
                     <span class="style-card__meta-badge">{{ course.lesson_count }} lessons</span>
-                  </div>
-                  <div class="style-card__meta-levels">
                     @for (level of courseLevelBadges(course); track level) {
+                      <span class="style-card__meta-dot" aria-hidden="true"></span>
                       <span class="style-card__level-badge">{{ level }}</span>
                     }
                   </div>

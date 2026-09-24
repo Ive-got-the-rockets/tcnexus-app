@@ -49,8 +49,10 @@ class TCNexus_Instructor_Builder {
 
 		$role = isset( $_GET['role'] ) && 'guest' === $_GET['role'] ? 'guest' : 'instructor';
 
+		$role = sanitize_key( $_POST['role'] ?? 'instructor' );
+		$is_character = 'character' === $role;
 		$new_id = wp_insert_post( array(
-			'post_type'   => 'tc_instructor',
+			'post_type'   => $is_character ? 'tc_character' : 'tc_instructor',
 			'post_title'  => 'guest' === $role ? 'Untitled Guest' : 'Untitled Instructor',
 			'post_status' => 'publish',
 		) );
@@ -115,8 +117,22 @@ class TCNexus_Instructor_Builder {
 		);
 
 		wp_enqueue_script(
+			'tcnexus-crop-rect',
+			TCNEXUS_LMS_URL . 'assets/crop-rect.js',
+			array(),
+			TCNEXUS_LMS_VERSION,
+			true
+		);
+		wp_enqueue_script(
 			'tcnexus-course-builder',
 			TCNEXUS_LMS_URL . 'assets/course-builder.js',
+			array( 'tcnexus-crop-rect' ),
+			TCNEXUS_LMS_VERSION,
+			true
+		);
+		wp_enqueue_script(
+			'tcnexus-profile-builder-guard',
+			TCNEXUS_LMS_URL . 'assets/profile-builder-guard.js',
 			array(),
 			TCNEXUS_LMS_VERSION,
 			true
@@ -206,7 +222,7 @@ class TCNexus_Instructor_Builder {
 		<div class="tcn-course-cards">
 			<?php foreach ( $people as $person ) :
 				$edit_url   = admin_url( 'admin.php?page=' . self::PAGE_SLUG . '&instructor_id=' . $person->ID );
-				$photo      = get_the_post_thumbnail_url( $person->ID, 'medium' );
+				$photo      = get_the_post_thumbnail_url( $person->ID, 'medium' ) ?: TCNexus_Profile_Placeholders::get_saved_url( $person->ID );
 				$delete_url = wp_nonce_url(
 					admin_url( 'admin-post.php?action=tcnexus_delete_instructor&instructor_id=' . $person->ID ),
 					'tcnexus_delete_instructor_' . $person->ID
@@ -258,7 +274,7 @@ class TCNexus_Instructor_Builder {
 				<span aria-hidden="true">&larr;</span> Back To All Instructors &amp; Guests
 			</a>
 
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="tcn-profile-builder-form">
 				<input type="hidden" name="action" value="tcnexus_save_instructor" />
 				<input type="hidden" name="instructor_id" value="<?php echo esc_attr( $instructor_id ); ?>" />
 				<input type="hidden" name="new_flow" value="<?php echo $new_flow ? '1' : '0'; ?>" />
@@ -311,6 +327,15 @@ class TCNexus_Instructor_Builder {
 				</div>
 			</form>
 
+			<div class="tcn-modal-backdrop" id="tcn-profile-unsaved-modal">
+				<div class="tcn-modal tcn-unsaved-modal" role="alertdialog" aria-modal="true" aria-labelledby="tcn-profile-unsaved-title" aria-describedby="tcn-profile-unsaved-message">
+					<div class="tcn-unsaved-modal__icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path class="tcn-unsaved-modal__triangle" d="M10.9 4.5a1.25 1.25 0 0 1 2.2 0l8 14.2a1.25 1.25 0 0 1-1.1 1.8H4a1.25 1.25 0 0 1-1.1-1.8l8-14.2Z" /><path class="tcn-unsaved-modal__mark" d="M12 9v5m0 3.2v.1" /></svg></div>
+					<h2 id="tcn-profile-unsaved-title">You are leaving without saving changes</h2>
+					<p id="tcn-profile-unsaved-message">This profile has unsaved changes. Would you like to save it before leaving?</p>
+					<div class="tcn-modal__actions"><button type="button" class="tcn-btn-ghost" id="tcn-profile-unsaved-cancel">Cancel</button><button type="button" class="tcn-btn-ghost" id="tcn-profile-unsaved-discard">Discard</button><button type="button" class="tcn-save-btn" id="tcn-profile-unsaved-save">Save</button></div>
+				</div>
+			</div>
+
 			<?php if ( $auto_reset ) : ?>
 				<!-- Rendered already-open (no JS involved) and with no
 				     dismiss handler wired to it anywhere — the only way off
@@ -353,10 +378,14 @@ class TCNexus_Instructor_Builder {
 
 		TCNexus_Post_Types::set_person_role( $instructor_id, sanitize_key( $_POST['role'] ?? 'instructor' ) );
 
-		if ( ! empty( $_POST['photo_id'] ) ) {
-			set_post_thumbnail( $instructor_id, absint( $_POST['photo_id'] ) );
+		$photo_id = absint( $_POST['photo_id'] ?? 0 );
+		if ( $photo_id ) {
+			set_post_thumbnail( $instructor_id, $photo_id );
+			TCNexus_Media_Library::assign_attachment( $photo_id, 'guest' === sanitize_key( $_POST['role'] ?? 'instructor' ) ? 'guests' : 'instructors' );
+			TCNexus_Profile_Placeholders::clear( $instructor_id );
 		} else {
 			delete_post_thumbnail( $instructor_id );
+			TCNexus_Profile_Placeholders::assign_if_missing( $instructor_id );
 		}
 
 		$redirect = admin_url( 'admin.php?page=' . self::PAGE_SLUG . '&instructor_id=' . $instructor_id . '&saved=1' );
@@ -387,8 +416,10 @@ class TCNexus_Instructor_Builder {
 			wp_send_json_error( array( 'message' => 'Name is required.' ) );
 		}
 
+		$role = sanitize_key( $_POST['role'] ?? 'instructor' );
+		$is_character = 'character' === $role;
 		$new_id = wp_insert_post( array(
-			'post_type'   => 'tc_instructor',
+			'post_type'   => $is_character ? 'tc_character' : 'tc_instructor',
 			'post_title'  => $name,
 			'post_content'=> wp_kses_post( wp_unslash( $_POST['bio'] ?? '' ) ),
 			'post_status' => 'publish',
@@ -398,10 +429,16 @@ class TCNexus_Instructor_Builder {
 			wp_send_json_error( array( 'message' => 'Could not create this person.' ) );
 		}
 
-		TCNexus_Post_Types::set_person_role( $new_id, sanitize_key( $_POST['role'] ?? 'instructor' ) );
+		if ( ! $is_character ) {
+			TCNexus_Post_Types::set_person_role( $new_id, $role );
+		}
 
-		if ( ! empty( $_POST['photo_id'] ) ) {
-			set_post_thumbnail( $new_id, absint( $_POST['photo_id'] ) );
+		$photo_id = absint( $_POST['photo_id'] ?? 0 );
+		if ( $photo_id ) {
+			set_post_thumbnail( $new_id, $photo_id );
+			TCNexus_Media_Library::assign_attachment( $photo_id, 'guest' === $role ? 'guests' : 'instructors' );
+		} else {
+			TCNexus_Profile_Placeholders::assign_if_missing( $new_id );
 		}
 
 		wp_send_json_success( array( 'id' => $new_id, 'title' => $name ) );

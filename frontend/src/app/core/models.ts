@@ -19,6 +19,21 @@ export interface CourseLevelVersion {
   guest?: Person | Person[] | null;
 }
 
+export interface ShowSeason {
+  enabled: boolean;
+  season_key: string;
+  label: string;
+  title: string;
+  content?: string;
+  lesson_count: number;
+  lessons?: Lesson[];
+  thumbnail: string | null;
+  image: string | null;
+  title_image?: string | null;
+  overview_link: string | null;
+  trailer_link?: string | null;
+}
+
 export interface Course {
   id: number;
   title: string;
@@ -82,10 +97,13 @@ export interface CourseDetail {
   characters?: Person[];
   lessons: Lesson[];
   configured_levels?: CourseLevelSlug[];
+  configured_seasons?: string[];
+  seasons?: Record<string, ShowSeason>;
   levels?: Partial<Record<CourseLevelSlug, CourseLevelVersion>>;
   languages?: Record<string, {
     label: string;
     levels?: Partial<Record<CourseLevelSlug, CourseLevelVersion>>;
+    seasons?: Record<string, ShowSeason>;
   }>;
 }
 

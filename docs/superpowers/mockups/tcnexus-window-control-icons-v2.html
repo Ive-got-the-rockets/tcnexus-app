@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TC-Lense window control icon mockup</title>
+<style>
+  :root { color-scheme:dark; --bg:#0b0d0c; --panel:#101210; --bar:#181b19; --line:rgba(244,241,233,.13); --paper:#f4f1e9; --muted:#aaa99f; --signal:#c7ff5c; }
+  * { box-sizing:border-box; }
+  body { min-height:100vh; margin:0; display:grid; place-items:center; padding:32px; background:radial-gradient(ellipse at 50% 0%,#1d2b23 0,#0b0d0c 55%); color:var(--paper); font:14px/1.45 Inter,system-ui,sans-serif; }
+  main { width:min(100%,760px); }
+  .eyebrow { color:var(--signal); font:11px ui-monospace,monospace; letter-spacing:.13em; text-transform:uppercase; }
+  h1 { margin:8px 0 8px; font:400 clamp(27px,5vw,40px)/1.08 Georgia,serif; }
+  .intro { max-width:600px; margin:0 0 24px; color:var(--muted); }
+  .panel { overflow:hidden; border:1px solid var(--line); border-radius:9px; background:var(--panel); box-shadow:0 24px 70px #0009; }
+  .panel-head { min-height:58px; display:flex; align-items:center; justify-content:space-between; gap:20px; padding:0 17px; background:var(--bar); border-bottom:1px solid var(--line); }
+  .brand { font:11px ui-monospace,monospace; letter-spacing:.12em; }
+  .controls { display:flex; align-items:center; gap:10px; }
+  .control { display:flex; align-items:center; gap:9px; padding:7px 10px; border:1px solid rgba(244,241,233,.1); border-radius:6px; color:var(--paper); background:#ffffff05; }
+  .control svg { width:24px; height:24px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:square; stroke-linejoin:miter; }
+  .control .pop svg { stroke-linecap:round; stroke-linejoin:round; }
+  .control-label { color:var(--muted); font-size:12px; white-space:nowrap; }
+  .screen { min-height:245px; display:grid; place-items:center; background:linear-gradient(145deg,#111614,#090b0a); }
+  .screen-note { color:#666a63; font:11px ui-monospace,monospace; letter-spacing:.1em; text-transform:uppercase; }
+  .captions { margin-top:16px; display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .caption { padding:13px 15px; border:1px solid var(--line); border-radius:7px; background:#ffffff04; }
+  .caption strong { display:block; margin-bottom:3px; font-size:13px; font-weight:500; }
+  .caption span { color:var(--muted); font-size:12px; }
+  .num { color:var(--signal); margin-right:7px; font:11px ui-monospace,monospace; }
+  @media(max-width:600px) { body{padding:20px 14px}.panel-head{align-items:flex-start;flex-direction:column;padding:15px}.controls{width:100%;justify-content:space-between}.control{padding:6px}.control-label{font-size:11px}.screen{min-height:180px} }
+</style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">TC-Lense · icon review</div>
+  <h1>Two distinct window actions</h1>
+  <p class="intro">Shown at toolbar size and in context. The left icon follows your reference, with crisp square corners; the right keeps the pop-out action visually distinct.</p>
+  <section class="panel" aria-label="TC-Lense header preview">
+    <div class="panel-head">
+      <span class="brand">TC-LENSE</span>
+      <div class="controls">
+        <div class="control" aria-label="Open in new window">
+          <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="12" y="5" width="14" height="11"/><rect x="6" y="12" width="14" height="12"/><path d="M13 18 26 5m-8 0h8v8"/></svg>
+          <span class="control-label">Open in new window</span>
+        </div>
+        <div class="control pop" aria-label="Pop out in page">
+          <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M19 5h8v8M27 5 16 16"/><path d="M13 8H6v18h20v-7"/></svg>
+          <span class="control-label">Pop out</span>
+        </div>
+        <div class="control" aria-label="Close TC-Lense">
+          <svg viewBox="0 0 32 32" aria-hidden="true"><path d="m9 9 14 14M23 9 9 23"/></svg>
+        </div>
+      </div>
+    </div>
+    <div class="screen"><span class="screen-note">TC app content</span></div>
+  </section>
+  <div class="captions">
+    <div class="caption"><strong><span class="num">01</span>Open in new window</strong><span>Overlapping windows plus an outward arrow; square corners as requested.</span></div>
+    <div class="caption"><strong><span class="num">02</span>Pop out</strong><span>Corner-frame with an arrow exiting the panel; starts the in-page floating mode.</span></div>
+  </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Lesson language tabs mockup</title>
+  <style>
+    :root{--ink:#201f1c;--muted:#7a756c;--paper:#f5f4f0;--panel:#fffdfa;--line:#e5e2d9;--mint:#8fd8c2;--mint-strong:#5fc7a8;--green:#94e84b;--danger:#6b2a1e}
+    *{box-sizing:border-box}body{margin:0;background:#e9e8e3;color:var(--ink);font-family:'Plus Jakarta Sans',Inter,Arial,sans-serif}.frame{width:min(1040px,calc(100% - 44px));margin:30px auto;background:var(--paper);border:1px solid #cbc8bf;border-radius:16px;box-shadow:0 18px 60px #26323822;overflow:hidden}.header{display:flex;justify-content:space-between;align-items:center;padding:24px 30px;border-bottom:1px solid var(--line)}.eyebrow{margin:0 0 6px;color:var(--muted);font-size:11px;letter-spacing:.14em;text-transform:uppercase}.header h1{margin:0;font:700 27px Georgia,serif}.lesson-count{color:var(--muted);font-size:13px}.tabs{display:flex;align-items:flex-end;gap:5px;padding:0 30px;border-bottom:1px solid var(--line);background:#efede7}.tab{position:relative;border:1px solid #d3d0c8;border-bottom:0;border-radius:12px 12px 0 0;background:#e3e1da;color:var(--muted);padding:9px 25px 10px;font-size:14px;font-weight:700;cursor:pointer}.tab.active{height:53px;background:var(--panel);color:var(--ink)}.tab.active:after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--panel)}.tab.add{min-width:46px;padding:9px 25px 10px;font-size:21px;line-height:1;color:#3f6d5d}.tab .dot{display:inline-block;width:7px;height:7px;margin-left:8px;border-radius:50%;background:var(--green);vertical-align:2px}.content{display:grid;grid-template-columns:360px 1fr;gap:30px;padding:30px;background:var(--panel)}.media{height:205px;border-radius:12px;background:linear-gradient(145deg,#2a5e76 0%,#9dcac6 52%,#d1b886 100%);display:flex;align-items:flex-end;padding:18px;color:white;font-weight:700;box-shadow:inset 0 -80px 90px #07131880}.copy-note{margin:13px 0 0;color:var(--muted);font-size:12px;line-height:1.5}.field{margin-bottom:18px}.field label{display:block;margin-bottom:7px;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase}.input,.textarea{width:100%;border:1px solid #cbc8bf;border-radius:8px;background:#fff;padding:12px 13px;color:var(--ink);font:inherit;font-size:14px}.textarea{min-height:128px;resize:none;line-height:1.5}.footer{display:flex;justify-content:flex-end;gap:10px;padding:20px 30px;border-top:1px solid var(--line);background:#f1efe7}.button{border:1px solid #c7c3b9;border-radius:999px;padding:10px 17px;background:#fffdfa;color:var(--ink);font:600 13px inherit}.button.primary{border-color:var(--mint-strong);background:var(--mint);color:#12352c}.modal-backdrop{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#201f1c66}.modal{width:min(410px,calc(100% - 34px));padding:25px 26px;background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:0 20px 60px #201f1c33}.modal h2{margin:0 0 7px;font:700 22px Georgia,serif}.modal p{margin:0 0 19px;color:var(--muted);font-size:13px}.select{width:100%;padding:12px;border:1px solid #cbc8bf;border-radius:8px;background:#fff;font:inherit;color:var(--ink)}.modal-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:22px}.hidden{display:none}@media(max-width:760px){.content{grid-template-columns:1fr}.media{height:180px}}
+  </style>
+</head>
+<body>
+  <main class="frame">
+    <header class="header"><div><p class="eyebrow">Lesson 01</p><h1>What Is The Stock Market?</h1></div><span class="lesson-count">Language versions</span></header>
+    <nav class="tabs" aria-label="Lesson languages">
+      <button class="tab active" data-language="English">English <span class="dot"></span></button>
+      <button class="tab add" id="add-language" aria-label="Add language">+</button>
+    </nav>
+    <section class="content">
+      <div><div class="media">Lesson preview image</div><p class="copy-note">New language versions begin with the English image, title, and description copied over. Other lesson details can be completed manually.</p></div>
+      <div>
+        <div class="field"><label>Lesson title</label><input class="input" value="What Is The Stock Market?" /></div>
+        <div class="field"><label>Description</label><textarea class="textarea">An introduction to the market, the participants, and the basic mechanics every trader should understand.</textarea></div>
+      </div>
+    </section>
+    <footer class="footer"><button class="button">Discard</button><button class="button primary">Save Lesson</button></footer>
+  </main>
+  <div class="modal-backdrop hidden" id="language-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal"><h2 id="modal-title">Select Language</h2><p>Choose a language to create a new lesson version.</p><select class="select" id="language-select"><option>French</option><option>German</option><option>Portuguese</option><option>Italian</option></select><div class="modal-actions"><button class="button" id="cancel">Cancel</button><button class="button primary" id="confirm">Add Language</button></div></div>
+  </div>
+  <script>
+    const modal=document.getElementById('language-modal');
+    document.getElementById('add-language').addEventListener('click',()=>modal.classList.remove('hidden'));
+    document.getElementById('cancel').addEventListener('click',()=>modal.classList.add('hidden'));
+    document.getElementById('confirm').addEventListener('click',()=>{
+      const language=document.getElementById('language-select').value;
+      const tab=document.createElement('button');tab.className='tab';tab.dataset.language=language;tab.innerHTML=language+' <span class="dot"></span>';
+      document.querySelector('.tabs').insertBefore(tab,document.getElementById('add-language'));modal.classList.add('hidden');
+    });
+  </script>
+</body>
+</html>

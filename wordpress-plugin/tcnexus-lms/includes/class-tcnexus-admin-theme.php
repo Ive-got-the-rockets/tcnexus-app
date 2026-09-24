@@ -17,7 +17,7 @@ class TCNexus_Admin_Theme {
 		// WordPress normally generates this exact suffix for a submenu page,
 		// but matching the page slug keeps the styling working across local
 		// installs that normalize the parent menu slug differently.
-		$is_membership_screen = false !== strpos( $hook, '_page_tcnexus-visitor-tracking' );
+		$is_membership_screen = false !== strpos( $hook, '_page_tcnexus-membership' ) || false !== strpos( $hook, '_page_tcnexus-visitor-tracking' );
 		$is_popup_details_screen = false !== strpos( $hook, '_page_tcnexus-registration-settings' );
 		$is_animation_screen = false !== strpos( $hook, '_page_tcnexus-card-carousel-animation' ) || false !== strpos( $hook, '_page_tcnexus-animations' );
 
@@ -50,6 +50,16 @@ class TCNexus_Admin_Theme {
 			);
 		}
 
+		if ( $is_membership_screen ) {
+			wp_enqueue_script(
+				'tcnexus-admin-membership',
+				TCNEXUS_LMS_URL . 'assets/admin-membership.js',
+				array(),
+				TCNEXUS_LMS_VERSION,
+				true
+			);
+		}
+
 		if ( $is_popup_details_screen ) {
 			wp_enqueue_style(
 				'tcnexus-course-builder',
@@ -66,9 +76,16 @@ class TCNexus_Admin_Theme {
 				true
 			);
 			wp_enqueue_script(
+				'tcnexus-crop-rect',
+				TCNEXUS_LMS_URL . 'assets/crop-rect.js',
+				array(),
+				TCNEXUS_LMS_VERSION,
+				true
+			);
+			wp_enqueue_script(
 				'tcnexus-course-builder',
 				TCNEXUS_LMS_URL . 'assets/course-builder.js',
-				array(),
+				array( 'tcnexus-crop-rect' ),
 				TCNEXUS_LMS_VERSION,
 				true
 			);
