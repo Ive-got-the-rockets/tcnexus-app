@@ -504,6 +504,7 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
       locked: false,
       excerpt: 'A guided platform lesson for this course.',
       video_url: null,
+      tc_lens_message: '',
     }));
 
     return {

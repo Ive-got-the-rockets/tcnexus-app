@@ -70,6 +70,7 @@ export interface Lesson {
   guests?: Person[];
   /** A Vimeo URL, or just the bare id (optionally "id/hash" for an unlisted share link). */
   video_url: string | null;
+  tc_lens_message: string;
 }
 
 export interface Person {

@@ -10,6 +10,7 @@ import { AccessCheckResult, CourseDetail, Lesson } from '../../core/models';
 import { isAnonymousFreeLimitReached, isFinalFreeLesson } from '../../core/registration-settings';
 import { VisitorService } from '../../core/visitor.service';
 import { WatchProgressService } from '../../core/watch-progress.service';
+import { buildTcLensUrl } from './tc-lens-url';
 import { launchXrayPopup } from './xray-popup';
 import { hasExceededDragThreshold, resizeFloatingWindow, type ResizeDirection } from './xray-window-geometry';
 
@@ -658,7 +659,7 @@ export class LessonPlayerPage implements OnDestroy {
 
     const title = document.createElement('span');
     title.className = 'tcn-xray-panel-title';
-    title.textContent = 'TC-Lense';
+    title.textContent = 'TC Lens';
 
     const actions = document.createElement('div');
     actions.className = 'tcn-xray-panel-actions';
@@ -707,7 +708,7 @@ export class LessonPlayerPage implements OnDestroy {
       handle.dataset['resizeDirection'] = direction;
       handle.setAttribute('role', 'separator');
       handle.setAttribute('aria-orientation', direction === 'e' || direction === 'w' ? 'vertical' : 'horizontal');
-      handle.setAttribute('aria-label', `Resize TC-Lense window from ${direction.toUpperCase()}`);
+      handle.setAttribute('aria-label', `Resize TC Lens window from ${direction.toUpperCase()}`);
       handle.tabIndex = 0;
 
       handle.addEventListener('pointerdown', (event) => {
@@ -777,7 +778,7 @@ export class LessonPlayerPage implements OnDestroy {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'tcn-xray-panel-action tcn-xray-panel-action--detach';
-    button.setAttribute('aria-label', 'Detach TC-Lense');
+    button.setAttribute('aria-label', 'Detach TC Lens');
     button.innerHTML =
       '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="6" y="8" width="18" height="17" rx="2"></rect><path d="M14 4h12v12M26 4 16 14"></path></svg>';
     button.addEventListener('click', () => this.detachXray());
@@ -799,7 +800,9 @@ export class LessonPlayerPage implements OnDestroy {
   private openXrayPopup(): void {
     // This call must stay synchronous inside the button's click handler so
     // browsers recognize it as a user gesture and don't block the popup.
-    const popup = launchXrayPopup(XRAY_PANEL_URL, window.open.bind(window));
+    const lesson = this.lesson();
+    const url = lesson ? buildTcLensUrl(XRAY_PANEL_URL, lesson.id) : XRAY_PANEL_URL;
+    const popup = launchXrayPopup(url, window.open.bind(window));
     if (!popup) {
       this.detachXray();
       return;
@@ -814,7 +817,7 @@ export class LessonPlayerPage implements OnDestroy {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'tcn-xray-panel-action tcn-xray-panel-action--dock';
-    button.setAttribute('aria-label', 'Dock TC-Lense');
+    button.setAttribute('aria-label', 'Dock TC Lens');
     button.innerHTML =
       '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="8" y="7" width="18" height="18" rx="2"></rect><path d="M4 11v14a3 3 0 0 0 3 3h14"></path></svg>';
     button.addEventListener('click', () => this.dockXray());
@@ -983,8 +986,12 @@ export class LessonPlayerPage implements OnDestroy {
     this.xrayOpen.set(open);
     this.playerWrap()?.nativeElement.classList.toggle('tcn-xray-open', open);
 
-    if (open && this.xrayFrame && !this.xrayFrame.getAttribute('src')) {
-      this.xrayFrame.setAttribute('src', XRAY_PANEL_URL);
+    const lesson = this.lesson();
+    if (open && this.xrayFrame && lesson) {
+      const url = buildTcLensUrl(XRAY_PANEL_URL, lesson.id);
+      if (this.xrayFrame.getAttribute('src') !== url) {
+        this.xrayFrame.setAttribute('src', url);
+      }
     }
 
     this.placeXray();

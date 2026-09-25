@@ -387,7 +387,8 @@ function buildLessons(course) {
       thumbnail: course.placeholder ? `https://picsum.photos/seed/tcnexus-placeholder-lesson-${course.id}-${i}/320/180` : null,
       locked: tier === 'paid',
       excerpt: `Part ${i} of ${course.title.toLowerCase()} — a focused, worked walkthrough building directly on the previous lesson.`,
-      video_url: course.episode_video_url ?? (course.placeholder ? null : TEST_VIDEO_URL)
+      video_url: course.episode_video_url ?? (course.placeholder ? null : TEST_VIDEO_URL),
+      tc_lens_message: ''
     });
   }
   return lessons;
