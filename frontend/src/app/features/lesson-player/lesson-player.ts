@@ -10,6 +10,7 @@ import { AccessCheckResult, CourseDetail, Lesson } from '../../core/models';
 import { isAnonymousFreeLimitReached, isFinalFreeLesson } from '../../core/registration-settings';
 import { VisitorService } from '../../core/visitor.service';
 import { WatchProgressService } from '../../core/watch-progress.service';
+import { buildTcLensMessage } from './tc-lens-message';
 import { buildTcLensUrl } from './tc-lens-url';
 import { launchXrayPopup } from './xray-popup';
 import { hasExceededDragThreshold, resizeFloatingWindow, type ResizeDirection } from './xray-window-geometry';
@@ -38,6 +39,7 @@ const UP_NEXT_COUNTDOWN_SECONDS = 10;
 // iPhone 16 Pro Max CSS viewport width.
 const XRAY_PANEL_WIDTH = 440;
 const XRAY_PANEL_URL = 'https://app.tradecheetah.com';
+const XRAY_PANEL_ORIGIN = new URL(XRAY_PANEL_URL).origin;
 
 interface FillRect {
   left: number;
@@ -680,6 +682,7 @@ export class LessonPlayerPage implements OnDestroy {
     const frame = document.createElement('iframe');
     frame.className = 'tcn-xray-frame';
     frame.setAttribute('frameborder', '0');
+    frame.addEventListener('load', () => this.sendTcLensMessage());
 
     actions.appendChild(closeButton);
     panel.append(header, frame);
@@ -991,6 +994,8 @@ export class LessonPlayerPage implements OnDestroy {
       const url = buildTcLensUrl(XRAY_PANEL_URL, lesson.id);
       if (this.xrayFrame.getAttribute('src') !== url) {
         this.xrayFrame.setAttribute('src', url);
+      } else {
+        this.sendTcLensMessage();
       }
     }
 
@@ -1144,6 +1149,15 @@ export class LessonPlayerPage implements OnDestroy {
         this.xrayPanel.style.height = '';
       }
     }
+  }
+
+  private sendTcLensMessage(): void {
+    const lesson = this.lesson();
+    const message = lesson?.tc_lens_message?.trim();
+    const target = this.xrayFrame?.contentWindow;
+    if (!lesson || !message || !target) return;
+
+    target.postMessage(buildTcLensMessage(lesson.id, message), XRAY_PANEL_ORIGIN);
   }
 
   /** Fullscreen state settles after Plyr emits its transition event. */
