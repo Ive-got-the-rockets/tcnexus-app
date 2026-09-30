@@ -57,7 +57,7 @@
             }
             <div class="detail__meta">
               <div class="detail__meta-primary">
-                <span class="detail__type-badge">{{ courseTypeLabel(c) }}</span>
+                <span class="detail__type-badge detail__type-badge--highlighted">{{ courseTypeLabel(c) }}</span>
                 <span class="detail__meta-dot" aria-hidden="true"></span>
                 <span class="detail__type-badge">{{ activeLessons(c).length }} {{ isShow(c) ? 'Episodes' : 'Lessons' }}</span>
                 @if (!isShow(c)) {
@@ -82,34 +82,41 @@
                 </div>
               </div>
             }
-            @if (c.instructor || c.guest) {
+            @if ((c.instructor?.length ?? 0) || (c.guest?.length ?? 0)) {
               <div class="detail__people-row">
-                @if (c.instructor; as instructors) {
-                  <div class="detail__people-group">
-                    <p class="detail__instructor-label">Instructor</p>
+                <div class="detail__people-group">
+                  <button
+                    type="button"
+                    class="detail__instructor-label detail__instructor-label--toggle"
+                    [attr.aria-expanded]="instructorOpen()"
+                    (click)="toggleInstructor()"
+                  >{{ instructorLabel(c) }}</button>
+                  @if (instructorOpen()) {
+                    @if (c.instructor?.length) {
                     <div class="detail__instructor-row">
-                      @for (instructor of people(instructors); track instructor.id) {
+                      @for (instructor of c.instructor ?? []; track instructor.id) {
                         <div class="detail__person-item">
                           <img class="detail__instructor-avatar" [src]="personPhotoUrl(instructor)" [alt]="instructor.name" />
                           <span class="detail__instructor-name">{{ instructor.name }}</span>
                         </div>
                       }
                     </div>
-                  </div>
-                }
-                @if (c.guest; as guests) {
-                  <div class="detail__people-group">
-                    <p class="detail__guests-label">Guest</p>
+                    }
+                    @if (c.guest?.length) {
+                      @if (c.instructor?.length) {
+                        <p class="detail__guests-label">{{ c.guest?.length === 1 ? 'Guest' : 'Guests' }}</p>
+                      }
                     <div class="detail__instructor-row">
-                      @for (guest of people(guests); track guest.id) {
+                      @for (guest of c.guest ?? []; track guest.id) {
                         <div class="detail__person-item">
                           <img class="detail__instructor-avatar" [src]="personPhotoUrl(guest)" [alt]="guest.name" />
                           <span class="detail__instructor-name">{{ guest.name }}</span>
                         </div>
                       }
                     </div>
-                  </div>
-                }
+                    }
+                  }
+                </div>
               </div>
             }
             <div class="detail__actions">

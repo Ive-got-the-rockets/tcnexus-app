@@ -202,7 +202,7 @@
       });
     }
 
-    row.addEventListener('click', function () {
+    row.addEventListener('click', function (event) {
       if (event.target.closest('[data-tier-toggle]')) return;
       var willOpen = !row.classList.contains('is-open');
       row.classList.toggle('is-open', willOpen);
@@ -272,6 +272,48 @@
 
   // ---------- Save (ajax, one lesson at a time) ----------
 
+  function parseTcLensTime(value, allowBlank) {
+    var text = String(value || '').trim();
+    if (!text && allowBlank) return null;
+    var match = text.match(/^(\d+):(\d{1,2})$/);
+    if (!match || Number(match[2]) > 59) return null;
+    return Number(match[1]) * 60 + Number(match[2]);
+  }
+
+  function serializeTcLensTimeline(expand) {
+    var timeline = [];
+    expand.querySelectorAll('[data-global-tc-lens-event]').forEach(function (eventRow, index) {
+      var startTime = parseTcLensTime(eventRow.querySelector('[data-tc-lens-start]')?.value, false);
+      var endTime = parseTcLensTime(eventRow.querySelector('[data-tc-lens-end]')?.value, true);
+      var message = eventRow.querySelector('[data-tc-lens-message]')?.value.trim() || '';
+      if (startTime === null || endTime !== null && endTime < startTime || !message) return;
+      timeline.push({
+        id: eventRow.querySelector('[data-tc-lens-id]')?.value || ('event-new-' + Date.now() + '-' + index),
+        messageType: eventRow.querySelector('[data-tc-lens-type]')?.value === 'trade' ? 'trade' : 'llm',
+        message: message,
+        startTime: startTime,
+        endTime: endTime
+      });
+    });
+    return timeline;
+  }
+
+  list.addEventListener('click', function (event) {
+    var add = event.target.closest('.tcn-global-tc-lens-add');
+    if (add) {
+      var timeline = add.closest('[data-global-tc-lens-timeline]');
+      var template = timeline ? timeline.querySelector('.tcn-global-tc-lens-template') : null;
+      var events = timeline ? timeline.querySelector('.tcn-global-tc-lens-events') : null;
+      if (template && events) events.appendChild(template.content.cloneNode(true));
+      return;
+    }
+    var remove = event.target.closest('.tcn-global-tc-lens-remove');
+    if (remove) {
+      var row = remove.closest('[data-global-tc-lens-event]');
+      if (row) row.remove();
+    }
+  });
+
   list.addEventListener('click', function (event) {
     if (!event.target.classList.contains('tcn-global-lesson-save')) {
       return;
@@ -306,6 +348,7 @@
       video_source: videoSourceRadio ? videoSourceRadio.value : 'vimeo',
       vimeo_id: videoIdInput ? videoIdInput.value : '',
       duration: durationInput ? durationInput.value : '',
+      tc_lens_timeline: JSON.stringify(serializeTcLensTimeline(expand)),
       tier: tierRadio ? tierRadio.value : 'free',
       thumbnail_id: thumbnailInput ? thumbnailInput.value : ''
     });

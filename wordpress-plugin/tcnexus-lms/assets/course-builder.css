@@ -170,6 +170,13 @@
   font-size: 13px;
   font-weight: 400;
   line-height: 1.2;
+  opacity: 1;
+  transition: opacity .22s ease, transform .22s ease;
+}
+
+.tcn-save-confirmation.is-dismissing {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 
 .tcn-header__save-btn-placeholder {
@@ -894,12 +901,14 @@
 .tcn-lessons-overview__type,
 .tcn-lessons-overview__level,
 .tcn-lessons-overview__duration,
+.tcn-lessons-overview__video-id,
 .tcn-lessons-overview__views {
   width: 120px;
 }
 
 .tcn-lessons-overview__order,
 .tcn-lessons-overview__duration,
+.tcn-lessons-overview__video-id,
 .tcn-lessons-overview__views {
   text-align: center;
   font-variant-numeric: tabular-nums;
@@ -911,6 +920,7 @@
    is what actually centers the header text over the numbers. */
 .tcn-lessons-overview th.tcn-lessons-overview__order,
 .tcn-lessons-overview th.tcn-lessons-overview__duration,
+.tcn-lessons-overview th.tcn-lessons-overview__video-id,
 .tcn-lessons-overview th.tcn-lessons-overview__views {
   text-align: center;
 }
@@ -984,11 +994,17 @@
 /* Collapsed by default; toggled open by course-builder.js when its summary
    row (the sibling .tcn-lesson-row directly above) is clicked. */
 .tcn-lesson-expand td {
+  position: relative;
   padding: 0;
   border-top: none;
+  /* Keep the rows underneath from showing through the open editor. */
+  background: var(--tcn-bg, #fffdf9);
+  z-index: 2;
 }
 
 .tcn-lesson-expand__panel {
+  position: relative;
+  z-index: 2;
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.2s ease;
@@ -1052,6 +1068,32 @@
   margin-bottom: 8px;
 }
 
+.tcn-lesson-card__video-id {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 4px 10px 0;
+  color: var(--tcn-text-dim);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tcn-lesson-card__video-id code {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #F1EFE7;
+  color: var(--tcn-text);
+  font-family: var(--tcn-font-mono, monospace);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 .tcn-lesson-card__body {
   flex: 1;
   min-width: 0;
@@ -1071,25 +1113,57 @@
   /* Leaves clearance for the absolutely-positioned trash icon (top-right of
      the whole card) so it never overlaps the Description field's label. */
   padding-right: 44px;
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  grid-template-areas:
+    "order title"
+    ". description";
 }
 
 .tcn-lesson-card__row--top .tcn-lesson-card__order {
+  grid-area: order;
   width: 90px;
   flex-shrink: 0;
 }
 
 .tcn-lesson-card__row--top .tcn-lesson-card__title {
-  flex: 0 0 500px;
+  grid-area: title;
   min-width: 0;
 }
 
 .tcn-lesson-card__row--top .tcn-lesson-card__description {
-  flex: 1;
+  grid-area: description;
   min-width: 0;
 }
 
 .tcn-lesson-card__row--video {
   align-items: center;
+}
+
+@media (max-width: 1100px) {
+  .tcn-lesson-card__row--top {
+    grid-template-columns: 90px minmax(0, 1fr);
+    grid-template-areas:
+      "order title"
+      ". description";
+  }
+}
+
+@media (max-width: 900px) {
+  .tcn-tc-lens-event {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .tcn-tc-lens-event__type,
+  .tcn-tc-lens-event__message {
+    grid-column: 1 / -1;
+  }
+
+  .tcn-tc-lens-event__remove {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+  }
 }
 
 .tcn-lesson-card__row--video .tcn-video-id-input {
@@ -1112,6 +1186,87 @@
 
 .tcn-lesson-card__guests {
   width: min(100%, 520px);
+}
+
+.tcn-tc-lens-timeline {
+  width: 100%;
+  margin-top: 4px;
+  padding: 16px;
+  border: 1px solid var(--tcn-border);
+  border-radius: 10px;
+  background: var(--tcn-bg-sunken);
+}
+
+.tcn-tc-lens-timeline__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.tcn-tc-lens-timeline__header .tcn-field__hint {
+  margin: 4px 0 0;
+}
+
+.tcn-tc-lens-timeline__error {
+  min-height: 18px;
+  margin: -4px 0 8px;
+  color: var(--tcn-error-text, #a34d4d);
+  font-size: 12px;
+}
+
+.tcn-tc-lens-event input[aria-invalid="true"] {
+  border-color: var(--tcn-error-text, #a34d4d);
+  box-shadow: 0 0 0 1px var(--tcn-error-text, #a34d4d);
+}
+
+.tcn-tc-lens-event {
+  position: relative;
+  display: grid;
+  grid-template-columns: 150px 120px 120px minmax(0, 1fr) 28px;
+  gap: 10px;
+  align-items: start;
+  padding: 12px 34px 12px 12px;
+  border: 1px solid var(--tcn-border);
+  border-radius: 8px;
+  background: var(--tcn-bg);
+}
+
+.tcn-tc-lens-event + .tcn-tc-lens-event {
+  margin-top: 8px;
+}
+
+.tcn-tc-lens-event .tcn-field__label span {
+  color: var(--tcn-text-dim);
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.tcn-tc-lens-event__message textarea {
+  width: 100%;
+  min-height: 66px;
+  resize: vertical;
+}
+
+.tcn-tc-lens-event__remove {
+  align-self: center;
+  border: 0;
+  padding: 2px;
+  background: transparent;
+  color: var(--tcn-text-dim);
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.tcn-tc-lens-event__remove:hover {
+  color: var(--tcn-error-text);
+}
+
+.tcn-tc-lens-event--template {
+  display: none;
 }
 
 .tcn-lesson-person-picker {

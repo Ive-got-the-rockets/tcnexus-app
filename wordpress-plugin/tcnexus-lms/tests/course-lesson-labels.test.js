@@ -7,4 +7,5 @@ assert.match(source, /\$lesson_label = self::is_show_mode\(\) \? 'Episode' : 'Le
 assert.match(source, /Save <\?php echo esc_html\( \$lesson_label \); \?>/);
 assert.match(source, /Save and Add New <\?php echo esc_html\( \$lesson_label \); \?>/);
 assert.match(source, /\+ Add <\?php echo esc_html\( \$lesson_label \); \?>/);
+assert.match(source, /<span class="tcn-slug-prefix"><\?php echo esc_html\( \$is_show \? '\/shows\/' : '\/courses\/' \); \?><\/span>/);
 console.log('course lesson labels contract passes');

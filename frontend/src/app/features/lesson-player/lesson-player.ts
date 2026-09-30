@@ -10,7 +10,7 @@ import { AccessCheckResult, CourseDetail, Lesson } from '../../core/models';
 import { isAnonymousFreeLimitReached, isFinalFreeLesson } from '../../core/registration-settings';
 import { VisitorService } from '../../core/visitor.service';
 import { WatchProgressService } from '../../core/watch-progress.service';
-import { buildTcLensMessage } from './tc-lens-message';
+import { buildTcLensTimelineMessage, getDueTimelineEvents } from './tc-lens-timeline';
 import { buildTcLensUrl } from './tc-lens-url';
 import { launchXrayPopup } from './xray-popup';
 import { hasExceededDragThreshold, resizeFloatingWindow, type ResizeDirection } from './xray-window-geometry';
@@ -38,6 +38,7 @@ const UP_NEXT_COUNTDOWN_SECONDS = 10;
 // XRAY_PANEL_URL in an iframe, and the bottom bar is an empty placeholder.
 // iPhone 16 Pro Max CSS viewport width.
 const XRAY_PANEL_WIDTH = 440;
+const XRAY_BOTTOM_BAR_HEIGHT = 180;
 const XRAY_PANEL_URL = 'https://app.tradecheetah.com';
 const XRAY_PANEL_ORIGIN = new URL(XRAY_PANEL_URL).origin;
 
@@ -67,6 +68,33 @@ function computeFillRect(reserveRight: number, reserveBottom: number, constrainH
   const width = Math.max(0, constrainHeight ? Math.min(vw, (vh * 16) / 9) : vw);
   const height = (width * 9) / 16;
   return { left: (vw - width) / 2, top: (vh - height) / 2, width, height };
+}
+
+interface DockedXrayLayout {
+  rect: FillRect;
+  bottomBarHeight: number;
+  panelRightInset: number;
+  bottomBarRightInset: number;
+}
+
+function computeDockedXrayLayout(reserveRight: number, minimumBottomBarHeight: number): DockedXrayLayout {
+  const availableWidth = Math.max(0, window.innerWidth - reserveRight);
+  const availableHeight = Math.max(0, window.innerHeight - minimumBottomBarHeight);
+  const videoWidth = Math.min(availableWidth, (availableHeight * 16) / 9);
+  const videoHeight = (videoWidth * 9) / 16;
+  const groupLeft = Math.max(0, (window.innerWidth - videoWidth - reserveRight) / 2);
+
+  return {
+    rect: {
+      left: groupLeft,
+      top: 0,
+      width: videoWidth,
+      height: videoHeight
+    },
+    bottomBarHeight: Math.max(minimumBottomBarHeight, window.innerHeight - videoHeight),
+    panelRightInset: groupLeft,
+    bottomBarRightInset: groupLeft + reserveRight
+  };
 }
 
 interface VimeoRef {
@@ -244,6 +272,10 @@ export class LessonPlayerPage implements OnDestroy {
   private upNextTriggered = false;
   private upNextDismissed = false;
   private countdownFrame: number | null = null;
+  private timelinePreviousTime = -1;
+  private timelineFrameReady = false;
+  private readonly timelineSentIds = new Set<string>();
+  private readonly timelinePendingEvents = new Map<string, Lesson['tc_lens_timeline'][number]>();
   private readonly promptPhase = signal<PromptPhase | null>(null);
   private readonly pendingStart = signal<{ lesson: Lesson; restart: boolean } | null>(null);
   private readonly pendingChoice = signal<{ course: CourseDetail; lesson: Lesson; restart: boolean } | null>(null);
@@ -314,6 +346,12 @@ export class LessonPlayerPage implements OnDestroy {
     this.player?.destroy();
   }
 
+  private resetTcLensTimeline(): void {
+    this.timelinePreviousTime = -1;
+    this.timelineSentIds.clear();
+    this.timelinePendingEvents.clear();
+  }
+
   private loadLesson(courseId: number, lessonId: number, restart: boolean): void {
     const isFirstLoad = this.player === null;
     if (isFirstLoad) {
@@ -341,6 +379,9 @@ export class LessonPlayerPage implements OnDestroy {
    * the initial navigation and the post-registration retry above.
    */
   private checkAccessAndProceed(course: CourseDetail, lesson: Lesson, restart: boolean): void {
+    if (this.lesson()?.id !== lesson.id || restart) {
+      this.resetTcLensTimeline();
+    }
     this.accessService.checkAccess(lesson.id).subscribe({
       next: (access) => {
         this.accessResult.set(access);
@@ -360,7 +401,6 @@ export class LessonPlayerPage implements OnDestroy {
 
         this.course.set(course);
         this.lesson.set(lesson);
-
         const next = course.lessons.find((l) => l.order === lesson.order + 1) ?? null;
         this.nextLesson.set(next);
 
@@ -682,7 +722,11 @@ export class LessonPlayerPage implements OnDestroy {
     const frame = document.createElement('iframe');
     frame.className = 'tcn-xray-frame';
     frame.setAttribute('frameborder', '0');
-    frame.addEventListener('load', () => this.sendTcLensMessage());
+    frame.addEventListener('load', () => {
+      this.timelineFrameReady = true;
+      this.queuePastTcLensEvents();
+      this.flushTcLensEvents();
+    });
 
     actions.appendChild(closeButton);
     panel.append(header, frame);
@@ -993,9 +1037,11 @@ export class LessonPlayerPage implements OnDestroy {
     if (open && this.xrayFrame && lesson) {
       const url = buildTcLensUrl(XRAY_PANEL_URL, lesson.id);
       if (this.xrayFrame.getAttribute('src') !== url) {
+        this.timelineFrameReady = false;
         this.xrayFrame.setAttribute('src', url);
       } else {
-        this.sendTcLensMessage();
+        this.queuePastTcLensEvents();
+        this.flushTcLensEvents();
       }
     }
 
@@ -1023,13 +1069,13 @@ export class LessonPlayerPage implements OnDestroy {
       !!plyrElement?.classList.contains('plyr--fullscreen-active') ||
       document.fullscreenElement === plyrElement;
     const docked = open && !this.xrayDetached();
-    const rect = computeFillRect(docked ? XRAY_PANEL_WIDTH : 0, 0, !docked);
+    const dockedLayout = docked ? computeDockedXrayLayout(XRAY_PANEL_WIDTH, XRAY_BOTTOM_BAR_HEIGHT) : null;
+    const rect = dockedLayout?.rect ?? computeFillRect(0, 0, true);
 
     if (docked) {
-      // X-Ray keeps the player flush with the viewport's top-left corner.
-      // Its width uses all space beside the fixed-width phone panel, while
-      // the height is derived from that width to preserve a true 16:9 ratio.
-      rect.left = 0;
+      // X-Ray keeps the video proportional and bottom-aligned to the bar.
+      // When the available column is wider than the height allows, the unused
+      // width becomes black side bars instead of cropping the video vertically.
       rect.top = 0;
     }
 
@@ -1051,14 +1097,14 @@ export class LessonPlayerPage implements OnDestroy {
         videoWrapper.style.position = 'absolute';
         videoWrapper.style.left = '0';
         videoWrapper.style.top = '0';
-        videoWrapper.style.width = `${rect.width}px`;
-        videoWrapper.style.height = `${rect.height}px`;
+        videoWrapper.style.setProperty('width', `${rect.width}px`, 'important');
+        videoWrapper.style.setProperty('height', `${rect.height}px`, 'important');
       } else if (videoWrapper) {
         videoWrapper.style.position = '';
         videoWrapper.style.left = '';
         videoWrapper.style.top = '';
-        videoWrapper.style.width = '';
-        videoWrapper.style.height = '';
+        videoWrapper.style.removeProperty('width');
+        videoWrapper.style.removeProperty('height');
       }
 
       if (docked && controlsRoot) {
@@ -1088,6 +1134,21 @@ export class LessonPlayerPage implements OnDestroy {
         controlsRoot.style.inset = '';
         controlsRoot.style.width = '';
         controlsRoot.style.height = '';
+      }
+      if (videoWrapper) {
+        if (docked) {
+          videoWrapper.style.position = 'absolute';
+          videoWrapper.style.left = '0';
+          videoWrapper.style.top = '0';
+          videoWrapper.style.setProperty('width', `${rect.width}px`, 'important');
+          videoWrapper.style.setProperty('height', `${rect.height}px`, 'important');
+        } else {
+          videoWrapper.style.position = '';
+          videoWrapper.style.left = '';
+          videoWrapper.style.top = '';
+          videoWrapper.style.removeProperty('width');
+          videoWrapper.style.removeProperty('height');
+        }
       }
       if (videoEmbed) {
         if (docked) {
@@ -1125,14 +1186,29 @@ export class LessonPlayerPage implements OnDestroy {
     if (docked) {
       const panelWidth = Math.min(XRAY_PANEL_WIDTH, window.innerWidth);
       if (this.xrayPanel) this.xrayPanel.style.width = `${panelWidth}px`;
-      if (this.xrayBottomBar) this.xrayBottomBar.style.right = `${panelWidth}px`;
+      if (this.xrayPanel) this.xrayPanel.style.right = `${dockedLayout?.panelRightInset ?? 0}px`;
       if (this.xrayBottomBar) {
-        this.xrayBottomBar.style.height = `${Math.max(0, window.innerHeight - rect.height)}px`;
+        this.xrayBottomBar.style.left = `${dockedLayout?.rect.left ?? 0}px`;
+        this.xrayBottomBar.style.right = `${dockedLayout?.bottomBarRightInset ?? panelWidth}px`;
+      }
+      if (this.xrayBottomBar) {
+        const bottomBarHeight = dockedLayout?.bottomBarHeight ?? XRAY_BOTTOM_BAR_HEIGHT;
+        this.xrayBottomBar.style.setProperty('height', `${bottomBarHeight}px`, 'important');
+        this.xrayBottomBar.style.setProperty('min-height', `${XRAY_BOTTOM_BAR_HEIGHT}px`, 'important');
+        this.xrayBottomBar.style.removeProperty('max-height');
       }
     } else {
       if (this.xrayPanel) this.xrayPanel.style.width = '';
-      if (this.xrayBottomBar) this.xrayBottomBar.style.right = '';
-      if (this.xrayBottomBar) this.xrayBottomBar.style.height = '';
+      if (this.xrayPanel) this.xrayPanel.style.right = '';
+      if (this.xrayBottomBar) {
+        this.xrayBottomBar.style.left = '';
+        this.xrayBottomBar.style.right = '';
+      }
+      if (this.xrayBottomBar) {
+        this.xrayBottomBar.style.removeProperty('height');
+        this.xrayBottomBar.style.removeProperty('min-height');
+        this.xrayBottomBar.style.removeProperty('max-height');
+      }
     }
 
     if (this.xrayPanel) {
@@ -1151,13 +1227,40 @@ export class LessonPlayerPage implements OnDestroy {
     }
   }
 
-  private sendTcLensMessage(): void {
+  private queuePastTcLensEvents(): void {
     const lesson = this.lesson();
-    const message = lesson?.tc_lens_message?.trim();
-    const target = this.xrayFrame?.contentWindow;
-    if (!lesson || !message || !target) return;
+    const currentTime = this.player?.currentTime ?? 0;
+    if (!lesson) return;
 
-    target.postMessage(buildTcLensMessage(lesson.id, message), XRAY_PANEL_ORIGIN);
+    const claimedIds = new Set([...this.timelineSentIds, ...this.timelinePendingEvents.keys()]);
+    for (const event of getDueTimelineEvents(lesson.tc_lens_timeline ?? [], -1, currentTime, claimedIds)) {
+      this.timelinePendingEvents.set(event.id, event);
+    }
+  }
+
+  private flushTcLensEvents(): void {
+    if (!this.timelineFrameReady) return;
+    const target = this.xrayFrame?.contentWindow;
+    const lesson = this.lesson();
+    if (!target || !lesson) return;
+
+    for (const [eventId, event] of this.timelinePendingEvents) {
+      target.postMessage(buildTcLensTimelineMessage(lesson.id, event), XRAY_PANEL_ORIGIN);
+      this.timelineSentIds.add(eventId);
+      this.timelinePendingEvents.delete(eventId);
+    }
+  }
+
+  private queueTcLensEvents(currentTime: number): void {
+    const lesson = this.lesson();
+    if (!lesson) return;
+
+    const claimedIds = new Set([...this.timelineSentIds, ...this.timelinePendingEvents.keys()]);
+    for (const event of getDueTimelineEvents(lesson.tc_lens_timeline ?? [], this.timelinePreviousTime, currentTime, claimedIds)) {
+      this.timelinePendingEvents.set(event.id, event);
+    }
+    this.timelinePreviousTime = currentTime;
+    this.flushTcLensEvents();
   }
 
   /** Fullscreen state settles after Plyr emits its transition event. */
@@ -1170,6 +1273,8 @@ export class LessonPlayerPage implements OnDestroy {
   private handleTimeUpdate(): void {
     if (!this.player) return;
     const { currentTime, duration } = this.player;
+
+    this.queueTcLensEvents(currentTime);
 
     const lesson = this.lesson();
     const course = this.course();

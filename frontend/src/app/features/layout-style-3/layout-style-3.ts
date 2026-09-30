@@ -164,6 +164,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
   });
   protected readonly languageMenuOpen = signal(false);
   protected readonly charactersOpen = signal(false);
+  protected readonly instructorOpen = signal(false);
   protected readonly selectedLanguage = signal('en');
   private overviewLoadingTask?: PDFDocumentLoadingTask;
   private overviewPdf?: PDFDocumentProxy;
@@ -234,6 +235,24 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
     document.body.style.overflow = '';
   }
 
+  protected toggleInstructor(): void {
+    this.instructorOpen.update(open => !open);
+  }
+
+  protected instructorLabel(detail: CourseDetail): string {
+    const instructorCount = detail.instructor?.length ?? 0;
+    const guestCount = detail.guest?.length ?? 0;
+    const instructorLabel = instructorCount === 1 ? 'Instructor' : 'Instructors';
+    const guestLabel = guestCount === 1 ? 'Guest' : 'Guests';
+    if (instructorCount === 0) return guestLabel;
+    if (guestCount === 0) return instructorLabel;
+    return `${instructorLabel} and ${guestLabel}`;
+  }
+
+  protected guestLabel(value: Person | Person[]): string {
+    return this.people(value).length === 1 ? 'Guest' : 'Guests';
+  }
+
   protected pageCount(kind: CarouselKind): number {
     const length = kind === 'shows'
       ? this.carouselShows().length
@@ -269,6 +288,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
     this.featuredIndex.set(index);
     this.featured.set(item);
     this.featuredDetail.set(null);
+    this.instructorOpen.set(false);
     this.selectedLanguage.set(this.courseLanguages(item)[0]?.slug ?? 'en');
     this.coursesService.getCourse(item.id).subscribe({
       next: detail => {
@@ -651,7 +671,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
       locked: false,
       excerpt: 'A guided platform lesson for this course.',
       video_url: null,
-      tc_lens_message: '',
+      tc_lens_timeline: [],
     }));
 
     return {

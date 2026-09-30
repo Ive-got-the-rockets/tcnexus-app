@@ -388,7 +388,7 @@ function buildLessons(course) {
       locked: tier === 'paid',
       excerpt: `Part ${i} of ${course.title.toLowerCase()} — a focused, worked walkthrough building directly on the previous lesson.`,
       video_url: course.episode_video_url ?? (course.placeholder ? null : TEST_VIDEO_URL),
-      tc_lens_message: ''
+      tc_lens_timeline: []
     });
   }
   return lessons;

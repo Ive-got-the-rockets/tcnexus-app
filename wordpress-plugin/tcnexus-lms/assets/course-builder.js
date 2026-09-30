@@ -7,6 +7,13 @@
   // #tcnexus-builder wrapper of its own.
   var root = document.getElementById('tcnexus-builder');
 
+  document.querySelectorAll('.tcn-save-confirmation').forEach(function (notice) {
+    window.setTimeout(function () {
+      notice.classList.add('is-dismissing');
+      window.setTimeout(function () { notice.remove(); }, 220);
+    }, 3000);
+  });
+
   function openOrganizedMediaLibrary(picker, onSelect) {
     var modal = document.createElement('div');
     modal.className = 'tcn-organized-media-modal';
@@ -420,6 +427,10 @@
       courseForm.addEventListener('input', markCourseFormDirty);
       courseForm.addEventListener('change', markCourseFormDirty);
        courseForm.addEventListener('submit', function (event) {
+         if (!validateTimelineRows()) {
+           event.preventDefault();
+           return;
+         }
          if (mustSetCourseType()) {
            event.preventDefault();
            showCourseTypeWarning();
@@ -739,6 +750,41 @@
         if (option) option.disabled = false;
         if (item) item.remove();
         refreshDropdown();
+      });
+    });
+  });
+
+  // Course instructors use the same avatar/name list interaction as lesson guests.
+  document.querySelectorAll('[data-instructor-picker="1"]').forEach(function (select) {
+    var field = select.closest('.tcn-course-instructors');
+    var list = field ? field.querySelector('.tcn-course-instructor-list') : null;
+    if (!list) return;
+    function refreshDropdown() { if (select._tcnRefresh) select._tcnRefresh(); }
+    function addInstructor() {
+      var id = select.value;
+      var option = select.options[select.selectedIndex];
+      if (!id || !option || list.querySelector('[data-instructor-id="' + id + '"]')) return;
+      var item = document.createElement('div');
+      item.className = 'tcn-lesson-guest';
+      item.setAttribute('data-instructor-id', id);
+      item.innerHTML = '<span class="tcn-lesson-guest__avatar-wrap"></span><span class="tcn-lesson-guest__name"></span><input type="hidden" name="' + select.getAttribute('data-person-input-name') + '" value="' + id + '" /><button type="button" class="tcn-lesson-guest__remove" aria-label="Remove instructor">×</button>';
+      item.querySelector('.tcn-lesson-guest__name').textContent = option.textContent;
+      if (option.getAttribute('data-photo')) {
+        var avatar = document.createElement('img');
+        avatar.className = 'tcn-lesson-guest__avatar';
+        avatar.src = option.getAttribute('data-photo');
+        avatar.alt = '';
+        item.querySelector('.tcn-lesson-guest__avatar-wrap').appendChild(avatar);
+      }
+      list.appendChild(item); select.value = ''; refreshDropdown();
+    }
+    refreshDropdown();
+    select.addEventListener('change', addInstructor);
+    list.querySelectorAll('.tcn-lesson-guest__remove').forEach(function (button) {
+      button.addEventListener('click', function () {
+        var item = button.closest('.tcn-character-list__item');
+        item = item || button.closest('.tcn-lesson-guest');
+        if (item) item.remove(); refreshDropdown();
       });
     });
   });
@@ -1218,7 +1264,112 @@
 
     filterLessonRows(currentLevel);
 
+    function refreshLessonPanelHeight(element) {
+      var panel = element.closest('.tcn-lesson-expand__panel');
+      var expandRow = panel ? panel.closest('.tcn-lesson-expand') : null;
+      if (panel && expandRow && expandRow.classList.contains('is-open')) {
+        requestAnimationFrame(function () {
+          panel.style.maxHeight = panel.scrollHeight + 'px';
+        });
+      }
+    }
+
+    function nextTimelineIndex(timeline) {
+      var next = Number(timeline.dataset.nextTimelineIndex || 0);
+      timeline.querySelectorAll('[data-tc-lens-event] [name]').forEach(function (control) {
+        var match = control.name.match(/\[tc_lens_timeline\]\[(\d+)\]/);
+        if (match) {
+          next = Math.max(next, Number(match[1]) + 1);
+        }
+      });
+      timeline.dataset.nextTimelineIndex = String(next + 1);
+      return next;
+    }
+
+    function addTimelineEvent(timeline) {
+      var events = timeline.querySelector('[data-tc-lens-events]');
+      var templateEvent = timeline.querySelector('[data-tc-lens-event-template]');
+      if (!events || !templateEvent) {
+        return;
+      }
+
+      var index = nextTimelineIndex(timeline);
+      var eventRow = templateEvent.cloneNode(true);
+      eventRow.hidden = false;
+      eventRow.removeAttribute('data-tc-lens-event-template');
+      eventRow.classList.remove('tcn-tc-lens-event--template');
+      eventRow.querySelectorAll('[disabled]').forEach(function (control) {
+        control.removeAttribute('disabled');
+      });
+      eventRow.querySelectorAll('[name]').forEach(function (control) {
+        control.name = control.name.replace(/__TIMELINE_INDEX__/g, String(index));
+      });
+      var idInput = eventRow.querySelector('input[type="hidden"]');
+      if (idInput) {
+        idInput.value = 'event-new-' + Date.now() + '-' + index;
+      }
+      events.appendChild(eventRow);
+      eventRow.querySelectorAll('.tcn-select').forEach(enhanceSelect);
+      refreshLessonPanelHeight(timeline);
+      if (typeof markCourseFormDirty === 'function') markCourseFormDirty();
+    }
+
+    function parseTimelineTime(value) {
+      var trimmed = String(value || '').trim();
+      var match = trimmed.match(/^(\d+):(\d{1,2})$/);
+      if (!match || Number(match[2]) > 59) return null;
+      return Number(match[1]) * 60 + Number(match[2]);
+    }
+
+    function validateTimelineRows() {
+      var firstInvalid = null;
+      lessonsList.querySelectorAll('[data-tc-lens-timeline]').forEach(function (timeline) {
+        var error = timeline.querySelector('.tcn-tc-lens-timeline__error');
+        var timelineError = '';
+        if (error) error.textContent = '';
+        timeline.querySelectorAll('[data-tc-lens-event]:not([data-tc-lens-event-template])').forEach(function (row) {
+          var start = row.querySelector('input[name$="[startTime]"]');
+          var end = row.querySelector('input[name$="[endTime]"]');
+          if (!start || !end) return;
+          var startSeconds = parseTimelineTime(start.value);
+          var endSeconds = String(end.value || '').trim() === '' ? null : parseTimelineTime(end.value);
+          var invalid = null === startSeconds ? 'Enter a valid start time as mm:ss.' : (null !== endSeconds && endSeconds < startSeconds ? 'End time must be after the start time.' : (String(end.value || '').trim() !== '' && null === endSeconds ? 'Enter a valid end time as mm:ss.' : ''));
+          start.removeAttribute('aria-invalid');
+          end.removeAttribute('aria-invalid');
+          if (invalid) {
+            if (!firstInvalid) firstInvalid = start;
+            if (null === startSeconds) start.setAttribute('aria-invalid', 'true');
+            if (String(end.value || '').trim() !== '' && (null === endSeconds || endSeconds < startSeconds)) end.setAttribute('aria-invalid', 'true');
+            timelineError = invalid;
+          }
+        });
+        if (error && timelineError) error.textContent = timelineError;
+      });
+      if (firstInvalid) {
+        firstInvalid.focus();
+        return false;
+      }
+      return true;
+    }
+
     lessonsList.addEventListener('click', function (event) {
+      var timelineAdd = event.target.closest('.tcn-tc-lens-add');
+      if (timelineAdd) {
+        var timeline = timelineAdd.closest('[data-tc-lens-timeline]');
+        if (timeline) addTimelineEvent(timeline);
+        return;
+      }
+      var timelineRemove = event.target.closest('.tcn-tc-lens-event__remove');
+      if (timelineRemove) {
+        var timelineEvent = timelineRemove.closest('[data-tc-lens-event]');
+        var timeline = timelineRemove.closest('[data-tc-lens-timeline]');
+        if (timelineEvent && !timelineEvent.hasAttribute('data-tc-lens-event-template')) {
+          timelineEvent.remove();
+          if (timeline) refreshLessonPanelHeight(timeline);
+          if (typeof markCourseFormDirty === 'function') markCourseFormDirty();
+        }
+        return;
+      }
       if (event.target.classList.contains('tcn-lesson-guest__remove')) {
         var guestItem = event.target.closest('.tcn-lesson-guest');
         if (guestItem) {

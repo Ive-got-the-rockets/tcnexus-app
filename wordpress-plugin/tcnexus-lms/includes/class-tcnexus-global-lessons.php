@@ -206,13 +206,14 @@ class TCNexus_Global_Lessons {
 							<th class="tcn-lessons-overview__course">Course / Show Name</th>
 							<th class="tcn-lessons-overview__level">Tier</th>
 							<th class="tcn-lessons-overview__duration">Duration</th>
+							<th class="tcn-lessons-overview__video-id">ID</th>
 							<th class="tcn-lessons-overview__views">Views</th>
 						</tr>
 					</thead>
 					<tbody id="tcnexus-global-lessons-list">
 						<?php if ( empty( $lessons ) ) : ?>
 							<tr class="tcn-lessons-empty-row">
-								<td colspan="7">No lessons or episodes yet — add them from a course or show's builder.</td>
+								<td colspan="8">No lessons or episodes yet — add them from a course or show's builder.</td>
 							</tr>
 						<?php else : ?>
 							<?php foreach ( $lessons as $index => $lesson ) :
@@ -223,6 +224,7 @@ class TCNexus_Global_Lessons {
 								$video_id           = get_post_meta( $lesson->ID, '_tcnexus_vimeo_id', true );
 								$video_source       = get_post_meta( $lesson->ID, '_tcnexus_video_source', true ) ?: 'vimeo';
 								$duration           = get_post_meta( $lesson->ID, '_tcnexus_duration', true );
+								$tc_lens_timeline   = TCNexus_Course_Builder::get_lesson_tc_lens_timeline( $lesson->ID );
 								$thumbnail_id       = get_post_thumbnail_id( $lesson->ID );
 								$video_placeholder  = 'youtube' === $video_source ? 'YouTube Video ID' : 'Vimeo Video ID';
 								$views              = isset( $lesson_views[ $lesson->ID ] ) ? $lesson_views[ $lesson->ID ] : 0;
@@ -247,14 +249,16 @@ class TCNexus_Global_Lessons {
 										</div>
 									</td>
 									<td class="tcn-lessons-overview__duration"><?php echo esc_html( $duration ?: '—' ); ?></td>
+									<td class="tcn-lessons-overview__video-id"><?php echo esc_html( $lesson->ID ); ?></td>
 									<td class="tcn-lessons-overview__views"><?php echo esc_html( number_format_i18n( $views ) ); ?></td>
 								</tr>
 								<tr class="tcn-lesson-expand">
-									<td colspan="7">
+									<td colspan="8">
 										<div class="tcn-lesson-expand__panel">
 											<div class="tcn-lesson-card">
 												<div class="tcn-lesson-card__media">
-													<?php TCNexus_Media::render_picker( 'Select Image', "global_lesson_thumbnail_{$lesson->ID}", $thumbnail_id, 'Select episode image', 640, 360 ); ?>
+														<?php TCNexus_Media::render_picker( 'Select Image', "global_lesson_thumbnail_{$lesson->ID}", $thumbnail_id, 'Select episode image', 640, 360 ); ?>
+														<div class="tcn-lesson-card__video-id"><span>Video ID</span><code><?php echo esc_html( $lesson->ID ); ?></code></div>
 												</div>
 												<div class="tcn-lesson-card__body">
 													<div class="tcn-lesson-card__row tcn-lesson-card__row--top">
@@ -283,9 +287,9 @@ class TCNexus_Global_Lessons {
 													<div class="tcn-lesson-card__row tcn-lesson-card__row--meta">
 														<div class="tcn-lesson-card__duration">
 															<label class="tcn-field__label">Duration</label>
-															<input type="text" class="tcn-duration-input" value="<?php echo esc_attr( $duration ); ?>" placeholder="e.g. 12:45" />
-														</div>
-														<div class="tcn-lesson-card__tier">
+																<input type="text" class="tcn-duration-input" value="<?php echo esc_attr( $duration ); ?>" placeholder="e.g. 12:45" />
+															</div>
+																<div class="tcn-lesson-card__tier">
 															<label class="tcn-field__label">Tier</label>
 															<div class="tcn-pill-toggle">
 																<input type="radio" id="gl_tier_<?php echo esc_attr( $lesson->ID ); ?>_free" name="gl_tier_<?php echo esc_attr( $lesson->ID ); ?>" value="free" <?php checked( $tier, 'free' ); ?> />
@@ -293,9 +297,25 @@ class TCNexus_Global_Lessons {
 																<input type="radio" id="gl_tier_<?php echo esc_attr( $lesson->ID ); ?>_paid" name="gl_tier_<?php echo esc_attr( $lesson->ID ); ?>" value="paid" <?php checked( $tier, 'paid' ); ?> />
 																<label for="gl_tier_<?php echo esc_attr( $lesson->ID ); ?>_paid">Paid</label>
 															</div>
+																	</div>
+																</div>
+																							<?php TCNexus_Course_Builder::render_lesson_guest_field( 'guest_ids[]', $lesson_guest_ids, $guests, 'Lesson' ); ?>
+															<div class="tcn-global-tc-lens-timeline" data-global-tc-lens-timeline>
+																<div class="tcn-global-tc-lens-timeline__header"><div><label class="tcn-field__label">TC Lens timeline</label><p class="tcn-field__hint">Send independent LLM or trade-data messages at selected video times.</p></div><button type="button" class="tcn-btn-ghost tcn-global-tc-lens-add">+ Add message</button></div>
+																<div class="tcn-global-tc-lens-events">
+																	<?php foreach ( $tc_lens_timeline as $event ) : $event_end = null !== $event['endTime'] ? sprintf( '%02d:%02d', floor( $event['endTime'] / 60 ), $event['endTime'] % 60 ) : ''; ?>
+																		<div class="tcn-global-tc-lens-event" data-global-tc-lens-event>
+																			<input type="hidden" data-tc-lens-id value="<?php echo esc_attr( $event['id'] ); ?>" />
+																			<label><span>Type</span><select data-tc-lens-type><option value="llm" <?php selected( $event['messageType'], 'llm' ); ?>>LLM</option><option value="trade" <?php selected( $event['messageType'], 'trade' ); ?>>Trade data</option></select></label>
+																			<label><span>Start time</span><input type="text" data-tc-lens-start value="<?php echo esc_attr( sprintf( '%02d:%02d', floor( $event['startTime'] / 60 ), $event['startTime'] % 60 ) ); ?>" placeholder="00:00" inputmode="numeric" /></label>
+																			<label><span>End time <em>optional</em></span><input type="text" data-tc-lens-end value="<?php echo esc_attr( $event_end ); ?>" placeholder="No end" inputmode="numeric" /></label>
+																			<label class="tcn-global-tc-lens-event__message"><span>Message</span><textarea data-tc-lens-message rows="2" placeholder="Message or prompt for this point in the video"><?php echo esc_textarea( $event['message'] ); ?></textarea></label>
+																			<button type="button" class="tcn-global-tc-lens-remove" aria-label="Remove TC Lens message">×</button>
+																		</div>
+																	<?php endforeach; ?>
+																</div>
+																<template class="tcn-global-tc-lens-template"><div class="tcn-global-tc-lens-event" data-global-tc-lens-event><input type="hidden" data-tc-lens-id value="" /><label><span>Type</span><select data-tc-lens-type><option value="llm">LLM</option><option value="trade">Trade data</option></select></label><label><span>Start time</span><input type="text" data-tc-lens-start placeholder="00:00" inputmode="numeric" /></label><label><span>End time <em>optional</em></span><input type="text" data-tc-lens-end placeholder="No end" inputmode="numeric" /></label><label class="tcn-global-tc-lens-event__message"><span>Message</span><textarea data-tc-lens-message rows="2" placeholder="Message or prompt for this point in the video"></textarea></label><button type="button" class="tcn-global-tc-lens-remove" aria-label="Remove TC Lens message">×</button></div></template>
 														</div>
-															</div>
-										<?php TCNexus_Course_Builder::render_lesson_guest_field( 'guest_ids[]', $lesson_guest_ids, $guests, 'Lesson' ); ?>
 															<div class="tcn-lesson-card__footer">
 														<button type="button" class="tcn-btn-ghost tcn-btn-ghost--danger tcn-global-lesson-remove">Remove</button>
 														<button type="button" class="tcn-save-btn tcn-global-lesson-save">Save</button>

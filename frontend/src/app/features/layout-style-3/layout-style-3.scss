@@ -11,7 +11,7 @@
   --signal: #c4ff3f;
   --line: rgba(242, 240, 232, 0.14);
   --carousel-headroom: 150px;
-  --hero-content-top: calc(25vh + 90px);
+  --hero-content-top: 150px;
   background: #0C0D0D;
 }
 
@@ -269,16 +269,36 @@
 }
 
 .style-featured__description {
+  position: relative;
   max-width: 38rem;
-  margin: 0;
+  margin: 0 0 20px;
+  padding-bottom: 25px;
   color: var(--muted);
   font-family: 'Inter', sans-serif;
   font-size: 1rem;
+  font-weight: 300;
   line-height: 1.7;
+}
+
+.style-featured__description::after {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 60px;
+  height: 1px;
+  background: var(--muted);
+  opacity: 0.4;
+  content: '';
 }
 
 .style-featured__person {
   margin-top: 20px;
+}
+
+.style-featured__person--group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .style-featured__person-label {
@@ -289,6 +309,38 @@
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.style-featured__person-label--toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--paper);
+  cursor: pointer;
+  font-weight: 400;
+}
+
+.style-featured__person-label--toggle::after {
+  content: '';
+  width: 0;
+  height: 0;
+  border-top: 5px solid currentColor;
+  border-right: 4px solid transparent;
+  border-left: 4px solid transparent;
+  transition: transform 0.2s ease;
+}
+
+.style-featured__person-label--toggle[aria-expanded='true']::after {
+  transform: rotate(180deg);
+}
+
+.style-featured__person-label--subsection {
+  margin-top: 1rem;
+  color: #A6AAA0;
+  font-weight: 400;
 }
 
 .style-featured__person-row {
@@ -460,12 +512,26 @@
 }
 
 .style-featured__meta {
+  position: relative;
   display: flex;
   flex-direction: row;
   align-items: flex-start;
   gap: 9px;
-  margin-top: 16px;
+  margin-top: 56px;
+  padding-bottom: 25px;
+  margin-bottom: 20px;
   font-family: var(--font-mono);
+}
+
+.style-featured__meta::after {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 60px;
+  height: 1px;
+  background: var(--muted);
+  opacity: 0.4;
+  content: '';
 }
 
 .style-featured__meta-primary,
@@ -477,8 +543,8 @@
 
 .style-featured__meta-badge,
 .style-featured__level-badge {
-  color: var(--amber);
-  border: 1px solid color-mix(in srgb, var(--amber) 40%, transparent);
+  color: var(--muted);
+  border: 1px solid color-mix(in srgb, var(--muted) 40%, transparent);
   border-radius: 999px;
   padding: 0.15rem 0.5rem;
   font-size: 0.625rem;
@@ -492,7 +558,7 @@
   height: 5px;
   flex: 0 0 5px;
   border-radius: 50%;
-  background: var(--signal);
+  background: var(--muted);
 }
 
 .style-featured__actions {
@@ -2323,8 +2389,7 @@
   padding-top: var(--hero-content-top);
 }
 
-/* Wide desktop refinement: move the hero content up without changing the
-   1920px desktop composition or any smaller breakpoint. */
+/* Keep every featured slide aligned to the same 200px top offset. */
 @media (min-width: 1200px) and (max-width: 1599px) {
   :host {
     --cards-per-page: 5;
@@ -2340,33 +2405,33 @@
   }
 
   :host {
-    --hero-content-top: calc(25vh - 120px);
+    --hero-content-top: 150px;
     background: #0C0D0D;
   }
 }
 
 @media (min-width: 1600px) {
   :host {
-    --hero-content-top: calc(25vh + 90px);
+    --hero-content-top: 150px;
   }
 }
 
 @media (min-width: 1200px) and (max-width: 1499px) {
   :host {
-    --hero-content-top: calc(25vh - 150px);
+    --hero-content-top: 150px;
   }
 }
 
 @media (min-width: 1200px) and (max-width: 1299px) {
   :host {
-    --hero-content-top: calc(25vh - 60px);
+    --hero-content-top: 150px;
   }
 }
 
 /* Tablet landscape: lift only the 1024px hero composition. */
 @media (min-width: 1000px) and (max-width: 1199px) {
   :host {
-    --hero-content-top: calc(25vh - 60px);
+    --hero-content-top: 150px;
   }
 }
 
@@ -2452,6 +2517,19 @@
   outline: 0 !important;
   background: #fff;
   color: #33373D;
+}
+
+/* Keep the instructor disclosure transparent until it is interacted with;
+   the shared button hover treatment still supplies its highlight. */
+.style-page .style-featured__person-label--toggle {
+  background: transparent !important;
+  color: #A6AAA0 !important;
+}
+
+.style-page .style-featured__person-label--toggle:hover,
+.style-page .style-featured__person-label--toggle:focus-visible {
+  background: transparent !important;
+  color: #F2F0E8 !important;
 }
 
 /* The featured artwork click target is invisible so it never obscures the

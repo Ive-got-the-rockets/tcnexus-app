@@ -1,3 +1,4 @@
+/* Diego Header Style 01: transparent, editorial header chrome. */
 .site-header {
   position: fixed;
   top: 0;
@@ -10,7 +11,7 @@
   align-items: center;
   gap: 1.5rem;
   padding-inline: clamp(1.25rem, 4vw, 3rem);
-  background: rgba(0, 0, 0, 0.45);
+  background: transparent;
   transform: translateY(0);
   transition: transform 0.3s ease;
 }
@@ -25,23 +26,9 @@
   }
 }
 
-.site-header::after {
-  content: '';
-  position: absolute;
-  left: 12.5%;
-  right: 12.5%;
-  bottom: 0;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.5) 50%,
-    transparent 100%
-  );
-}
-
 .wordmark {
   justify-self: start;
+  transform: translateY(20px);
   font-family: var(--font-display);
   font-size: 1.25rem;
   font-weight: 400;
@@ -56,12 +43,15 @@
 }
 
 .site-header__nav {
+  position: absolute;
+  left: max(1.25rem, 12.5vw);
+  transform: translateY(20px);
   display: flex;
   align-items: center;
   gap: 1.75rem;
   font-family: var(--font-ui);
   font-size: 18px;
-  font-weight: 300;
+  font-weight: 200;
   color: var(--paper);
   white-space: nowrap;
 }
@@ -78,53 +68,10 @@
   }
 }
 
-/* Active Home cue: a thin illuminated shelf in the existing signal green. */
-.site-header__nav-link--active {
-  isolation: isolate;
-
-  &::before,
-  &::after {
-    content: '';
-    pointer-events: none;
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    transform-origin: 50% 0;
-  }
-
-  &::before {
-    z-index: 1;
-    top: -19px;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    transform: none;
-    background: var(--signal);
-    box-shadow: 0 0 7px 3px color-mix(in srgb, var(--signal) 45%, transparent);
-  }
-
-  &::after {
-    z-index: -1;
-    top: -17px;
-    left: 0;
-    width: 100%;
-    height: 42px;
-    transform: none;
-    background: linear-gradient(180deg, color-mix(in srgb, var(--signal) 28%, transparent), transparent 82%);
-    filter: blur(5px);
-    opacity: 0.72;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .site-header__nav-link--active::before,
-  .site-header__nav-link--active::after {
-    animation: none;
-  }
-}
-
 .site-header__actions {
-  justify-self: end;
+  position: absolute;
+  right: 47px;
+  transform: translateY(20px);
   display: flex;
   align-items: center;
   gap: 1.25rem;

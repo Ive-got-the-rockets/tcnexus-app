@@ -9,6 +9,9 @@
    letterboxed gutter on the sides instead of the other way around. */
 .player-page {
   height: 100dvh;
+  width: 100vw;
+  background: #000;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;

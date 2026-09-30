@@ -43,7 +43,7 @@ export class CoursesService {
             locked: false,
             excerpt: 'The Primer — Episode 1',
             video_url: PRIMER_TEST_VIDEO_URL,
-            tc_lens_message: '',
+            tc_lens_timeline: [],
           }]
         };
       })

@@ -189,7 +189,7 @@ class TCNexus_REST_API {
 				return $level;
 			}
 		}
-		return reset( $levels ) ?: array( 'title' => '', 'content' => '', 'course_types' => array(), 'overview_link' => '', 'trailer_link' => '', 'lessons' => array(), 'instructor' => null, 'guest' => null, 'image' => null, 'landing_background' => null, 'title_image' => null );
+		return reset( $levels ) ?: array( 'title' => '', 'content' => '', 'course_types' => array(), 'overview_link' => '', 'trailer_link' => '', 'lessons' => array(), 'instructor' => array(), 'guest' => array(), 'image' => null, 'landing_background' => null, 'title_image' => null );
 	}
 
 	private static function format_course_levels( $course_id, $stored = null ) {
@@ -214,8 +214,8 @@ class TCNexus_REST_API {
 				'thumbnail'     => ! empty( $level['thumbnail_desktop_id'] ) ? wp_get_attachment_image_url( (int) $level['thumbnail_desktop_id'], 'large' ) : null,
 				'overview_link' => ! empty( $level['overview_link'] ) ? $level['overview_link'] : null,
 				'trailer_link'  => ! empty( $level['trailer_link'] ) ? $level['trailer_link'] : null,
-				'instructor'    => self::format_person( (int) ( $level['instructor_id'] ?? 0 ) ),
-				'guest'         => self::format_person( (int) ( $level['guest_id'] ?? 0 ) ),
+				'instructor'    => self::format_people( (array) ( $level['instructor_ids'] ?? ( ! empty( $level['instructor_id'] ) ? array( $level['instructor_id'] ) : array() ) ) ),
+				'guest'         => self::unique_lesson_guests( $lessons ),
 			);
 		}
 		return $formatted;
@@ -261,6 +261,26 @@ class TCNexus_REST_API {
 			'name'  => $person->post_title,
 			'photo' => get_the_post_thumbnail_url( $person->ID, 'medium' ) ?: TCNexus_Profile_Placeholders::get_saved_url( $person->ID ),
 		);
+	}
+
+	private static function format_people( $person_ids ) {
+		$people = array();
+		foreach ( array_values( array_unique( array_filter( array_map( 'absint', (array) $person_ids ) ) ) ) as $person_id ) {
+			$person = self::format_person( $person_id );
+			if ( $person ) { $people[] = $person; }
+		}
+		return $people;
+	}
+
+	private static function unique_lesson_guests( $lessons ) {
+		$people = array();
+		$seen = array();
+		foreach ( (array) $lessons as $lesson ) {
+			foreach ( (array) ( $lesson['guests'] ?? array() ) as $person ) {
+				if ( ! empty( $person['id'] ) && empty( $seen[ $person['id'] ] ) ) { $seen[ $person['id'] ] = true; $people[] = $person; }
+			}
+		}
+		return $people;
 	}
 
 	public static function get_lesson( \WP_REST_Request $request ) {
@@ -427,6 +447,7 @@ class TCNexus_REST_API {
 			// lesson's id is still returned here for API honesty, but won't
 			// actually play until the player gains a youtube provider too.
 			'video_url'  => get_post_meta( $lesson->ID, '_tcnexus_vimeo_id', true ) ?: null,
+			'tc_lens_timeline' => TCNexus_Course_Builder::get_lesson_tc_lens_timeline( $lesson->ID ),
 		);
 
 		if ( ! $minimal ) {

@@ -47,6 +47,8 @@ class TCNexus_Course_Builder {
 	const LANGUAGE_LESSON_META_KEY = '_tcnexus_course_language';
 	const LESSON_GUESTS_META_KEY = '_tcnexus_lesson_guest_ids';
 	const LESSON_CHARACTERS_META_KEY = '_tcnexus_lesson_character_ids';
+	const LESSON_TC_LENS_MESSAGE_META_KEY = '_tcnexus_tc_lens_message';
+	const LESSON_TC_LENS_TIMELINE_META_KEY = '_tcnexus_tc_lens_timeline';
 	const LEVEL_MIGRATION_OPTION = '_tcnexus_course_levels_migrated_1';
 	const SHOW_SEASON_MIGRATION_OPTION = '_tcnexus_show_seasons_migrated_1';
 
@@ -114,6 +116,7 @@ class TCNexus_Course_Builder {
 			'thumbnail_desktop_id' => 0,
 			'thumbnail_mobile_id'  => 0,
 			'instructor_id'        => 0,
+			'instructor_ids'       => array(),
 			'guest_id'             => 0,
 			'character_ids'        => array(),
 			'overview_link'        => '',
@@ -138,6 +141,8 @@ class TCNexus_Course_Builder {
 		$level['thumbnail_desktop_id'] = (int) get_post_thumbnail_id( $course_id );
 		$level['thumbnail_mobile_id']  = (int) get_post_meta( $course_id, '_tcnexus_thumbnail_mobile_id', true );
 		$level['instructor_id']        = (int) get_post_meta( $course_id, '_tcnexus_instructor_id', true );
+		$level['instructor_ids']       = array_values( array_filter( array_map( 'absint', (array) get_post_meta( $course_id, '_tcnexus_instructor_ids', true ) ) ) );
+		if ( empty( $level['instructor_ids'] ) && $level['instructor_id'] ) { $level['instructor_ids'] = array( $level['instructor_id'] ); }
 		$level['guest_id']             = (int) get_post_meta( $course_id, '_tcnexus_guest_id', true );
 		$level['character_ids']        = array_values( array_filter( array_map( 'absint', (array) get_post_meta( $course_id, self::SHOW_CHARACTERS_META_KEY, true ) ) ) );
 		$level['overview_link']        = get_post_meta( $course_id, '_tcnexus_overview_link', true );
@@ -156,6 +161,9 @@ class TCNexus_Course_Builder {
 			$level = self::empty_level( $slug );
 			if ( isset( $stored[ $slug ] ) && is_array( $stored[ $slug ] ) ) {
 				$level = array_merge( $level, $stored[ $slug ] );
+			}
+			if ( empty( $level['instructor_ids'] ) && ! empty( $level['instructor_id'] ) ) {
+				$level['instructor_ids'] = array( absint( $level['instructor_id'] ) );
 			}
 			if ( 'beginner' === $slug && empty( $level['course_slug'] ) ) {
 				$level['course_slug'] = get_post_field( 'post_name', $course_id );
@@ -311,6 +319,9 @@ class TCNexus_Course_Builder {
 			foreach ( array( 'image_desktop_id', 'image_mobile_id', 'landing_background_id', 'title_image_id', 'thumbnail_desktop_id', 'thumbnail_mobile_id', 'instructor_id', 'guest_id' ) as $key ) {
 				$level[ $key ] = absint( $raw[ $key ] ?? 0 );
 			}
+			$instructor_ids = isset( $raw['instructor_ids'] ) ? (array) $raw['instructor_ids'] : ( $level['instructor_id'] ? array( $level['instructor_id'] ) : array() );
+			$level['instructor_ids'] = array_values( array_unique( array_filter( array_map( 'absint', $instructor_ids ) ) ) );
+			$level['instructor_id'] = $level['instructor_ids'][0] ?? 0;
 			$level['character_ids'] = array_values( array_filter( array_map( 'absint', (array) ( $raw['character_ids'] ?? array() ) ) ) );
 			$level['overview_link'] = esc_url_raw( wp_unslash( $raw['overview_link'] ?? '' ) );
 			$level['trailer_link'] = esc_url_raw( wp_unslash( $raw['trailer_link'] ?? '' ) );
@@ -623,8 +634,9 @@ class TCNexus_Course_Builder {
 								if ( ! $card_image_id && ! empty( $primary_levels['beginner']['thumbnail_desktop_id'] ) ) { $card_image_id = absint( $primary_levels['beginner']['thumbnail_desktop_id'] ); }
 								if ( ! $card_image_id && ! empty( $primary_levels['beginner']['image_desktop_id'] ) ) { $card_image_id = absint( $primary_levels['beginner']['image_desktop_id'] ); }
 								$card_image_url = $card_image_id ? wp_get_attachment_image_url( $card_image_id, 'medium' ) : '';
-								$instructor = ! empty( $primary_levels['beginner']['instructor_id'] ) ? get_post( absint( $primary_levels['beginner']['instructor_id'] ) ) : null;
-								$guest = ! empty( $primary_levels['beginner']['guest_id'] ) ? get_post( absint( $primary_levels['beginner']['guest_id'] ) ) : null;
+								$instructor_ids = (array) ( $primary_levels['beginner']['instructor_ids'] ?? array() );
+								if ( empty( $instructor_ids ) && ! empty( $primary_levels['beginner']['instructor_id'] ) ) { $instructor_ids = array( $primary_levels['beginner']['instructor_id'] ); }
+								$instructors = array_values( array_filter( array_map( 'get_post', array_map( 'absint', $instructor_ids ) ) ) );
 								$characters = self::is_show_mode() ? array_values( array_filter( array_map( 'get_post', array_map( 'absint', (array) get_post_meta( $course->ID, self::SHOW_CHARACTERS_META_KEY, true ) ) ) ) ) : array();
 								$edit_url = admin_url( 'admin.php?page=' . self::builder_page() . '&course_id=' . $course->ID );
 								$delete_url = wp_nonce_url( admin_url( 'admin-post.php?action=' . ( self::is_show_mode() ? 'tcnexus_delete_show' : 'tcnexus_delete_course' ) . '&course_id=' . $course->ID . '&builder_mode=' . ( self::is_show_mode() ? 'show' : 'course' ) ), 'tcnexus_delete_course_' . $course->ID );
@@ -831,7 +843,7 @@ class TCNexus_Course_Builder {
 		$tabs = array(
 			'basics' => 'Basics',
 			'media'  => 'Media',
-			'people' => self::is_show_mode() ? 'Characters' : 'People',
+			'people' => self::is_show_mode() ? 'Characters' : 'Instructors',
 			'links'  => 'Links',
 		);
 		$active_tab = isset( $_GET['tab'] ) && array_key_exists( $_GET['tab'], $tabs ) ? $_GET['tab'] : 'basics';
@@ -906,7 +918,7 @@ class TCNexus_Course_Builder {
 							<p class="tcn-header__eyebrow"><?php echo esc_html( self::content_label() ); ?></p>
 							<input type="text" id="course_title" name="course_title" class="tcn-title-input" value="<?php echo esc_attr( $active_title ?: ( 'en' === $active_language ? $course->post_title : '' ) ); ?>" placeholder="Course title" />
 							<div class="tcn-slug-row">
-								<span class="tcn-slug-prefix">/courses/</span>
+								<span class="tcn-slug-prefix"><?php echo esc_html( $is_show ? '/shows/' : '/courses/' ); ?></span>
 								<input type="text" id="course_slug" name="course_slug" class="tcn-slug-input" value="<?php echo esc_attr( $active_slug ?: ( 'en' === $active_language ? $course->post_name : '' ) ); ?>" />
 							</div>
 						</div>
@@ -939,8 +951,7 @@ class TCNexus_Course_Builder {
 						$thumbnail_mobile_id  = (int) $level_data['thumbnail_mobile_id'];
 						$landing_background_id = (int) ( $level_data['landing_background_id'] ?? 0 );
 						$title_image_id      = (int) ( $level_data['title_image_id'] ?? 0 );
-						$instructor_id        = (int) $level_data['instructor_id'];
-						$guest_id             = (int) $level_data['guest_id'];
+						$instructor_ids       = array_values( array_filter( array_map( 'absint', (array) ( $level_data['instructor_ids'] ?? array( $level_data['instructor_id'] ?? 0 ) ) ) ) );
 						$character_ids        = array_values( array_filter( array_map( 'absint', (array) ( $level_data['character_ids'] ?? array() ) ) ) );
 						$overview_link        = $level_data['overview_link'];
 						$trailer_link         = $level_data['trailer_link'];
@@ -1056,8 +1067,7 @@ class TCNexus_Course_Builder {
 						</div>
 						<?php else : ?>
 							<?php
-							self::render_person_field( 'Instructor', 'levels[' . $level_slug . '][instructor_id]', $instructors, $instructor_id, 'instructor' );
-							self::render_person_field( 'Guest', 'levels[' . $level_slug . '][guest_id]', $guests, $guest_id, 'guest' );
+							self::render_instructor_field( 'levels[' . $level_slug . '][instructor_ids][]', $instructor_ids, $instructors, $level_slug );
 							?>
 						<?php endif; ?>
 
@@ -1125,13 +1135,14 @@ class TCNexus_Course_Builder {
 								<th>Title</th>
 								<th class="tcn-lessons-overview__level">Tier</th>
 								<th class="tcn-lessons-overview__duration">Duration</th>
+								<th class="tcn-lessons-overview__video-id">ID</th>
 								<th class="tcn-lessons-overview__views">Views</th>
 							</tr>
 						</thead>
 						<tbody id="tcnexus-lessons-list">
 							<?php if ( empty( $lessons ) ) : ?>
 								<tr class="tcn-lessons-empty-row" id="tcnexus-lessons-empty">
-								<td colspan="5"><div class="tcn-lessons-empty__content"><span>No <?php echo esc_html( strtolower( $lesson_label ) . 's' ); ?> yet.</span><button type="button" class="tcn-btn-ghost tcn-add-lesson-btn">+ Add <?php echo esc_html( $lesson_label ); ?></button></div></td>
+								<td colspan="6"><div class="tcn-lessons-empty__content"><span>No <?php echo esc_html( strtolower( $lesson_label ) . 's' ); ?> yet.</span><button type="button" class="tcn-btn-ghost tcn-add-lesson-btn">+ Add <?php echo esc_html( $lesson_label ); ?></button></div></td>
 								</tr>
 							<?php else : ?>
 								<?php foreach ( $lessons as $index => $lesson ) :
@@ -1140,9 +1151,10 @@ class TCNexus_Course_Builder {
 									$existing_name       = 'levels[' . $lesson_level . '][lessons][existing][' . $lesson->ID . ']';
 									$tier              = TCNexus_Post_Types::get_lesson_tier( $lesson->ID );
 									$video_id          = get_post_meta( $lesson->ID, '_tcnexus_vimeo_id', true );
-									$video_source      = get_post_meta( $lesson->ID, '_tcnexus_video_source', true ) ?: 'vimeo';
-									$duration          = get_post_meta( $lesson->ID, '_tcnexus_duration', true );
-									$description       = $lesson->post_content;
+					$video_source      = get_post_meta( $lesson->ID, '_tcnexus_video_source', true ) ?: 'vimeo';
+					$duration          = get_post_meta( $lesson->ID, '_tcnexus_duration', true );
+					$description       = $lesson->post_content;
+					$tc_lens_timeline  = self::get_lesson_tc_lens_timeline( $lesson->ID );
 					$thumbnail_id      = get_post_thumbnail_id( $lesson->ID );
 					$lesson_person_ids = self::is_show_mode() ? self::get_lesson_character_ids( $lesson->ID ) : self::get_lesson_guest_ids( $lesson->ID );
 					$row_key           = $lesson->ID;
@@ -1159,10 +1171,11 @@ class TCNexus_Course_Builder {
 										</td>
 										<td class="tcn-lessons-overview__level"><span class="tcn-level-chip tcn-level-chip--<?php echo esc_attr( $tier ); ?>"><?php echo esc_html( ucfirst( $tier ) ); ?></span></td>
 										<td class="tcn-lessons-overview__duration"><?php echo esc_html( $duration ?: '—' ); ?></td>
+										<td class="tcn-lessons-overview__video-id"><?php echo esc_html( $lesson->ID ); ?></td>
 										<td class="tcn-lessons-overview__views"><?php echo esc_html( number_format_i18n( $views ) ); ?></td>
 									</tr>
 									<tr class="tcn-lesson-expand" data-lesson-level="<?php echo esc_attr( $lesson_level ); ?>">
-										<td colspan="5">
+											<td colspan="6">
 											<div class="tcn-lesson-expand__panel">
 												<div class="tcn-lesson-card">
 													<button type="button" class="tcn-lesson-card__delete tcn-remove-row" aria-label="Remove lesson">
@@ -1175,7 +1188,8 @@ class TCNexus_Course_Builder {
 														</svg>
 													</button>
 													<div class="tcn-lesson-card__media">
-														<?php TCNexus_Media::render_picker( 'Select Image', $existing_name . '[thumbnail_id]', $thumbnail_id, 'Select ' . strtolower( $lesson_label ) . ' image', 640, 360 ); ?>
+																<?php TCNexus_Media::render_picker( 'Select Image', $existing_name . '[thumbnail_id]', $thumbnail_id, 'Select ' . strtolower( $lesson_label ) . ' image', 640, 360 ); ?>
+																<div class="tcn-lesson-card__video-id"><span>Video ID</span><code><?php echo esc_html( $lesson->ID ); ?></code></div>
 													</div>
 													<div class="tcn-lesson-card__body">
 														<div class="tcn-lesson-card__row tcn-lesson-card__row--top">
@@ -1191,10 +1205,10 @@ class TCNexus_Course_Builder {
 															</div>
 															<div class="tcn-lesson-card__description">
 																<label class="tcn-field__label">Description</label>
-																<textarea name="<?php echo esc_attr( $existing_name . '[description]' ); ?>" rows="2" placeholder="Short description shown with this lesson"><?php echo esc_textarea( $description ); ?></textarea>
-															</div>
-														</div>
-														<div class="tcn-lesson-card__row tcn-lesson-card__row--video">
+											<textarea name="<?php echo esc_attr( $existing_name . '[description]' ); ?>" rows="2" placeholder="Short description shown with this lesson"><?php echo esc_textarea( $description ); ?></textarea>
+										</div>
+											</div>
+										<div class="tcn-lesson-card__row tcn-lesson-card__row--video">
 																		<?php self::render_video_source_toggle( $existing_name . '[video_source]', "video_source_{$row_key}", $video_source ); ?>
 																		<input type="text" class="tcn-video-id-input" name="<?php echo esc_attr( $existing_name . '[vimeo_id]' ); ?>" value="<?php echo esc_attr( $video_id ); ?>" placeholder="<?php echo esc_attr( $video_placeholder ); ?>" />
 														</div>
@@ -1208,8 +1222,9 @@ class TCNexus_Course_Builder {
 																<?php self::render_tier_toggle( $existing_name . '[tier]', "tier_{$row_key}", $tier ); ?>
 															</div>
 															</div>
-											<?php self::render_lesson_guest_field( self::is_show_mode() ? $existing_name . '[character_ids][]' : $existing_name . '[guest_ids][]', $lesson_person_ids, self::is_show_mode() ? $characters : $guests, $lesson_label, self::is_show_mode() ? 'character' : 'guest' ); ?>
-															<div class="tcn-lesson-card__footer">
+										<?php self::render_lesson_guest_field( self::is_show_mode() ? $existing_name . '[character_ids][]' : $existing_name . '[guest_ids][]', $lesson_person_ids, self::is_show_mode() ? $characters : $guests, $lesson_label, self::is_show_mode() ? 'character' : 'guest' ); ?>
+										<?php self::render_tc_lens_timeline_field( $existing_name, $tc_lens_timeline ); ?>
+											<div class="tcn-lesson-card__footer">
 																		<input type="checkbox" class="tcn-lesson-delete-flag" name="<?php echo esc_attr( $existing_name . '[delete]' ); ?>" value="1" style="display:none;" />
 																															<button type="submit" name="lesson_action" value="save" class="tcn-btn-ghost">Save <?php echo esc_html( $lesson_label ); ?></button>
 																															<button type="submit" name="lesson_action" value="save_add_new" class="tcn-btn-ghost">Save and Add New <?php echo esc_html( $lesson_label ); ?></button>
@@ -1236,10 +1251,11 @@ class TCNexus_Course_Builder {
 							</td>
 							<td class="tcn-lessons-overview__level"><span class="tcn-level-chip tcn-level-chip--free">Free</span></td>
 							<td class="tcn-lessons-overview__duration">—</td>
+							<td class="tcn-lessons-overview__video-id">—</td>
 							<td class="tcn-lessons-overview__views">0</td>
 						</tr>
 						<tr class="tcn-lesson-expand is-open" data-lesson-level="__LEVEL__">
-							<td colspan="5">
+											<td colspan="6">
 								<div class="tcn-lesson-expand__panel">
 									<div class="tcn-lesson-card">
 										<button type="button" class="tcn-lesson-card__delete tcn-remove-row" aria-label="Remove lesson">
@@ -1252,7 +1268,8 @@ class TCNexus_Course_Builder {
 											</svg>
 										</button>
 										<div class="tcn-lesson-card__media">
-																													<?php TCNexus_Media::render_picker( 'Select Image', 'levels[__LEVEL__][lessons][new][__INDEX__][thumbnail_id]', 0, 'Select ' . strtolower( $lesson_label ) . ' image', 640, 360 ); ?>
+															<?php TCNexus_Media::render_picker( 'Select Image', 'levels[__LEVEL__][lessons][new][__INDEX__][thumbnail_id]', 0, 'Select ' . strtolower( $lesson_label ) . ' image', 640, 360 ); ?>
+															<div class="tcn-lesson-card__video-id"><span>Video ID</span><code>Assigned after save</code></div>
 										</div>
 										<div class="tcn-lesson-card__body">
 											<div class="tcn-lesson-card__row tcn-lesson-card__row--top">
@@ -1266,12 +1283,11 @@ class TCNexus_Course_Builder {
 													<label class="tcn-field__label">Title</label>
 													<input type="text" name="levels[__LEVEL__][lessons][new][__INDEX__][title]" placeholder="Lesson title" />
 												</div>
-												<div class="tcn-lesson-card__description">
-													<label class="tcn-field__label">Description</label>
-													<textarea name="levels[__LEVEL__][lessons][new][__INDEX__][description]" rows="2" placeholder="Short description shown with this lesson"></textarea>
-												</div>
-											</div>
-											<div class="tcn-lesson-card__row tcn-lesson-card__row--video">
+																						<div class="tcn-lesson-card__description">
+																							<label class="tcn-field__label">Description</label>
+																								<textarea name="levels[__LEVEL__][lessons][new][__INDEX__][description]" rows="2" placeholder="Short description shown with this lesson"></textarea>
+																							</div>
+												<div class="tcn-lesson-card__row tcn-lesson-card__row--video">
 																	<?php self::render_video_source_toggle( 'levels[__LEVEL__][lessons][new][__INDEX__][video_source]', 'video_source___INDEX__', 'vimeo' ); ?>
 																	<input type="text" class="tcn-video-id-input" name="levels[__LEVEL__][lessons][new][__INDEX__][vimeo_id]" placeholder="Vimeo Video ID" />
 											</div>
@@ -1285,8 +1301,9 @@ class TCNexus_Course_Builder {
 																									<?php self::render_tier_toggle( 'levels[__LEVEL__][lessons][new][__INDEX__][tier]', 'tier___INDEX__', 'free' ); ?>
 																									</div>
 																								</div>
-																		<?php self::render_lesson_guest_field( self::is_show_mode() ? 'levels[__LEVEL__][lessons][new][__INDEX__][character_ids][]' : 'levels[__LEVEL__][lessons][new][__INDEX__][guest_ids][]', array(), self::is_show_mode() ? $characters : $guests, $lesson_label, self::is_show_mode() ? 'character' : 'guest' ); ?>
-																					<div class="tcn-lesson-card__footer">
+													<?php self::render_lesson_guest_field( self::is_show_mode() ? 'levels[__LEVEL__][lessons][new][__INDEX__][character_ids][]' : 'levels[__LEVEL__][lessons][new][__INDEX__][guest_ids][]', array(), self::is_show_mode() ? $characters : $guests, $lesson_label, self::is_show_mode() ? 'character' : 'guest' ); ?>
+													<?php self::render_tc_lens_timeline_field( 'levels[__LEVEL__][lessons][new][__INDEX__]', array(), true ); ?>
+													<div class="tcn-lesson-card__footer">
 																																			<button type="submit" name="lesson_action" value="save" class="tcn-btn-ghost">Save <?php echo esc_html( $lesson_label ); ?></button>
 																																			<button type="submit" name="lesson_action" value="save_add_new" class="tcn-btn-ghost">Save and Add New <?php echo esc_html( $lesson_label ); ?></button>
 																																			<button type="button" class="tcn-btn-ghost tcn-add-lesson-btn">+ Add <?php echo esc_html( $lesson_label ); ?></button>
@@ -1390,6 +1407,71 @@ class TCNexus_Course_Builder {
 		TCNexus_Media::render_picker( $label, $field_key, $attachment_id, $title, $crop_width, $crop_height );
 	}
 
+	private static function format_tc_lens_time( $seconds ) {
+		$seconds = max( 0, absint( $seconds ) );
+		return sprintf( '%02d:%02d', floor( $seconds / 60 ), $seconds % 60 );
+	}
+
+	private static function render_tc_lens_timeline_field( $field_prefix, $timeline, $template = false ) {
+		$timeline = self::sanitize_tc_lens_timeline( $timeline );
+		?>
+		<section class="tcn-tc-lens-timeline" data-tc-lens-timeline>
+			<div class="tcn-tc-lens-timeline__header">
+				<div>
+					<label class="tcn-field__label">TC Lens timeline</label>
+					<p class="tcn-field__hint">Send independent LLM or trade-data messages at selected video times.</p>
+				</div>
+				<button type="button" class="tcn-btn-ghost tcn-tc-lens-add">+ Add message</button>
+			</div>
+			<p class="tcn-tc-lens-timeline__error" role="alert" aria-live="polite"></p>
+			<div class="tcn-tc-lens-events" data-tc-lens-events>
+				<?php foreach ( $timeline as $index => $event ) :
+					$event_prefix = $field_prefix . '[tc_lens_timeline][' . $index . ']';
+					?>
+					<div class="tcn-tc-lens-event" data-tc-lens-event>
+						<input type="hidden" name="<?php echo esc_attr( $event_prefix . '[id]' ); ?>" value="<?php echo esc_attr( $event['id'] ); ?>" />
+						<div class="tcn-tc-lens-event__type">
+							<label class="tcn-field__label">Type</label>
+							<select name="<?php echo esc_attr( $event_prefix . '[messageType]' ); ?>" class="tcn-select">
+								<option value="llm" <?php selected( $event['messageType'], 'llm' ); ?>>LLM</option>
+								<option value="trade" <?php selected( $event['messageType'], 'trade' ); ?>>Trade data</option>
+							</select>
+						</div>
+						<div class="tcn-tc-lens-event__time">
+							<label class="tcn-field__label">Start time</label>
+							<input type="text" inputmode="numeric" name="<?php echo esc_attr( $event_prefix . '[startTime]' ); ?>" value="<?php echo esc_attr( self::format_tc_lens_time( $event['startTime'] ) ); ?>" placeholder="00:00" />
+						</div>
+						<div class="tcn-tc-lens-event__time">
+							<label class="tcn-field__label">End time <span>(optional)</span></label>
+							<input type="text" inputmode="numeric" name="<?php echo esc_attr( $event_prefix . '[endTime]' ); ?>" value="<?php echo null !== $event['endTime'] ? esc_attr( self::format_tc_lens_time( $event['endTime'] ) ) : ''; ?>" placeholder="00:00" />
+						</div>
+						<div class="tcn-tc-lens-event__message">
+							<label class="tcn-field__label">Message</label>
+							<textarea name="<?php echo esc_attr( $event_prefix . '[message]' ); ?>" rows="2" placeholder="Message or prompt for this point in the video"><?php echo esc_textarea( $event['message'] ); ?></textarea>
+						</div>
+						<button type="button" class="tcn-tc-lens-event__remove" aria-label="Remove TC Lens message">×</button>
+					</div>
+				<?php endforeach; ?>
+				<?php if ( $template ) : ?>
+					<div class="tcn-tc-lens-event tcn-tc-lens-event--template" data-tc-lens-event-template hidden>
+						<input type="hidden" disabled name="<?php echo esc_attr( $field_prefix . '[tc_lens_timeline][__TIMELINE_INDEX__][id]' ); ?>" value="" />
+						<div class="tcn-tc-lens-event__type">
+							<label class="tcn-field__label">Type</label>
+							<select disabled name="<?php echo esc_attr( $field_prefix . '[tc_lens_timeline][__TIMELINE_INDEX__][messageType]' ); ?>" class="tcn-select">
+								<option value="llm">LLM</option><option value="trade">Trade data</option>
+							</select>
+						</div>
+						<div class="tcn-tc-lens-event__time"><label class="tcn-field__label">Start time</label><input disabled type="text" inputmode="numeric" name="<?php echo esc_attr( $field_prefix . '[tc_lens_timeline][__TIMELINE_INDEX__][startTime]' ); ?>" value="" placeholder="00:00" /></div>
+						<div class="tcn-tc-lens-event__time"><label class="tcn-field__label">End time <span>(optional)</span></label><input disabled type="text" inputmode="numeric" name="<?php echo esc_attr( $field_prefix . '[tc_lens_timeline][__TIMELINE_INDEX__][endTime]' ); ?>" value="" placeholder="00:00" /></div>
+						<div class="tcn-tc-lens-event__message"><label class="tcn-field__label">Message</label><textarea disabled name="<?php echo esc_attr( $field_prefix . '[tc_lens_timeline][__TIMELINE_INDEX__][message]' ); ?>" rows="2" placeholder="Message or prompt for this point in the video"></textarea></div>
+						<button type="button" class="tcn-tc-lens-event__remove" aria-label="Remove TC Lens message">×</button>
+					</div>
+				<?php endif; ?>
+			</div>
+		</section>
+		<?php
+	}
+
 	/**
 	 * Instructor and Guest fields use the shared quick-create modal. Episode
 	 * fields reuse the same UI for Characters when this builder is in Show mode.
@@ -1408,6 +1490,33 @@ class TCNexus_Course_Builder {
 				<button type="button" class="tcn-btn-ghost tcn-add-person" data-target-select="<?php echo esc_attr( $field_name ); ?>" data-role="<?php echo esc_attr( $role ); ?>" aria-label="Add new <?php echo esc_attr( $role ); ?>">
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
 				</button>
+			</div>
+		</div>
+		<?php
+	}
+
+	private static function render_instructor_field( $field_name, $selected_ids, $people, $level_slug ) {
+		$selected_ids = array_values( array_unique( array_filter( array_map( 'absint', (array) $selected_ids ) ) ) );
+		?>
+		<div class="tcn-lesson-card__guests tcn-course-instructors">
+			<label class="tcn-field__label" for="instructors_<?php echo esc_attr( $level_slug ); ?>">Instructors for this course</label>
+			<div class="tcn-lesson-person-picker">
+				<select id="instructors_<?php echo esc_attr( $level_slug ); ?>" class="tcn-select tcn-course-instructor-picker" data-instructor-picker="1" data-person-input-name="<?php echo esc_attr( $field_name ); ?>">
+					<option value="">Select an instructor…</option>
+					<?php foreach ( $people as $person ) : ?><option value="<?php echo esc_attr( $person->ID ); ?>" data-photo="<?php echo esc_url( get_the_post_thumbnail_url( $person->ID, 'thumbnail' ) ?: '' ); ?>"><?php echo esc_html( $person->post_title ); ?></option><?php endforeach; ?>
+				</select>
+			</div>
+			<p class="tcn-field__hint">Selected instructors from the dropdown will be added below.</p>
+			<div class="tcn-lesson-guest-list tcn-course-instructor-list">
+				<?php foreach ( $selected_ids as $person_id ) : $person = get_post( $person_id ); if ( ! $person ) { continue; } ?>
+					<div class="tcn-lesson-guest" data-instructor-id="<?php echo esc_attr( $person_id ); ?>">
+						<?php $person_photo = get_the_post_thumbnail_url( $person->ID, 'thumbnail' ); ?>
+						<?php if ( $person_photo ) : ?><img class="tcn-lesson-guest__avatar" src="<?php echo esc_url( $person_photo ); ?>" alt="" /><?php endif; ?>
+						<span class="tcn-lesson-guest__name"><?php echo esc_html( $person->post_title ); ?></span>
+						<input type="hidden" name="<?php echo esc_attr( $field_name ); ?>" value="<?php echo esc_attr( $person_id ); ?>" />
+						<button type="button" class="tcn-lesson-guest__remove" aria-label="Remove <?php echo esc_attr( $person->post_title ); ?>">×</button>
+					</div>
+				<?php endforeach; ?>
 			</div>
 		</div>
 		<?php
@@ -1580,8 +1689,9 @@ class TCNexus_Course_Builder {
 			delete_post_thumbnail( $course_id );
 		}
 		update_post_meta( $course_id, '_tcnexus_thumbnail_mobile_id', $beginner_level['thumbnail_mobile_id'] );
-		update_post_meta( $course_id, '_tcnexus_instructor_id', $beginner_level['instructor_id'] );
-		update_post_meta( $course_id, '_tcnexus_guest_id', $beginner_level['guest_id'] );
+		$beginner_instructor_ids = array_values( array_unique( array_filter( array_map( 'absint', (array) ( $beginner_level['instructor_ids'] ?? array( $beginner_level['instructor_id'] ?? 0 ) ) ) ) ) );
+		update_post_meta( $course_id, '_tcnexus_instructor_ids', $beginner_instructor_ids );
+		update_post_meta( $course_id, '_tcnexus_instructor_id', $beginner_instructor_ids[0] ?? 0 );
 		if ( self::is_show_mode() ) {
 			update_post_meta( $course_id, self::SHOW_CHARACTERS_META_KEY, array_values( array_filter( array_map( 'absint', (array) ( $beginner_level['character_ids'] ?? array() ) ) ) ) );
 		}
@@ -1630,6 +1740,7 @@ class TCNexus_Course_Builder {
 					update_post_meta( $new_id, '_tcnexus_vimeo_id', sanitize_text_field( wp_unslash( $data['vimeo_id'] ?? '' ) ) );
 					update_post_meta( $new_id, '_tcnexus_video_source', self::sanitize_video_source( $data['video_source'] ?? 'vimeo' ) );
 					update_post_meta( $new_id, '_tcnexus_duration', sanitize_text_field( wp_unslash( $data['duration'] ?? '' ) ) );
+					self::update_lesson_tc_lens_timeline( $new_id, $data['tc_lens_timeline'] ?? array() );
 					TCNexus_Post_Types::set_lesson_tier( $new_id, sanitize_key( $data['tier'] ?? 'free' ) );
 					if ( self::is_show_mode() ) {
 						update_post_meta( $new_id, self::LESSON_CHARACTERS_META_KEY, self::sanitize_lesson_character_ids( $data['character_ids'] ?? array() ) );
@@ -1641,6 +1752,9 @@ class TCNexus_Course_Builder {
 					}
 				}
 			}
+		}
+		if ( ! $is_show ) {
+			self::migrate_legacy_course_guest_to_first_lesson( $course_id, $english_levels );
 		}
 
 		$return_tab = isset( $_POST['active_tab'] ) && in_array( sanitize_key( $_POST['active_tab'] ), array( 'basics', 'media', 'people', 'links' ), true ) ? sanitize_key( $_POST['active_tab'] ) : 'basics';
@@ -1671,6 +1785,100 @@ class TCNexus_Course_Builder {
 	}
 
 	/**
+	 * Normalize one timeline time value to seconds.
+	 *
+	 * The admin normally submits seconds, but accepting mm:ss here keeps the
+	 * storage boundary defensive for alternate editors and direct requests.
+	 */
+	private static function normalize_tc_lens_time( $value, $allow_null = false ) {
+		if ( $allow_null && ( null === $value || '' === trim( (string) $value ) ) ) {
+			return null;
+		}
+
+		if ( is_string( $value ) && preg_match( '/^(\d+):(\d{1,2})$/', trim( $value ), $matches ) ) {
+			$minutes = absint( $matches[1] );
+			$seconds = absint( $matches[2] );
+			if ( $seconds > 59 ) {
+				return null;
+			}
+			return ( $minutes * 60 ) + $seconds;
+		}
+
+		if ( is_int( $value ) || ( is_string( $value ) && preg_match( '/^\d+$/', trim( $value ) ) ) ) {
+			return absint( $value );
+		}
+
+		return null;
+	}
+
+	/**
+	 * Sanitize and normalize the repeatable TC Lens timeline rows.
+	 */
+	public static function sanitize_tc_lens_timeline( $timeline ) {
+		if ( is_string( $timeline ) ) {
+			$decoded = json_decode( $timeline, true );
+			$timeline = is_array( $decoded ) ? $decoded : array();
+		}
+		$timeline = is_array( $timeline ) ? $timeline : array();
+		$normalized = array();
+
+		foreach ( $timeline as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+
+			$message_type = sanitize_key( $row['messageType'] ?? $row['message_type'] ?? '' );
+			$message      = is_scalar( $row['message'] ?? null ) ? sanitize_textarea_field( wp_unslash( (string) $row['message'] ) ) : '';
+			$start_time   = self::normalize_tc_lens_time( $row['startTime'] ?? $row['start_time'] ?? null );
+			$raw_end_time = $row['endTime'] ?? $row['end_time'] ?? null;
+			$end_is_blank = null === $raw_end_time || ( is_scalar( $raw_end_time ) && '' === trim( (string) $raw_end_time ) );
+			$end_time     = self::normalize_tc_lens_time( $raw_end_time, true );
+
+			if ( ! in_array( $message_type, array( 'llm', 'trade' ), true ) || '' === trim( $message ) || null === $start_time || ( ! $end_is_blank && null === $end_time ) ) {
+				continue;
+			}
+			if ( null !== $end_time && $end_time < $start_time ) {
+				continue;
+			}
+
+			$row_id = sanitize_key( $row['id'] ?? '' );
+			if ( '' === $row_id ) {
+				$row_id = 'event-' . wp_generate_uuid4();
+			}
+
+			$normalized[] = array(
+				'id'          => $row_id,
+				'messageType' => $message_type,
+				'message'     => $message,
+				'startTime'   => $start_time,
+				'endTime'     => $end_time,
+			);
+		}
+
+		return $normalized;
+	}
+
+	/**
+	 * Return the normalized timeline stored on a lesson.
+	 */
+	public static function get_lesson_tc_lens_timeline( $lesson_id ) {
+		$stored = get_post_meta( $lesson_id, self::LESSON_TC_LENS_TIMELINE_META_KEY, true );
+		if ( is_string( $stored ) ) {
+			$stored = json_decode( $stored, true );
+		}
+		return self::sanitize_tc_lens_timeline( $stored );
+	}
+
+	/**
+	 * Persist the normalized timeline JSON for a lesson.
+	 */
+	public static function update_lesson_tc_lens_timeline( $lesson_id, $timeline ) {
+		$normalized = self::sanitize_tc_lens_timeline( $timeline );
+		update_post_meta( $lesson_id, self::LESSON_TC_LENS_TIMELINE_META_KEY, wp_json_encode( $normalized ) );
+		return $normalized;
+	}
+
+	/**
 	 * Saves an existing lesson's editable fields (everything except which
 	 * course it belongs to). Shared by this class's own form-based save
 	 * above and by TCNexus_Global_Lessons's per-row AJAX save, so both
@@ -1686,6 +1894,7 @@ class TCNexus_Course_Builder {
 		update_post_meta( $lesson_id, '_tcnexus_vimeo_id', sanitize_text_field( wp_unslash( $data['vimeo_id'] ?? '' ) ) );
 		update_post_meta( $lesson_id, '_tcnexus_video_source', self::sanitize_video_source( $data['video_source'] ?? 'vimeo' ) );
 		update_post_meta( $lesson_id, '_tcnexus_duration', sanitize_text_field( wp_unslash( $data['duration'] ?? '' ) ) );
+		self::update_lesson_tc_lens_timeline( $lesson_id, $data['tc_lens_timeline'] ?? array() );
 		TCNexus_Post_Types::set_lesson_tier( $lesson_id, sanitize_key( $data['tier'] ?? 'free' ) );
 		if ( self::lesson_uses_characters( $lesson_id ) && array_key_exists( 'character_ids', $data ) ) {
 			update_post_meta( $lesson_id, self::LESSON_CHARACTERS_META_KEY, self::sanitize_lesson_character_ids( $data['character_ids'] ) );
@@ -1725,7 +1934,26 @@ class TCNexus_Course_Builder {
 		}
 		$course_id = (int) get_post_meta( $lesson_id, '_tcnexus_course_id', true );
 		$legacy_id = (int) get_post_meta( $course_id, '_tcnexus_guest_id', true );
-		return $legacy_id ? self::sanitize_lesson_guest_ids( array( $legacy_id ) ) : array();
+		if ( ! $legacy_id ) {
+			return array();
+		}
+		$first_lesson = get_posts( array( 'post_type' => 'tc_lesson', 'posts_per_page' => 1, 'post_status' => array( 'publish', 'draft' ), 'meta_key' => '_tcnexus_course_id', 'meta_value' => $course_id, 'orderby' => 'menu_order', 'order' => 'ASC', 'fields' => 'ids' ) );
+		return ! empty( $first_lesson ) && (int) $first_lesson[0] === (int) $lesson_id ? self::sanitize_lesson_guest_ids( array( $legacy_id ) ) : array();
+	}
+
+	private static function migrate_legacy_course_guest_to_first_lesson( $course_id, $levels ) {
+		$guest_ids = array( absint( get_post_meta( $course_id, '_tcnexus_guest_id', true ) ) );
+		foreach ( (array) $levels as $level ) {
+			if ( ! empty( $level['guest_id'] ) ) { $guest_ids[] = absint( $level['guest_id'] ); }
+		}
+		$guest_ids = self::sanitize_lesson_guest_ids( $guest_ids );
+		if ( empty( $guest_ids ) ) { return; }
+		$first_lesson = get_posts( array( 'post_type' => 'tc_lesson', 'posts_per_page' => 1, 'post_status' => array( 'publish', 'draft' ), 'meta_key' => '_tcnexus_course_id', 'meta_value' => $course_id, 'orderby' => 'menu_order', 'order' => 'ASC', 'fields' => 'ids' ) );
+		if ( empty( $first_lesson ) ) { return; }
+		$lesson_id = (int) $first_lesson[0];
+		$existing = self::get_lesson_guest_ids( $lesson_id );
+		update_post_meta( $lesson_id, self::LESSON_GUESTS_META_KEY, self::sanitize_lesson_guest_ids( array_merge( $existing, $guest_ids ) ) );
+		delete_post_meta( $course_id, '_tcnexus_guest_id' );
 	}
 
 	public static function get_lesson_character_ids( $lesson_id ) {

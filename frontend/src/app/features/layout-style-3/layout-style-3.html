@@ -88,34 +88,41 @@
           </div>
         }
         @if (featuredDetail(); as detail) {
-          @if (detail.instructor || detail.guest) {
+          @if ((detail.instructor?.length ?? 0) || (detail.guest?.length ?? 0)) {
             <div class="style-featured__people-row">
-              @if (detail.instructor; as instructors) {
-                <div class="style-featured__person">
-                  <p class="style-featured__person-label">Instructor</p>
-                  <div class="style-featured__person-row">
-                    @for (instructor of people(instructors); track instructor.id) {
-                      <div class="style-featured__person-item">
-                        <img class="style-featured__person-avatar" [src]="personPhotoUrl(instructor)" [alt]="instructor.name" />
-                        <span>{{ instructor.name }}</span>
-                      </div>
+              <div class="style-featured__person style-featured__person--group">
+                <button
+                  type="button"
+                  class="style-featured__person-label style-featured__person-label--toggle"
+                  [attr.aria-expanded]="instructorOpen()"
+                  (click)="toggleInstructor()"
+                >{{ instructorLabel(detail) }}</button>
+                @if (instructorOpen()) {
+                  @if (detail.instructor?.length) {
+                    <div class="style-featured__person-row">
+                      @for (instructor of detail.instructor ?? []; track instructor.id) {
+                        <div class="style-featured__person-item">
+                          <img class="style-featured__person-avatar" [src]="personPhotoUrl(instructor)" [alt]="instructor.name" />
+                          <span>{{ instructor.name }}</span>
+                        </div>
+                      }
+                    </div>
+                  }
+                  @if (detail.guest?.length) {
+                    @if (detail.instructor?.length) {
+                      <p class="style-featured__person-label style-featured__person-label--subsection">{{ guestLabel(detail.guest ?? []) }}</p>
                     }
-                  </div>
-                </div>
-              }
-              @if (detail.guest; as guests) {
-                <div class="style-featured__person">
-                  <p class="style-featured__person-label">Guest</p>
-                  <div class="style-featured__person-row">
-                    @for (guest of people(guests); track guest.id) {
-                      <div class="style-featured__person-item">
-                        <img class="style-featured__person-avatar" [src]="personPhotoUrl(guest)" [alt]="guest.name" />
-                        <span>{{ guest.name }}</span>
-                      </div>
-                    }
-                  </div>
-                </div>
-              }
+                    <div class="style-featured__person-row">
+                      @for (guest of detail.guest ?? []; track guest.id) {
+                        <div class="style-featured__person-item">
+                          <img class="style-featured__person-avatar" [src]="personPhotoUrl(guest)" [alt]="guest.name" />
+                          <span>{{ guest.name }}</span>
+                        </div>
+                      }
+                    </div>
+                  }
+                }
+              </div>
             </div>
           }
         }
@@ -500,11 +507,11 @@
         <div class="style-course-modal__description" [innerHTML]="detail.content"></div>
 
         <div class="style-course-modal__people">
-          @if (detail.instructor; as instructors) {
+          @if (detail.instructor?.length) {
             <div class="style-course-modal__person">
-              <span class="style-course-modal__person-label">Instructor</span>
+              <span class="style-course-modal__person-label">{{ detail.instructor?.length === 1 ? 'Instructor' : 'Instructors' }}</span>
               <div class="style-course-modal__person-row">
-                @for (instructor of people(instructors); track instructor.id) {
+                @for (instructor of detail.instructor ?? []; track instructor.id) {
                   <div class="style-featured__person-item">
                     <img [src]="personPhotoUrl(instructor)" [alt]="instructor.name" />
                     <span>{{ instructor.name }}</span>
@@ -513,11 +520,11 @@
               </div>
             </div>
           }
-          @if (detail.guest; as guests) {
+          @if (detail.guest?.length) {
             <div class="style-course-modal__person">
-              <span class="style-course-modal__person-label">Guest</span>
+              <span class="style-course-modal__person-label">{{ detail.guest?.length === 1 ? 'Guest' : 'Guests' }}</span>
               <div class="style-course-modal__person-row">
-                @for (guest of people(guests); track guest.id) {
+                @for (guest of detail.guest ?? []; track guest.id) {
                   <div class="style-featured__person-item">
                     <img [src]="personPhotoUrl(guest)" [alt]="guest.name" />
                     <span>{{ guest.name }}</span>

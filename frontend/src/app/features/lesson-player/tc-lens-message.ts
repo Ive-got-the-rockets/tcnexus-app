@@ -11,3 +11,27 @@ export function buildTcLensMessage(videoId: number, message: string): TcLensMess
     message,
   };
 }
+
+import type { TcLensTimelineEvent } from '../../core/models';
+
+export interface TcLensTimelineMessage {
+  type: 'tc-lens-timeline-event';
+  videoId: string;
+  messageType: 'llm' | 'trade';
+  message: string;
+  startTime: number;
+  endTime: number | null;
+  eventId: string;
+}
+
+export function buildTcLensTimelineMessage(videoId: number | string, event: TcLensTimelineEvent): TcLensTimelineMessage {
+  return {
+    type: 'tc-lens-timeline-event',
+    videoId: String(videoId),
+    messageType: event.messageType,
+    message: event.message,
+    startTime: event.startTime,
+    endTime: event.endTime,
+    eventId: event.id,
+  };
+}

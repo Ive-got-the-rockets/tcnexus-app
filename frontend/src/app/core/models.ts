@@ -15,8 +15,8 @@ export interface CourseLevelVersion {
   title_image?: string | null;
   overview_link: string | null;
   trailer_link?: string | null;
-  instructor?: Person | Person[] | null;
-  guest?: Person | Person[] | null;
+  instructor?: Person[];
+  guest?: Person[];
 }
 
 export interface ShowSeason {
@@ -70,7 +70,17 @@ export interface Lesson {
   guests?: Person[];
   /** A Vimeo URL, or just the bare id (optionally "id/hash" for an unlisted share link). */
   video_url: string | null;
-  tc_lens_message: string;
+  tc_lens_timeline: TcLensTimelineEvent[];
+}
+
+export type TcLensMessageType = 'llm' | 'trade';
+
+export interface TcLensTimelineEvent {
+  id: string;
+  messageType: TcLensMessageType;
+  message: string;
+  startTime: number;
+  endTime: number | null;
 }
 
 export interface Person {
@@ -93,8 +103,8 @@ export interface CourseDetail {
   course_types: string[];
   overview_link: string | null;
   trailer_link?: string | null;
-  instructor: Person | Person[] | null;
-  guest: Person | Person[] | null;
+  instructor: Person[] | null;
+  guest: Person[] | null;
   characters?: Person[];
   lessons: Lesson[];
   configured_levels?: CourseLevelSlug[];
