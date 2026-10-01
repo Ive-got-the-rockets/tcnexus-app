@@ -2,6 +2,8 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 
 const source = fs.readFileSync('wordpress-plugin/tcnexus-lms/includes/class-tcnexus-course-builder.php', 'utf8');
+const script = fs.readFileSync('wordpress-plugin/tcnexus-lms/assets/course-builder.js', 'utf8');
+const styles = fs.readFileSync('wordpress-plugin/tcnexus-lms/assets/course-builder.css', 'utf8');
 
 assert.match(source, /\$lesson_label = self::is_show_mode\(\) \? 'Episode' : 'Lesson'/);
 assert.match(source, /Save <\?php echo esc_html\( \$lesson_label \); \?>/);
@@ -23,4 +25,7 @@ assert.match(source, /'trade' => array/);
 assert.match(source, /'llm' => array/);
 assert.match(source, /'data'\s*=>\s*'trade' === \$message_type/);
 assert.match(source, /render_tc_lens_timeline_field\( \$existing_name, \$tc_lens_timeline, true \)/);
+assert.match(source, /class="tcn-tc-lens-event__remove"[\s\S]*<svg/);
+assert.match(script, /var timelineRemove = event\.target\.closest\('\.tcn-tc-lens-event__remove'\);[\s\S]*event\.preventDefault\(\);[\s\S]*event\.stopPropagation\(\);/);
+assert.match(styles, /\.tcn-tc-lens-event__remove[\s\S]*position: absolute;[\s\S]*top: 10px;[\s\S]*right: 10px;/);
 console.log('course lesson labels contract passes');

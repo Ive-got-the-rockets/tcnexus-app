@@ -1378,6 +1378,8 @@
       }
       var timelineRemove = event.target.closest('.tcn-tc-lens-event__remove');
       if (timelineRemove) {
+        event.preventDefault();
+        event.stopPropagation();
         var timelineEvent = timelineRemove.closest('[data-tc-lens-event]');
         var timeline = timelineRemove.closest('[data-tc-lens-timeline]');
         if (timelineEvent && !timelineEvent.hasAttribute('data-tc-lens-event-template')) {

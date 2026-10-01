@@ -1446,7 +1446,7 @@ class TCNexus_Course_Builder {
 							<input type="text" inputmode="numeric" name="<?php echo esc_attr( $event_prefix . '[endTime]' ); ?>" value="<?php echo null !== $event['endTime'] ? esc_attr( self::format_tc_lens_time( $event['endTime'] ) ) : ''; ?>" placeholder="00:00" />
 						</div>
 						<?php self::render_tc_lens_payload_fields( $event_prefix, $event ); ?>
-						<button type="button" class="tcn-tc-lens-event__remove" aria-label="Remove TC Lens message">×</button>
+						<button type="button" class="tcn-tc-lens-event__remove" aria-label="Remove TC Lens message" title="Remove TC Lens message"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /></svg></button>
 					</div>
 				<?php endforeach; ?>
 				<?php if ( $template ) : ?>
@@ -1461,7 +1461,7 @@ class TCNexus_Course_Builder {
 						<div class="tcn-tc-lens-event__time"><label class="tcn-field__label">Start time</label><input disabled type="text" inputmode="numeric" name="<?php echo esc_attr( $field_prefix . '[tc_lens_timeline][__TIMELINE_INDEX__][startTime]' ); ?>" value="" placeholder="00:00" /></div>
 						<div class="tcn-tc-lens-event__time"><label class="tcn-field__label">End time <span>(optional)</span></label><input disabled type="text" inputmode="numeric" name="<?php echo esc_attr( $field_prefix . '[tc_lens_timeline][__TIMELINE_INDEX__][endTime]' ); ?>" value="" placeholder="00:00" /></div>
 						<?php self::render_tc_lens_payload_fields( $field_prefix . '[tc_lens_timeline][__TIMELINE_INDEX__]', array(), true ); ?>
-						<button type="button" class="tcn-tc-lens-event__remove" aria-label="Remove TC Lens message">×</button>
+						<button type="button" class="tcn-tc-lens-event__remove" aria-label="Remove TC Lens message" title="Remove TC Lens message"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /></svg></button>
 					</div>
 				<?php endif; ?>
 			</div>

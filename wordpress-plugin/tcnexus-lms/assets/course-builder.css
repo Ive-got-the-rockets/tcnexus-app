@@ -1296,18 +1296,32 @@
 }
 
 .tcn-tc-lens-event__remove {
-  align-self: center;
-  border: 0;
-  padding: 2px;
-  background: transparent;
-  color: var(--tcn-text-dim);
-  cursor: pointer;
-  font-size: 22px;
-  line-height: 1;
+	position: absolute;
+	top: 10px;
+	right: 10px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	height: 30px;
+	padding: 0;
+	border: 1px solid transparent;
+	border-radius: 6px;
+	background: transparent;
+	color: var(--tcn-text-dim);
+	cursor: pointer;
+	line-height: 1;
+	transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .tcn-tc-lens-event__remove:hover {
-  color: var(--tcn-error-text);
+	border-color: var(--tcn-error);
+	background: rgba(239, 167, 156, 0.2);
+	color: var(--tcn-error-text);
+}
+
+.tcn-tc-lens-event__remove svg {
+	display: block;
 }
 
 .tcn-tc-lens-event--template {
