@@ -309,6 +309,8 @@
     }
     var remove = event.target.closest('.tcn-global-tc-lens-remove');
     if (remove) {
+      event.preventDefault();
+      event.stopPropagation();
       var row = remove.closest('[data-global-tc-lens-event]');
       if (row) row.remove();
     }

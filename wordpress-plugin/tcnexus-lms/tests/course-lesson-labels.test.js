@@ -3,6 +3,7 @@ const fs = require('node:fs');
 
 const source = fs.readFileSync('wordpress-plugin/tcnexus-lms/includes/class-tcnexus-course-builder.php', 'utf8');
 const script = fs.readFileSync('wordpress-plugin/tcnexus-lms/assets/course-builder.js', 'utf8');
+const globalScript = fs.readFileSync('wordpress-plugin/tcnexus-lms/assets/global-lessons.js', 'utf8');
 const styles = fs.readFileSync('wordpress-plugin/tcnexus-lms/assets/course-builder.css', 'utf8');
 
 assert.match(source, /\$lesson_label = self::is_show_mode\(\) \? 'Episode' : 'Lesson'/);
@@ -29,6 +30,7 @@ assert.match(source, /class="tcn-tc-lens-event__remove"[\s\S]*<svg/);
 assert.match(source, /<small class="tcn-tc-lens-field__help">Choose what TC Lens should receive\.<\/small>/);
 assert.match(source, /<small class="tcn-tc-lens-field__help">Sets the depth of the LLM explanation\.<\/small>/);
 assert.match(script, /var timelineRemove = event\.target\.closest\('\.tcn-tc-lens-event__remove'\);[\s\S]*event\.preventDefault\(\);[\s\S]*event\.stopPropagation\(\);/);
+assert.match(globalScript, /var remove = event\.target\.closest\('\.tcn-global-tc-lens-remove'\);[\s\S]*event\.preventDefault\(\);[\s\S]*event\.stopPropagation\(\);[\s\S]*row\.remove\(\);/);
 assert.match(styles, /\.tcn-tc-lens-event__remove[\s\S]*position: absolute;[\s\S]*top: 10px;[\s\S]*right: 10px;/);
 assert.match(styles, /\.tcn-tc-lens-field__help[\s\S]*font-size: 10px;/);
 console.log('course lesson labels contract passes');
