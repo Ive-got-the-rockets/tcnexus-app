@@ -1,12 +1,15 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const path = require('node:path');
 
-const style3Template = fs.readFileSync('frontend/src/app/features/layout-style-3/layout-style-3.html', 'utf8');
-const detailTemplate = fs.readFileSync('frontend/src/app/features/course-detail/course-detail.html', 'utf8');
-const detailComponent = fs.readFileSync('frontend/src/app/features/course-detail/course-detail.ts', 'utf8');
-const detailStyles = fs.readFileSync('frontend/src/app/features/course-detail/course-detail.scss', 'utf8');
-const catalogStyles = fs.readFileSync('frontend/src/app/features/catalog/course-catalog.scss', 'utf8');
-const layout3Styles = fs.readFileSync('frontend/src/app/features/layout-style-3/layout-style-3.scss', 'utf8');
+const root = path.join(__dirname, '..');
+
+const style3Template = fs.readFileSync(path.join(root, 'src/app/features/layout-style-3/layout-style-3.html'), 'utf8');
+const detailTemplate = fs.readFileSync(path.join(root, 'src/app/features/course-detail/course-detail.html'), 'utf8');
+const detailComponent = fs.readFileSync(path.join(root, 'src/app/features/course-detail/course-detail.ts'), 'utf8');
+const detailStyles = fs.readFileSync(path.join(root, 'src/app/features/course-detail/course-detail.scss'), 'utf8');
+const catalogStyles = fs.readFileSync(path.join(root, 'src/app/features/catalog/course-catalog.scss'), 'utf8');
+const layout3Styles = fs.readFileSync(path.join(root, 'src/app/features/layout-style-3/layout-style-3.scss'), 'utf8');
 
 assert.match(style3Template, /\{\{ lessonListLabel\(\) \}\}/);
 assert.doesNotMatch(style3Template, /<h3>Episodes<\/h3>/);

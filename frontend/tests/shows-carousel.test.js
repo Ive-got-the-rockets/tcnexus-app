@@ -42,7 +42,7 @@ assert.match(builder, /<b>Characters:<\/b>/);
 assert.match(builder, /SHOW_CHARACTERS_META_KEY/);
 assert.match(builder, /data-character-picker="1"/);
 assert.match(builder, /Selected Characters/);
-assert.match(builder, /'people' => self::is_show_mode\(\) \? 'Characters' : 'People'/);
+assert.match(builder, /'people' => self::is_show_mode\(\) \? 'Characters' : 'Instructors'/);
 const builderJs = fs.readFileSync(path.join(root, '../wordpress-plugin/tcnexus-lms/assets/course-builder.js'), 'utf8');
 const media = fs.readFileSync(path.join(root, '../wordpress-plugin/tcnexus-lms/includes/class-tcnexus-media.php'), 'utf8');
 assert.match(builderJs, /option\.disabled = true/);

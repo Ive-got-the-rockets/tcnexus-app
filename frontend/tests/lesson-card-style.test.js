@@ -10,7 +10,7 @@ const mainPageStyles = fs.readFileSync(path.join(root, 'src/app/features/layout-
 for (const styles of [detailStyles, catalogStyles, mainPageStyles]) {
   assert.match(styles, /background: (?:#0C0D0D|rgba\(12, 13, 13, 0\.[78]\));/);
   assert.match(styles, /border: none;/);
-  assert.match(styles, /background: #33363F;/);
+  assert.match(styles, /background: rgba\(51, 55, 61, 0\.4\);/);
 }
 
 assert.doesNotMatch(detailStyles, /linear-gradient\(to left, color-mix\(in srgb, var\(--signal\)/);
@@ -18,21 +18,21 @@ assert.doesNotMatch(catalogStyles, /linear-gradient\(to left, color-mix\(in srgb
 assert.doesNotMatch(mainPageStyles, /linear-gradient\(to left, color-mix\(in srgb, var\(--signal\)/);
 
 for (const styles of [detailStyles, catalogStyles]) {
-  assert.match(styles, /\.lesson-row__play svg,[\s\S]*\.lesson-row__restart svg[\s\S]*background: #33373D;/);
+  assert.match(styles, /\.lesson-row__play svg,[\s\S]*\.lesson-row__restart svg[\s\S]*background: rgba\(51, 55, 61, 0\.4\);/);
   assert.match(styles, /\.lesson-row__play svg,[\s\S]*\.lesson-row__restart svg[\s\S]*border: none;/);
   assert.match(styles, /\.lesson-row__play svg,[\s\S]*\.lesson-row__restart svg[\s\S]*color: var\(--paper\);/);
   assert.match(styles, /\.lesson-row__restart[\s\S]*background: #fff;[\s\S]*color: #33373D;/);
 }
 
-assert.match(mainPageStyles, /\.episode-panel__header[\s\S]*background: rgba\(12, 13, 13, 0\.7\);/);
-assert.match(mainPageStyles, /\.episode-panel__close[\s\S]*border: none;[\s\S]*border-radius: 999px;[\s\S]*background: #33373D;/);
+assert.match(mainPageStyles, /\.episode-panel__header[\s\S]*background: rgba\(12, 13, 13, 0\.9\);/);
+assert.match(mainPageStyles, /\.episode-panel__close[\s\S]*border: none;[\s\S]*border-radius: 999px;[\s\S]*background: rgba\(51, 55, 61, 0\.4\);/);
 assert.match(mainPageStyles, /\.episode-panel__close[\s\S]*background: #fff;[\s\S]*color: #33373D;/);
-assert.match(mainPageStyles, /\.lesson-row[\s\S]*background: rgba\(12, 13, 13, 0\.7\);/);
-assert.match(mainPageStyles, /\.style-course-modal__lesson[\s\S]*background: rgba\(12, 13, 13, 0\.7\);/);
-assert.match(mainPageStyles, /\.style-course-modal__close[\s\S]*border: none;[\s\S]*border-radius: 999px;[\s\S]*background: #33373D;/);
+assert.match(mainPageStyles, /\.lesson-row[\s\S]*background: rgba\(12, 13, 13, 0\.9\);/);
+assert.match(mainPageStyles, /\.style-course-modal__lesson[\s\S]*background: rgba\(12, 13, 13, 0\.9\);/);
+assert.match(mainPageStyles, /\.style-course-modal__close[\s\S]*border: none;[\s\S]*border-radius: 999px;[\s\S]*background: rgba\(51, 55, 61, 0\.4\);/);
 assert.match(mainPageStyles, /\.style-course-modal__close:hover[\s\S]*background: #fff;[\s\S]*color: #33373D;/);
-assert.match(detailStyles, /\.lesson-row[\s\S]*background: rgba\(12, 13, 13, 0\.7\);/);
-assert.match(mainPageStyles, /\.episode-panel__close[\s\S]*border: none;[\s\S]*border-radius: var\(--button-radius\);[\s\S]*background: #33373D;/);
+assert.match(detailStyles, /\.lesson-row[\s\S]*background: rgba\(12, 13, 13, 0\.9\);/);
+assert.match(mainPageStyles, /\.episode-panel__close[\s\S]*border: none;[\s\S]*border-radius: 999px;[\s\S]*background: rgba\(51, 55, 61, 0\.4\);/);
 assert.match(mainPageStyles, /\.episode-panel__close[\s\S]*background: #fff;[\s\S]*color: #33373D;/);
 
 console.log('lesson card style contract passes');

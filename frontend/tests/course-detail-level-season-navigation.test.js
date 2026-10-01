@@ -23,11 +23,11 @@ test('season response types carry independent episode lists', () => {
   assert.ok(models.includes('seasons?: Record<string, ShowSeason>'), 'detail response exposes a season map');
 });
 
-test('detail menus use the standard white hover treatment and point open heading menus down', () => {
+test('detail menus use the standard white hover treatment and rotate the open heading cue', () => {
   assert.match(styles, /\.detail__language--open \.detail__language-trigger\s*\{\s*color:\s*#fff;/);
   assert.match(styles, /\.detail__language-menu button:hover[\s\S]*background:\s*#fff;[\s\S]*color:\s*#33373D;/);
   assert.match(styles, /\.detail__level-menu button:hover[\s\S]*background:\s*#fff;[\s\S]*color:\s*#33373D;/);
-  assert.match(styles, /\.detail__heading-picker--open \.detail__heading-trigger svg[\s\S]*transform:\s*rotate\(90deg\)/);
+  assert.match(styles, /\.detail__heading-picker--open \.detail__heading-trigger svg[\s\S]*transform:\s*translateY\(4px\) rotate\(-90deg\)/);
 });
 
 test('course level options honor enabled payloads and use canonical level labels', () => {
