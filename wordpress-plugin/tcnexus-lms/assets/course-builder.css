@@ -1280,6 +1280,14 @@
   margin-bottom: 4px;
 }
 
+.tcn-tc-lens-field__help {
+	display: block;
+	margin: -1px 0 5px;
+	color: var(--tcn-text-dim);
+	font-size: 10px;
+	line-height: 1.3;
+}
+
 .tcn-tc-lens-payload [hidden] {
   display: none;
 }

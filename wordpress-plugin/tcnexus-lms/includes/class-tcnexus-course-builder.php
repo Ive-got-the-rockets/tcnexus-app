@@ -1432,6 +1432,7 @@ class TCNexus_Course_Builder {
 						<input type="hidden" name="<?php echo esc_attr( $event_prefix . '[id]' ); ?>" value="<?php echo esc_attr( $event['id'] ); ?>" />
 						<div class="tcn-tc-lens-event__type">
 							<label class="tcn-field__label">Type</label>
+							<small class="tcn-tc-lens-field__help">Choose what TC Lens should receive.</small>
 							<select name="<?php echo esc_attr( $event_prefix . '[messageType]' ); ?>" class="tcn-select">
 								<option value="llm" <?php selected( $event['messageType'], 'llm' ); ?>>LLM</option>
 								<option value="trade" <?php selected( $event['messageType'], 'trade' ); ?>>Trade data</option>
@@ -1439,10 +1440,12 @@ class TCNexus_Course_Builder {
 						</div>
 						<div class="tcn-tc-lens-event__time">
 							<label class="tcn-field__label">Start time</label>
+							<small class="tcn-tc-lens-field__help">When this message should appear.</small>
 							<input type="text" inputmode="numeric" name="<?php echo esc_attr( $event_prefix . '[startTime]' ); ?>" value="<?php echo esc_attr( self::format_tc_lens_time( $event['startTime'] ) ); ?>" placeholder="00:00" />
 						</div>
 						<div class="tcn-tc-lens-event__time">
 							<label class="tcn-field__label">End time <span>(optional)</span></label>
+							<small class="tcn-tc-lens-field__help">Optional: when this message should stop.</small>
 							<input type="text" inputmode="numeric" name="<?php echo esc_attr( $event_prefix . '[endTime]' ); ?>" value="<?php echo null !== $event['endTime'] ? esc_attr( self::format_tc_lens_time( $event['endTime'] ) ) : ''; ?>" placeholder="00:00" />
 						</div>
 						<?php self::render_tc_lens_payload_fields( $event_prefix, $event ); ?>
@@ -1454,12 +1457,13 @@ class TCNexus_Course_Builder {
 						<input type="hidden" disabled name="<?php echo esc_attr( $field_prefix . '[tc_lens_timeline][__TIMELINE_INDEX__][id]' ); ?>" value="" />
 						<div class="tcn-tc-lens-event__type">
 							<label class="tcn-field__label">Type</label>
+							<small class="tcn-tc-lens-field__help">Choose what TC Lens should receive.</small>
 							<select disabled name="<?php echo esc_attr( $field_prefix . '[tc_lens_timeline][__TIMELINE_INDEX__][messageType]' ); ?>" class="tcn-select">
 								<option value="llm">LLM</option><option value="trade">Trade data</option>
 							</select>
 						</div>
-						<div class="tcn-tc-lens-event__time"><label class="tcn-field__label">Start time</label><input disabled type="text" inputmode="numeric" name="<?php echo esc_attr( $field_prefix . '[tc_lens_timeline][__TIMELINE_INDEX__][startTime]' ); ?>" value="" placeholder="00:00" /></div>
-						<div class="tcn-tc-lens-event__time"><label class="tcn-field__label">End time <span>(optional)</span></label><input disabled type="text" inputmode="numeric" name="<?php echo esc_attr( $field_prefix . '[tc_lens_timeline][__TIMELINE_INDEX__][endTime]' ); ?>" value="" placeholder="00:00" /></div>
+						<div class="tcn-tc-lens-event__time"><label class="tcn-field__label">Start time</label><small class="tcn-tc-lens-field__help">When this message should appear.</small><input disabled type="text" inputmode="numeric" name="<?php echo esc_attr( $field_prefix . '[tc_lens_timeline][__TIMELINE_INDEX__][startTime]' ); ?>" value="" placeholder="00:00" /></div>
+						<div class="tcn-tc-lens-event__time"><label class="tcn-field__label">End time <span>(optional)</span></label><small class="tcn-tc-lens-field__help">Optional: when this message should stop.</small><input disabled type="text" inputmode="numeric" name="<?php echo esc_attr( $field_prefix . '[tc_lens_timeline][__TIMELINE_INDEX__][endTime]' ); ?>" value="" placeholder="00:00" /></div>
 						<?php self::render_tc_lens_payload_fields( $field_prefix . '[tc_lens_timeline][__TIMELINE_INDEX__]', array(), true ); ?>
 						<button type="button" class="tcn-tc-lens-event__remove" aria-label="Remove TC Lens message" title="Remove TC Lens message"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /></svg></button>
 					</div>
@@ -1483,19 +1487,19 @@ class TCNexus_Course_Builder {
 		?>
 		<div class="tcn-tc-lens-payload" data-tc-lens-payload>
 			<div class="tcn-tc-lens-payload__trade" data-tc-lens-payload-panel="trade">
-				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Underlying</label><input<?php echo $attr; ?> type="text" name="<?php echo esc_attr( $event_prefix . '[trade][underlying]' ); ?>" value="<?php echo esc_attr( $trade['underlying'] ?? '' ); ?>" placeholder="SPY" /></div>
-				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Strategy</label><input<?php echo $attr; ?> type="text" name="<?php echo esc_attr( $event_prefix . '[trade][strategy]' ); ?>" value="<?php echo esc_attr( $trade['strategy'] ?? '' ); ?>" placeholder="Long Call" /></div>
-				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Strikes</label><input<?php echo $attr; ?> type="text" name="<?php echo esc_attr( $event_prefix . '[trade][strikes]' ); ?>" value="<?php echo esc_attr( implode( ', ', (array) ( $trade['strikes'] ?? array() ) ) ); ?>" placeholder="500, 510" /></div>
-				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Expiration</label><input<?php echo $attr; ?> type="text" name="<?php echo esc_attr( $event_prefix . '[trade][expiration]' ); ?>" value="<?php echo esc_attr( $trade['expiration'] ?? '' ); ?>" placeholder="2026-12-18" /></div>
-				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Quantity</label><input<?php echo $attr; ?> type="number" min="0" step="any" name="<?php echo esc_attr( $event_prefix . '[trade][quantity]' ); ?>" value="<?php echo esc_attr( $trade['quantity'] ?? '' ); ?>" /></div>
-				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Entry price</label><input<?php echo $attr; ?> type="number" min="0" step="any" name="<?php echo esc_attr( $event_prefix . '[trade][entryPrice]' ); ?>" value="<?php echo esc_attr( $trade['entryPrice'] ?? '' ); ?>" /></div>
-				<div class="tcn-tc-lens-event__field tcn-tc-lens-event__field--wide"><label class="tcn-field__label">Legs</label><textarea<?php echo $attr; ?> name="<?php echo esc_attr( $event_prefix . '[trade][legs]' ); ?>" rows="2" placeholder="One leg per line: buy | call | 1 | 500 | 2026-12-18"><?php echo esc_textarea( self::format_tc_lens_legs( $trade['legs'] ?? array() ) ); ?></textarea></div>
-				<div class="tcn-tc-lens-event__field tcn-tc-lens-event__field--wide"><label class="tcn-field__label">Lesson assumptions</label><textarea<?php echo $attr; ?> name="<?php echo esc_attr( $event_prefix . '[trade][assumptions]' ); ?>" rows="2" placeholder="Learning and recalculation assumptions"><?php echo esc_textarea( $trade['assumptions'] ?? '' ); ?></textarea></div>
+				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Underlying</label><small class="tcn-tc-lens-field__help">Ticker or asset used in the example.</small><input<?php echo $attr; ?> type="text" name="<?php echo esc_attr( $event_prefix . '[trade][underlying]' ); ?>" value="<?php echo esc_attr( $trade['underlying'] ?? '' ); ?>" placeholder="SPY" /></div>
+				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Strategy</label><small class="tcn-tc-lens-field__help">Name the trade or options strategy.</small><input<?php echo $attr; ?> type="text" name="<?php echo esc_attr( $event_prefix . '[trade][strategy]' ); ?>" value="<?php echo esc_attr( $trade['strategy'] ?? '' ); ?>" placeholder="Long Call" /></div>
+				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Strikes</label><small class="tcn-tc-lens-field__help">Strike prices used by the trade.</small><input<?php echo $attr; ?> type="text" name="<?php echo esc_attr( $event_prefix . '[trade][strikes]' ); ?>" value="<?php echo esc_attr( implode( ', ', (array) ( $trade['strikes'] ?? array() ) ) ); ?>" placeholder="500, 510" /></div>
+				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Expiration</label><small class="tcn-tc-lens-field__help">Expiration date for the position.</small><input<?php echo $attr; ?> type="text" name="<?php echo esc_attr( $event_prefix . '[trade][expiration]' ); ?>" value="<?php echo esc_attr( $trade['expiration'] ?? '' ); ?>" placeholder="2026-12-18" /></div>
+				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Quantity</label><small class="tcn-tc-lens-field__help">Number of contracts or units.</small><input<?php echo $attr; ?> type="number" min="0" step="any" name="<?php echo esc_attr( $event_prefix . '[trade][quantity]' ); ?>" value="<?php echo esc_attr( $trade['quantity'] ?? '' ); ?>" /></div>
+				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Entry price</label><small class="tcn-tc-lens-field__help">Price paid when the trade starts.</small><input<?php echo $attr; ?> type="number" min="0" step="any" name="<?php echo esc_attr( $event_prefix . '[trade][entryPrice]' ); ?>" value="<?php echo esc_attr( $trade['entryPrice'] ?? '' ); ?>" /></div>
+				<div class="tcn-tc-lens-event__field tcn-tc-lens-event__field--wide"><label class="tcn-field__label">Legs</label><small class="tcn-tc-lens-field__help">Add one trade leg per line.</small><textarea<?php echo $attr; ?> name="<?php echo esc_attr( $event_prefix . '[trade][legs]' ); ?>" rows="2" placeholder="One leg per line: buy | call | 1 | 500 | 2026-12-18"><?php echo esc_textarea( self::format_tc_lens_legs( $trade['legs'] ?? array() ) ); ?></textarea></div>
+				<div class="tcn-tc-lens-event__field tcn-tc-lens-event__field--wide"><label class="tcn-field__label">Lesson assumptions</label><small class="tcn-tc-lens-field__help">Context TC Lens should use for the calculation.</small><textarea<?php echo $attr; ?> name="<?php echo esc_attr( $event_prefix . '[trade][assumptions]' ); ?>" rows="2" placeholder="Learning and recalculation assumptions"><?php echo esc_textarea( $trade['assumptions'] ?? '' ); ?></textarea></div>
 			</div>
 			<div class="tcn-tc-lens-payload__llm" data-tc-lens-payload-panel="llm">
-				<div class="tcn-tc-lens-event__field tcn-tc-lens-event__field--wide"><label class="tcn-field__label">Prepared question</label><textarea<?php echo $attr; ?> name="<?php echo esc_attr( $event_prefix . '[llm][question]' ); ?>" rows="2" placeholder="Question to send to the LLM"><?php echo esc_textarea( $llm['question'] ?? '' ); ?></textarea></div>
-				<div class="tcn-tc-lens-event__field tcn-tc-lens-event__field--wide"><label class="tcn-field__label">Scene context</label><textarea<?php echo $attr; ?> name="<?php echo esc_attr( $event_prefix . '[llm][sceneContext]' ); ?>" rows="2" placeholder="What is happening in the video at this moment?"><?php echo esc_textarea( $llm['sceneContext'] ?? '' ); ?></textarea></div>
-				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Learning level</label><select<?php echo $attr; ?> name="<?php echo esc_attr( $event_prefix . '[llm][learningLevel]' ); ?>" class="tcn-select"><option value="beginner" <?php selected( $llm['learningLevel'] ?? 'beginner', 'beginner' ); ?>>Beginner</option><option value="intermediate" <?php selected( $llm['learningLevel'] ?? '', 'intermediate' ); ?>>Intermediate</option><option value="advanced" <?php selected( $llm['learningLevel'] ?? '', 'advanced' ); ?>>Advanced</option><option value="expert" <?php selected( $llm['learningLevel'] ?? '', 'expert' ); ?>>Expert</option></select></div>
+				<div class="tcn-tc-lens-event__field tcn-tc-lens-event__field--wide"><label class="tcn-field__label">Prepared question</label><small class="tcn-tc-lens-field__help">Question TC Lens should answer.</small><textarea<?php echo $attr; ?> name="<?php echo esc_attr( $event_prefix . '[llm][question]' ); ?>" rows="2" placeholder="Question to send to the LLM"><?php echo esc_textarea( $llm['question'] ?? '' ); ?></textarea></div>
+				<div class="tcn-tc-lens-event__field tcn-tc-lens-event__field--wide"><label class="tcn-field__label">Scene context</label><small class="tcn-tc-lens-field__help">What is happening in the video here.</small><textarea<?php echo $attr; ?> name="<?php echo esc_attr( $event_prefix . '[llm][sceneContext]' ); ?>" rows="2" placeholder="What is happening in the video at this moment?"><?php echo esc_textarea( $llm['sceneContext'] ?? '' ); ?></textarea></div>
+				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Learning level</label><small class="tcn-tc-lens-field__help">Sets the depth of the LLM explanation.</small><select<?php echo $attr; ?> name="<?php echo esc_attr( $event_prefix . '[llm][learningLevel]' ); ?>" class="tcn-select"><option value="beginner" <?php selected( $llm['learningLevel'] ?? 'beginner', 'beginner' ); ?>>Beginner</option><option value="intermediate" <?php selected( $llm['learningLevel'] ?? '', 'intermediate' ); ?>>Intermediate</option><option value="advanced" <?php selected( $llm['learningLevel'] ?? '', 'advanced' ); ?>>Advanced</option><option value="expert" <?php selected( $llm['learningLevel'] ?? '', 'expert' ); ?>>Expert</option></select></div>
 			</div>
 		</div>
 		<?php
