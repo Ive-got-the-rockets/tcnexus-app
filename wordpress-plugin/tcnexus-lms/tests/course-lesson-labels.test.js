@@ -31,6 +31,7 @@ assert.match(source, /<small class="tcn-tc-lens-field__help">Choose what TC Lens
 assert.match(source, /<small class="tcn-tc-lens-field__help">Sets the depth of the LLM explanation\.<\/small>/);
 assert.match(script, /var timelineRemove = event\.target\.closest\('\.tcn-tc-lens-event__remove'\);[\s\S]*event\.preventDefault\(\);[\s\S]*event\.stopPropagation\(\);/);
 assert.match(globalScript, /var remove = event\.target\.closest\('\.tcn-global-tc-lens-remove'\);[\s\S]*event\.preventDefault\(\);[\s\S]*event\.stopPropagation\(\);[\s\S]*row\.remove\(\);/);
+assert.match(script, /var timelineEvent = timelineRemove\.closest\('\[data-tc-lens-event\]'\);[\s\S]*if \(timelineEvent\) \{[\s\S]*timelineEvent\.remove\(\);/);
 assert.match(styles, /\.tcn-tc-lens-event__remove[\s\S]*position: absolute;[\s\S]*top: 10px;[\s\S]*right: 10px;/);
 assert.match(styles, /\.tcn-tc-lens-field__help[\s\S]*font-size: 10px;/);
 console.log('course lesson labels contract passes');

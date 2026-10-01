@@ -1382,7 +1382,7 @@
         event.stopPropagation();
         var timelineEvent = timelineRemove.closest('[data-tc-lens-event]');
         var timeline = timelineRemove.closest('[data-tc-lens-timeline]');
-        if (timelineEvent && !timelineEvent.hasAttribute('data-tc-lens-event-template')) {
+        if (timelineEvent) {
           timelineEvent.remove();
           if (timeline) refreshLessonPanelHeight(timeline);
           if (typeof markCourseFormDirty === 'function') markCourseFormDirty();
