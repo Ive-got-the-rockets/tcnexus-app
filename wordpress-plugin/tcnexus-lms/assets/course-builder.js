@@ -1111,6 +1111,7 @@
       var durationCell = summaryRow.querySelector('.tcn-lessons-overview__duration');
       if (durationInput && durationCell) {
         durationInput.addEventListener('input', function () {
+          durationInput.value = formatTcLensTimeInput(durationInput.value);
           durationCell.textContent = durationInput.value.trim() || '—';
         });
       }
