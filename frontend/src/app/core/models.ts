@@ -75,12 +75,59 @@ export interface Lesson {
 
 export type TcLensMessageType = 'llm' | 'trade';
 
-export interface TcLensTimelineEvent {
+export type TcLensLearningLevel = 'beginner' | 'intermediate' | 'advanced' | 'expert' | string;
+
+export interface TcLensTradeLeg {
+  action: string;
+  side: string;
+  quantity: number;
+  strike: number | string | null;
+  expiration: string | null;
+  entryPrice?: number | null;
+}
+
+export interface TcLensTradeData {
+  underlying: string;
+  strategy: string;
+  legs: TcLensTradeLeg[];
+  strikes: Array<number | string>;
+  expiration: string | null;
+  quantity: number | null;
+  entryPrice: number | null;
+  assumptions: string;
+}
+
+export interface TcLensLlmData {
+  question: string;
+  sceneContext: string;
+  learningLevel: TcLensLearningLevel;
+}
+
+export interface TcLensTimelineBase {
   id: string;
   messageType: TcLensMessageType;
-  message: string;
   startTime: number;
   endTime: number | null;
+  /** Legacy fallback retained while existing lessons migrate to structured data. */
+  message?: string;
+}
+
+export interface TcLensTradeCue extends TcLensTimelineBase {
+  messageType: 'trade';
+  data: TcLensTradeData;
+}
+
+export interface TcLensLlmCue extends TcLensTimelineBase {
+  messageType: 'llm';
+  data: TcLensLlmData;
+}
+
+export type TcLensTimelineEvent = TcLensTradeCue | TcLensLlmCue;
+
+export interface TcLensProtocolEnvelope {
+  protocolVersion: number;
+  lessonId: string;
+  sessionId: string;
 }
 
 export interface Person {
