@@ -272,6 +272,16 @@
 
   // ---------- Save (ajax, one lesson at a time) ----------
 
+  function formatTcLensTimeInput(value) {
+    var text = String(value || '').replace(/[^\d:]/g, '');
+    if (text.indexOf(':') !== -1) {
+      var parts = text.split(':');
+      return parts[0].slice(0, 2) + ':' + (parts[1] || '').slice(0, 2);
+    }
+    var digits = text.replace(/\D/g, '').slice(0, 4);
+    return digits.length > 2 ? digits.slice(0, 2) + ':' + digits.slice(2) : digits;
+  }
+
   function parseTcLensTime(value, allowBlank) {
     var text = String(value || '').trim();
     if (!text && allowBlank) return null;
@@ -314,6 +324,12 @@
       var row = remove.closest('[data-global-tc-lens-event]');
       if (row) row.remove();
     }
+  });
+
+  list.addEventListener('input', function (event) {
+    if (!event.target.matches('[data-tc-lens-start], [data-tc-lens-end]')) return;
+    var formatted = formatTcLensTimeInput(event.target.value);
+    if (event.target.value !== formatted) event.target.value = formatted;
   });
 
   list.addEventListener('click', function (event) {

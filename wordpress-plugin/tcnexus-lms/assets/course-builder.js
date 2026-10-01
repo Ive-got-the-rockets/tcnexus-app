@@ -1331,6 +1331,16 @@
       });
     }
 
+    function formatTcLensTimeInput(value) {
+      var text = String(value || '').replace(/[^\d:]/g, '');
+      if (text.indexOf(':') !== -1) {
+        var parts = text.split(':');
+        return parts[0].slice(0, 2) + ':' + (parts[1] || '').slice(0, 2);
+      }
+      var digits = text.replace(/\D/g, '').slice(0, 4);
+      return digits.length > 2 ? digits.slice(0, 2) + ':' + digits.slice(2) : digits;
+    }
+
     function parseTimelineTime(value) {
       var trimmed = String(value || '').trim();
       var match = trimmed.match(/^(\d+):(\d{1,2})$/);
@@ -1465,6 +1475,13 @@
           closingPanel.classList.remove('tcn-lesson-expand__panel--settled');
         }
       }
+    });
+
+    lessonsList.addEventListener('input', function (event) {
+      var input = event.target;
+      if (!input.matches('input[name$="[startTime]"], input[name$="[endTime]"]')) return;
+      var formatted = formatTcLensTimeInput(input.value);
+      if (input.value !== formatted) input.value = formatted;
     });
 
     lessonsList.addEventListener('change', function (event) {
