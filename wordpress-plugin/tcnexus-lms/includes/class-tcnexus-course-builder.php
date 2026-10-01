@@ -1223,7 +1223,7 @@ class TCNexus_Course_Builder {
 															</div>
 															</div>
 										<?php self::render_lesson_guest_field( self::is_show_mode() ? $existing_name . '[character_ids][]' : $existing_name . '[guest_ids][]', $lesson_person_ids, self::is_show_mode() ? $characters : $guests, $lesson_label, self::is_show_mode() ? 'character' : 'guest' ); ?>
-										<?php self::render_tc_lens_timeline_field( $existing_name, $tc_lens_timeline ); ?>
+										<?php self::render_tc_lens_timeline_field( $existing_name, $tc_lens_timeline, true ); ?>
 											<div class="tcn-lesson-card__footer">
 																		<input type="checkbox" class="tcn-lesson-delete-flag" name="<?php echo esc_attr( $existing_name . '[delete]' ); ?>" value="1" style="display:none;" />
 																															<button type="submit" name="lesson_action" value="save" class="tcn-btn-ghost">Save <?php echo esc_html( $lesson_label ); ?></button>

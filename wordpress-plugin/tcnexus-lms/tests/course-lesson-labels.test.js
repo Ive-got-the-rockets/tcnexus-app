@@ -22,4 +22,5 @@ assert.match(source, /\[llm\]\[learningLevel\]/);
 assert.match(source, /'trade' => array/);
 assert.match(source, /'llm' => array/);
 assert.match(source, /'data'\s*=>\s*'trade' === \$message_type/);
+assert.match(source, /render_tc_lens_timeline_field\( \$existing_name, \$tc_lens_timeline, true \)/);
 console.log('course lesson labels contract passes');
