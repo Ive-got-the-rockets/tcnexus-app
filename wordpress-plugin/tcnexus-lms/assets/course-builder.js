@@ -1310,8 +1310,25 @@
       }
       events.appendChild(eventRow);
       eventRow.querySelectorAll('.tcn-select').forEach(enhanceSelect);
+      syncTimelinePayload(eventRow);
       refreshLessonPanelHeight(timeline);
       if (typeof markCourseFormDirty === 'function') markCourseFormDirty();
+    }
+
+    function syncTimelinePayload(row) {
+      if (!row) return;
+      var type = row.querySelector('select[name$="[messageType]"]');
+      var payload = row.querySelector('[data-tc-lens-payload]');
+      if (!type || !payload) return;
+      payload.querySelectorAll('[data-tc-lens-payload-panel]').forEach(function (panel) {
+        var active = panel.getAttribute('data-tc-lens-payload-panel') === type.value;
+        panel.hidden = !active;
+        panel.querySelectorAll('input, textarea, select').forEach(function (control) {
+          if (!control.disabled || control.closest('[data-tc-lens-event-template]')) {
+            control.setAttribute('aria-hidden', active ? 'false' : 'true');
+          }
+        });
+      });
     }
 
     function parseTimelineTime(value) {
@@ -1447,6 +1464,15 @@
         }
       }
     });
+
+    lessonsList.addEventListener('change', function (event) {
+      var type = event.target.closest('select[name$="[messageType]"]');
+      if (!type) return;
+      syncTimelinePayload(type.closest('[data-tc-lens-event]'));
+      refreshLessonPanelHeight(type.closest('[data-tc-lens-timeline]'));
+    });
+
+    lessonsList.querySelectorAll('[data-tc-lens-event]:not([data-tc-lens-event-template])').forEach(syncTimelinePayload);
 
     lessonsList.addEventListener('change', function (event) {
       if (event.target.matches('.tcn-lesson-guest-picker')) {

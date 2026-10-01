@@ -1445,10 +1445,7 @@ class TCNexus_Course_Builder {
 							<label class="tcn-field__label">End time <span>(optional)</span></label>
 							<input type="text" inputmode="numeric" name="<?php echo esc_attr( $event_prefix . '[endTime]' ); ?>" value="<?php echo null !== $event['endTime'] ? esc_attr( self::format_tc_lens_time( $event['endTime'] ) ) : ''; ?>" placeholder="00:00" />
 						</div>
-						<div class="tcn-tc-lens-event__message">
-							<label class="tcn-field__label">Message</label>
-							<textarea name="<?php echo esc_attr( $event_prefix . '[message]' ); ?>" rows="2" placeholder="Message or prompt for this point in the video"><?php echo esc_textarea( $event['message'] ); ?></textarea>
-						</div>
+						<?php self::render_tc_lens_payload_fields( $event_prefix, $event ); ?>
 						<button type="button" class="tcn-tc-lens-event__remove" aria-label="Remove TC Lens message">×</button>
 					</div>
 				<?php endforeach; ?>
@@ -1463,13 +1460,56 @@ class TCNexus_Course_Builder {
 						</div>
 						<div class="tcn-tc-lens-event__time"><label class="tcn-field__label">Start time</label><input disabled type="text" inputmode="numeric" name="<?php echo esc_attr( $field_prefix . '[tc_lens_timeline][__TIMELINE_INDEX__][startTime]' ); ?>" value="" placeholder="00:00" /></div>
 						<div class="tcn-tc-lens-event__time"><label class="tcn-field__label">End time <span>(optional)</span></label><input disabled type="text" inputmode="numeric" name="<?php echo esc_attr( $field_prefix . '[tc_lens_timeline][__TIMELINE_INDEX__][endTime]' ); ?>" value="" placeholder="00:00" /></div>
-						<div class="tcn-tc-lens-event__message"><label class="tcn-field__label">Message</label><textarea disabled name="<?php echo esc_attr( $field_prefix . '[tc_lens_timeline][__TIMELINE_INDEX__][message]' ); ?>" rows="2" placeholder="Message or prompt for this point in the video"></textarea></div>
+						<?php self::render_tc_lens_payload_fields( $field_prefix . '[tc_lens_timeline][__TIMELINE_INDEX__]', array(), true ); ?>
 						<button type="button" class="tcn-tc-lens-event__remove" aria-label="Remove TC Lens message">×</button>
 					</div>
 				<?php endif; ?>
 			</div>
 		</section>
 		<?php
+	}
+
+	private static function render_tc_lens_payload_fields( $event_prefix, $event = array(), $disabled = false ) {
+		$payload = array( 'trade' => array(), 'llm' => array() );
+		$trade = isset( $event['trade'] ) && is_array( $event['trade'] ) ? $event['trade'] : array();
+		$llm   = isset( $event['llm'] ) && is_array( $event['llm'] ) ? $event['llm'] : array();
+		if ( empty( $trade ) && ! empty( $event['message'] ) ) {
+			$trade['assumptions'] = $event['message'];
+		}
+		if ( empty( $llm ) && ! empty( $event['message'] ) ) {
+			$llm['question'] = $event['message'];
+		}
+		$attr  = $disabled ? ' disabled' : '';
+		?>
+		<div class="tcn-tc-lens-payload" data-tc-lens-payload>
+			<div class="tcn-tc-lens-payload__trade" data-tc-lens-payload-panel="trade">
+				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Underlying</label><input<?php echo $attr; ?> type="text" name="<?php echo esc_attr( $event_prefix . '[trade][underlying]' ); ?>" value="<?php echo esc_attr( $trade['underlying'] ?? '' ); ?>" placeholder="SPY" /></div>
+				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Strategy</label><input<?php echo $attr; ?> type="text" name="<?php echo esc_attr( $event_prefix . '[trade][strategy]' ); ?>" value="<?php echo esc_attr( $trade['strategy'] ?? '' ); ?>" placeholder="Long Call" /></div>
+				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Strikes</label><input<?php echo $attr; ?> type="text" name="<?php echo esc_attr( $event_prefix . '[trade][strikes]' ); ?>" value="<?php echo esc_attr( implode( ', ', (array) ( $trade['strikes'] ?? array() ) ) ); ?>" placeholder="500, 510" /></div>
+				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Expiration</label><input<?php echo $attr; ?> type="text" name="<?php echo esc_attr( $event_prefix . '[trade][expiration]' ); ?>" value="<?php echo esc_attr( $trade['expiration'] ?? '' ); ?>" placeholder="2026-12-18" /></div>
+				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Quantity</label><input<?php echo $attr; ?> type="number" min="0" step="any" name="<?php echo esc_attr( $event_prefix . '[trade][quantity]' ); ?>" value="<?php echo esc_attr( $trade['quantity'] ?? '' ); ?>" /></div>
+				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Entry price</label><input<?php echo $attr; ?> type="number" min="0" step="any" name="<?php echo esc_attr( $event_prefix . '[trade][entryPrice]' ); ?>" value="<?php echo esc_attr( $trade['entryPrice'] ?? '' ); ?>" /></div>
+				<div class="tcn-tc-lens-event__field tcn-tc-lens-event__field--wide"><label class="tcn-field__label">Legs</label><textarea<?php echo $attr; ?> name="<?php echo esc_attr( $event_prefix . '[trade][legs]' ); ?>" rows="2" placeholder="One leg per line: buy | call | 1 | 500 | 2026-12-18"><?php echo esc_textarea( self::format_tc_lens_legs( $trade['legs'] ?? array() ) ); ?></textarea></div>
+				<div class="tcn-tc-lens-event__field tcn-tc-lens-event__field--wide"><label class="tcn-field__label">Lesson assumptions</label><textarea<?php echo $attr; ?> name="<?php echo esc_attr( $event_prefix . '[trade][assumptions]' ); ?>" rows="2" placeholder="Learning and recalculation assumptions"><?php echo esc_textarea( $trade['assumptions'] ?? '' ); ?></textarea></div>
+			</div>
+			<div class="tcn-tc-lens-payload__llm" data-tc-lens-payload-panel="llm">
+				<div class="tcn-tc-lens-event__field tcn-tc-lens-event__field--wide"><label class="tcn-field__label">Prepared question</label><textarea<?php echo $attr; ?> name="<?php echo esc_attr( $event_prefix . '[llm][question]' ); ?>" rows="2" placeholder="Question to send to the LLM"><?php echo esc_textarea( $llm['question'] ?? '' ); ?></textarea></div>
+				<div class="tcn-tc-lens-event__field tcn-tc-lens-event__field--wide"><label class="tcn-field__label">Scene context</label><textarea<?php echo $attr; ?> name="<?php echo esc_attr( $event_prefix . '[llm][sceneContext]' ); ?>" rows="2" placeholder="What is happening in the video at this moment?"><?php echo esc_textarea( $llm['sceneContext'] ?? '' ); ?></textarea></div>
+				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Learning level</label><select<?php echo $attr; ?> name="<?php echo esc_attr( $event_prefix . '[llm][learningLevel]' ); ?>" class="tcn-select"><option value="beginner" <?php selected( $llm['learningLevel'] ?? 'beginner', 'beginner' ); ?>>Beginner</option><option value="intermediate" <?php selected( $llm['learningLevel'] ?? '', 'intermediate' ); ?>>Intermediate</option><option value="advanced" <?php selected( $llm['learningLevel'] ?? '', 'advanced' ); ?>>Advanced</option><option value="expert" <?php selected( $llm['learningLevel'] ?? '', 'expert' ); ?>>Expert</option></select></div>
+			</div>
+		</div>
+		<?php
+	}
+
+	private static function format_tc_lens_legs( $legs ) {
+		$lines = array();
+		foreach ( (array) $legs as $leg ) {
+			if ( ! is_array( $leg ) ) {
+				continue;
+			}
+			$lines[] = implode( ' | ', array( $leg['action'] ?? '', $leg['side'] ?? '', $leg['quantity'] ?? '', $leg['strike'] ?? '', $leg['expiration'] ?? '' ) );
+		}
+		return implode( "\n", $lines );
 	}
 
 	/**
@@ -1829,12 +1869,19 @@ class TCNexus_Course_Builder {
 
 			$message_type = sanitize_key( $row['messageType'] ?? $row['message_type'] ?? '' );
 			$message      = is_scalar( $row['message'] ?? null ) ? sanitize_textarea_field( wp_unslash( (string) $row['message'] ) ) : '';
+			$trade        = is_array( $row['trade'] ?? null ) ? $row['trade'] : array();
+			$llm          = is_array( $row['llm'] ?? null ) ? $row['llm'] : array();
+			$trade_data   = self::sanitize_tc_lens_trade_data( $trade, $message );
+			$llm_data     = self::sanitize_tc_lens_llm_data( $llm, $message );
 			$start_time   = self::normalize_tc_lens_time( $row['startTime'] ?? $row['start_time'] ?? null );
 			$raw_end_time = $row['endTime'] ?? $row['end_time'] ?? null;
 			$end_is_blank = null === $raw_end_time || ( is_scalar( $raw_end_time ) && '' === trim( (string) $raw_end_time ) );
 			$end_time     = self::normalize_tc_lens_time( $raw_end_time, true );
 
-			if ( ! in_array( $message_type, array( 'llm', 'trade' ), true ) || '' === trim( $message ) || null === $start_time || ( ! $end_is_blank && null === $end_time ) ) {
+			$has_payload = 'trade' === $message_type
+				? ( '' !== $trade_data['underlying'] || '' !== $trade_data['strategy'] || ! empty( $trade_data['legs'] ) || '' !== $trade_data['assumptions'] || '' !== $message )
+				: ( '' !== $llm_data['question'] || '' !== $llm_data['sceneContext'] || '' !== $message );
+			if ( ! in_array( $message_type, array( 'llm', 'trade' ), true ) || ! $has_payload || null === $start_time || ( ! $end_is_blank && null === $end_time ) ) {
 				continue;
 			}
 			if ( null !== $end_time && $end_time < $start_time ) {
@@ -1852,10 +1899,68 @@ class TCNexus_Course_Builder {
 				'message'     => $message,
 				'startTime'   => $start_time,
 				'endTime'     => $end_time,
+				'trade'       => $trade_data,
+				'llm'         => $llm_data,
+				'data'        => 'trade' === $message_type ? $trade_data : $llm_data,
 			);
 		}
 
 		return $normalized;
+	}
+
+	private static function sanitize_tc_lens_trade_data( $trade, $legacy_message = '' ) {
+		$legs = array();
+		$raw_legs = $trade['legs'] ?? array();
+		if ( is_string( $raw_legs ) ) {
+			$raw_legs = preg_split( '/\r\n|\r|\n/', $raw_legs );
+		}
+		foreach ( (array) $raw_legs as $leg ) {
+			if ( is_string( $leg ) ) {
+				$parts = array_map( 'trim', explode( '|', $leg ) );
+				$leg = array(
+					'action'     => $parts[0] ?? '',
+					'side'       => $parts[1] ?? '',
+					'quantity'   => $parts[2] ?? '',
+					'strike'     => $parts[3] ?? '',
+					'expiration' => $parts[4] ?? '',
+				);
+			}
+			if ( ! is_array( $leg ) ) {
+				continue;
+			}
+			$legs[] = array(
+				'action'      => sanitize_text_field( wp_unslash( (string) ( $leg['action'] ?? '' ) ) ),
+				'side'        => sanitize_text_field( wp_unslash( (string) ( $leg['side'] ?? '' ) ) ),
+				'quantity'    => max( 0, (float) ( $leg['quantity'] ?? 0 ) ),
+				'strike'      => sanitize_text_field( wp_unslash( (string) ( $leg['strike'] ?? '' ) ) ),
+				'expiration'  => sanitize_text_field( wp_unslash( (string) ( $leg['expiration'] ?? '' ) ) ),
+				'entryPrice'  => '' === (string) ( $leg['entryPrice'] ?? '' ) ? null : (float) $leg['entryPrice'],
+			);
+		}
+
+		$raw_strikes = $trade['strikes'] ?? array();
+		if ( is_string( $raw_strikes ) ) {
+			$raw_strikes = explode( ',', $raw_strikes );
+		}
+
+		return array(
+			'underlying' => sanitize_text_field( wp_unslash( (string) ( $trade['underlying'] ?? '' ) ) ),
+			'strategy'   => sanitize_text_field( wp_unslash( (string) ( $trade['strategy'] ?? '' ) ) ),
+			'legs'       => $legs,
+			'strikes'    => array_values( array_filter( array_map( function ( $strike ) { return sanitize_text_field( wp_unslash( (string) $strike ) ); }, (array) $raw_strikes ) ) ),
+			'expiration' => sanitize_text_field( wp_unslash( (string) ( $trade['expiration'] ?? '' ) ) ) ?: null,
+			'quantity'   => '' === (string) ( $trade['quantity'] ?? '' ) ? null : max( 0, (float) $trade['quantity'] ),
+			'entryPrice' => '' === (string) ( $trade['entryPrice'] ?? '' ) ? null : (float) $trade['entryPrice'],
+			'assumptions' => sanitize_textarea_field( wp_unslash( (string) ( $trade['assumptions'] ?? $legacy_message ) ) ),
+		);
+	}
+
+	private static function sanitize_tc_lens_llm_data( $llm, $legacy_message = '' ) {
+		return array(
+			'question'     => sanitize_textarea_field( wp_unslash( (string) ( $llm['question'] ?? $legacy_message ) ) ),
+			'sceneContext' => sanitize_textarea_field( wp_unslash( (string) ( $llm['sceneContext'] ?? '' ) ) ),
+			'learningLevel' => sanitize_key( $llm['learningLevel'] ?? 'beginner' ) ?: 'beginner',
+		);
 	}
 
 	/**

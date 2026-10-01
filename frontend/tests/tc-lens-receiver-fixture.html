@@ -1,0 +1,41 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>TC Lens receiver fixture</title>
+<style>
+  body { margin: 0; padding: 24px; background: #101313; color: #e8eeee; font: 14px/1.45 system-ui, sans-serif; }
+  h1 { margin: 0 0 8px; font-size: 18px; }
+  #status { color: #8ee8c0; }
+  pre { min-height: 240px; padding: 16px; overflow: auto; background: #050707; border: 1px solid #293333; border-radius: 8px; white-space: pre-wrap; }
+</style>
+<h1>TC Lens host receiver fixture</h1>
+<div id="status">Waiting for a parent session…</div>
+<pre id="log"></pre>
+<script>
+  const status = document.querySelector('#status');
+  const log = document.querySelector('#log');
+  const write = (value) => { log.textContent += `${JSON.stringify(value, null, 2)}\n\n`; };
+
+  window.addEventListener('message', (event) => {
+    if (!event.data || typeof event.data !== 'object') return;
+    const message = event.data;
+    status.textContent = `${message.type} · session ${message.sessionId || 'not started'}`;
+    write(message);
+
+    if (message.type === 'tc-lens-session-start' || message.type === 'tc-lens-state-sync') {
+      event.source?.postMessage({
+        type: 'tc-lens-ready',
+        protocolVersion: message.protocolVersion,
+        sessionId: message.sessionId,
+      }, event.origin);
+    }
+
+    if (message.eventId) {
+      event.source?.postMessage({
+        type: 'tc-lens-ack',
+        protocolVersion: message.protocolVersion,
+        sessionId: message.sessionId,
+        eventId: message.eventId,
+      }, event.origin);
+    }
+  });
+</script>

@@ -10,8 +10,8 @@ import { AccessCheckResult, CourseDetail, Lesson } from '../../core/models';
 import { isAnonymousFreeLimitReached, isFinalFreeLesson } from '../../core/registration-settings';
 import { VisitorService } from '../../core/visitor.service';
 import { WatchProgressService } from '../../core/watch-progress.service';
-import { buildTcLensTimelineMessage, getDueTimelineEvents } from './tc-lens-timeline';
 import { buildTcLensUrl } from './tc-lens-url';
+import { TcLensHostBridge } from './tc-lens-host-bridge';
 import { launchXrayPopup } from './xray-popup';
 import { hasExceededDragThreshold, resizeFloatingWindow, type ResizeDirection } from './xray-window-geometry';
 
@@ -241,6 +241,20 @@ export class LessonPlayerPage implements OnDestroy {
   private xrayBottomBar: HTMLElement | null = null;
   private xrayResizeObserver: ResizeObserver | null = null;
   private xrayDragCleanup: (() => void) | null = null;
+  private tcLensBridge: TcLensHostBridge | null = null;
+  private tcLensBridgeLessonId: number | null = null;
+  private tcLensSessionActive = false;
+  private tcLensSeekPending = false;
+  private readonly onTcLensMessage = (event: MessageEvent): void => {
+    if (event.origin !== XRAY_PANEL_ORIGIN || !event.data || typeof event.data !== 'object') return;
+    if (event.data.type === 'tc-lens-ready') {
+      this.tcLensBridge?.markReady();
+      return;
+    }
+    if (event.data.type === 'tc-lens-ack') {
+      this.tcLensBridge?.handleIncoming(event.data);
+    }
+  };
   private readonly onResize = (): void => {
     if (this.xrayOpen()) {
       this.placeXray();
@@ -273,9 +287,6 @@ export class LessonPlayerPage implements OnDestroy {
   private upNextDismissed = false;
   private countdownFrame: number | null = null;
   private timelinePreviousTime = -1;
-  private timelineFrameReady = false;
-  private readonly timelineSentIds = new Set<string>();
-  private readonly timelinePendingEvents = new Map<string, Lesson['tc_lens_timeline'][number]>();
   private readonly promptPhase = signal<PromptPhase | null>(null);
   private readonly pendingStart = signal<{ lesson: Lesson; restart: boolean } | null>(null);
   private readonly pendingChoice = signal<{ course: CourseDetail; lesson: Lesson; restart: boolean } | null>(null);
@@ -336,6 +347,7 @@ export class LessonPlayerPage implements OnDestroy {
     });
 
     window.addEventListener('resize', this.onResize, { passive: true });
+    window.addEventListener('message', this.onTcLensMessage);
   }
 
   ngOnDestroy(): void {
@@ -343,13 +355,18 @@ export class LessonPlayerPage implements OnDestroy {
     window.removeEventListener('resize', this.onResize);
     this.xrayResizeObserver?.disconnect();
     this.xrayDragCleanup?.();
+    if (this.tcLensSessionActive) this.tcLensBridge?.close(this.player?.currentTime ?? 0);
+    window.removeEventListener('message', this.onTcLensMessage);
     this.player?.destroy();
   }
 
   private resetTcLensTimeline(): void {
+    if (this.tcLensSessionActive) this.tcLensBridge?.close(this.player?.currentTime ?? 0);
+    this.tcLensBridge = null;
+    this.tcLensBridgeLessonId = null;
+    this.tcLensSessionActive = false;
+    this.tcLensSeekPending = false;
     this.timelinePreviousTime = -1;
-    this.timelineSentIds.clear();
-    this.timelinePendingEvents.clear();
   }
 
   private loadLesson(courseId: number, lessonId: number, restart: boolean): void {
@@ -500,6 +517,17 @@ export class LessonPlayerPage implements OnDestroy {
       this.addClickToggleOverlay();
     });
     this.player.on('timeupdate', () => this.handleTimeUpdate());
+    this.player.on('seeking', () => {
+      this.tcLensSeekPending = true;
+    });
+    this.player.on('seeked', () => {
+      if (this.tcLensSessionActive && this.tcLensBridge) {
+        const currentTime = this.player?.currentTime ?? 0;
+        this.tcLensBridge.seek(currentTime);
+        this.timelinePreviousTime = currentTime;
+      }
+      this.tcLensSeekPending = false;
+    });
     this.player.on('ended', () => this.handleEnded());
     // Native fullscreen re-parents rendering to .plyr itself, so the fill
     // rect (and which element it applies to) has to be recomputed on every
@@ -723,9 +751,7 @@ export class LessonPlayerPage implements OnDestroy {
     frame.className = 'tcn-xray-frame';
     frame.setAttribute('frameborder', '0');
     frame.addEventListener('load', () => {
-      this.timelineFrameReady = true;
-      this.queuePastTcLensEvents();
-      this.flushTcLensEvents();
+      this.tcLensBridge?.markReady();
     });
 
     actions.appendChild(closeButton);
@@ -1030,6 +1056,10 @@ export class LessonPlayerPage implements OnDestroy {
 
   protected setXrayOpen(open: boolean): void {
     if (!open && this.xrayDetached()) this.dockXray();
+    if (!open && this.tcLensSessionActive) {
+      this.tcLensBridge?.close(this.player?.currentTime ?? 0);
+      this.tcLensSessionActive = false;
+    }
     this.xrayOpen.set(open);
     this.playerWrap()?.nativeElement.classList.toggle('tcn-xray-open', open);
 
@@ -1037,12 +1067,19 @@ export class LessonPlayerPage implements OnDestroy {
     if (open && this.xrayFrame && lesson) {
       const url = buildTcLensUrl(XRAY_PANEL_URL, lesson.id);
       if (this.xrayFrame.getAttribute('src') !== url) {
-        this.timelineFrameReady = false;
         this.xrayFrame.setAttribute('src', url);
-      } else {
-        this.queuePastTcLensEvents();
-        this.flushTcLensEvents();
       }
+      if (!this.tcLensBridge || this.tcLensBridgeLessonId !== lesson.id) {
+        this.tcLensBridge = new TcLensHostBridge(
+          lesson.id,
+          lesson.tc_lens_timeline ?? [],
+          (message) => this.xrayFrame?.contentWindow?.postMessage(message, XRAY_PANEL_ORIGIN),
+        );
+        this.tcLensBridgeLessonId = lesson.id;
+      }
+      this.tcLensBridge.open(this.player?.currentTime ?? 0);
+      this.tcLensSessionActive = true;
+      this.timelinePreviousTime = this.player?.currentTime ?? 0;
     }
 
     this.placeXray();
@@ -1227,42 +1264,6 @@ export class LessonPlayerPage implements OnDestroy {
     }
   }
 
-  private queuePastTcLensEvents(): void {
-    const lesson = this.lesson();
-    const currentTime = this.player?.currentTime ?? 0;
-    if (!lesson) return;
-
-    const claimedIds = new Set([...this.timelineSentIds, ...this.timelinePendingEvents.keys()]);
-    for (const event of getDueTimelineEvents(lesson.tc_lens_timeline ?? [], -1, currentTime, claimedIds)) {
-      this.timelinePendingEvents.set(event.id, event);
-    }
-  }
-
-  private flushTcLensEvents(): void {
-    if (!this.timelineFrameReady) return;
-    const target = this.xrayFrame?.contentWindow;
-    const lesson = this.lesson();
-    if (!target || !lesson) return;
-
-    for (const [eventId, event] of this.timelinePendingEvents) {
-      target.postMessage(buildTcLensTimelineMessage(lesson.id, event), XRAY_PANEL_ORIGIN);
-      this.timelineSentIds.add(eventId);
-      this.timelinePendingEvents.delete(eventId);
-    }
-  }
-
-  private queueTcLensEvents(currentTime: number): void {
-    const lesson = this.lesson();
-    if (!lesson) return;
-
-    const claimedIds = new Set([...this.timelineSentIds, ...this.timelinePendingEvents.keys()]);
-    for (const event of getDueTimelineEvents(lesson.tc_lens_timeline ?? [], this.timelinePreviousTime, currentTime, claimedIds)) {
-      this.timelinePendingEvents.set(event.id, event);
-    }
-    this.timelinePreviousTime = currentTime;
-    this.flushTcLensEvents();
-  }
-
   /** Fullscreen state settles after Plyr emits its transition event. */
   private scheduleXrayPlacement(): void {
     requestAnimationFrame(() => {
@@ -1274,7 +1275,16 @@ export class LessonPlayerPage implements OnDestroy {
     if (!this.player) return;
     const { currentTime, duration } = this.player;
 
-    this.queueTcLensEvents(currentTime);
+    if (this.tcLensSessionActive && this.tcLensBridge) {
+      if (this.tcLensSeekPending) {
+        this.timelinePreviousTime = currentTime;
+      } else if (currentTime < this.timelinePreviousTime) {
+        this.tcLensBridge.seek(currentTime);
+      } else {
+        this.tcLensBridge.advance(this.timelinePreviousTime, currentTime);
+      }
+      this.timelinePreviousTime = currentTime;
+    }
 
     const lesson = this.lesson();
     const course = this.course();

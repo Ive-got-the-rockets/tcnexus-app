@@ -65,6 +65,19 @@ export interface TcLensSeekMessage {
   currentTime: number;
 }
 
+export interface TcLensReadyMessage {
+  type: 'tc-lens-ready';
+  protocolVersion: number;
+  sessionId?: string;
+}
+
+export interface TcLensAckMessage {
+  type: 'tc-lens-ack';
+  protocolVersion?: number;
+  sessionId: string;
+  eventId: string;
+}
+
 export type TcLensOutboundMessage =
   | TcLensSessionMessage
   | TcLensTradeCueMessage
@@ -87,7 +100,7 @@ export function buildTcLensTimelineMessage(videoId: number | string, event: TcLe
     type: 'tc-lens-timeline-event',
     videoId: String(videoId),
     messageType: event.messageType,
-    message: event.message,
+    message: event.message ?? (event.messageType === 'llm' ? event.data.question : event.data.assumptions),
     startTime: event.startTime,
     endTime: event.endTime,
     eventId: event.id,
@@ -100,7 +113,22 @@ export function buildTcLensCueMessage(
   sequence: number,
   event: TcLensTimelineEvent,
 ): TcLensTradeCueMessage | TcLensLlmCueMessage {
-  const base = {
+  if (event.messageType === 'trade') {
+    return {
+      type: 'tc-lens-trade-cue',
+      protocolVersion: TC_LENS_PROTOCOL_VERSION,
+      lessonId: String(lessonId),
+      sessionId,
+      sequence,
+      eventId: event.id,
+      startTime: event.startTime,
+      endTime: event.endTime,
+      data: event.data,
+    };
+  }
+
+  return {
+    type: 'tc-lens-llm-cue',
     protocolVersion: TC_LENS_PROTOCOL_VERSION,
     lessonId: String(lessonId),
     sessionId,
@@ -110,10 +138,6 @@ export function buildTcLensCueMessage(
     endTime: event.endTime,
     data: event.data,
   };
-
-  return event.messageType === 'trade'
-    ? { type: 'tc-lens-trade-cue', ...base }
-    : { type: 'tc-lens-llm-cue', ...base };
 }
 
 export function buildTcLensSessionMessage(
