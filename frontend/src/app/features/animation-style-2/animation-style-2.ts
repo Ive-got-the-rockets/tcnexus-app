@@ -22,57 +22,6 @@ interface ReturnOverlayState {
   thumbnailUrl: string;
 }
 
-const DEMO_SHOWS: Course[] = [
-  {
-    id: -101,
-    title: 'Demo Show 01',
-    excerpt: 'A sample show card for previewing the Shows carousel.',
-    thumbnail: 'https://picsum.photos/seed/tcnexus-demo-show-01/640/360',
-    image: null,
-    course_types: ['Shows'],
-    lesson_count: 6,
-    overview_link: null,
-    trailer_link: null,
-    configured_levels: ['beginner'],
-  },
-  {
-    id: -102,
-    title: 'Demo Show 02',
-    excerpt: 'A sample show card for previewing the Shows carousel.',
-    thumbnail: 'https://picsum.photos/seed/tcnexus-demo-show-02/640/360',
-    image: null,
-    course_types: ['Shows'],
-    lesson_count: 8,
-    overview_link: null,
-    trailer_link: null,
-    configured_levels: ['beginner', 'intermediate'],
-  },
-  {
-    id: -103,
-    title: 'Demo Show 03',
-    excerpt: 'A sample show card for previewing the Shows carousel.',
-    thumbnail: 'https://picsum.photos/seed/tcnexus-demo-show-03/640/360',
-    image: null,
-    course_types: ['Shows'],
-    lesson_count: 5,
-    overview_link: null,
-    trailer_link: null,
-    configured_levels: ['beginner', 'intermediate', 'advanced'],
-  },
-  {
-    id: -104,
-    title: 'Demo Show 04',
-    excerpt: 'A sample show card for previewing the Shows carousel.',
-    thumbnail: 'https://picsum.photos/seed/tcnexus-demo-show-04/640/360',
-    image: null,
-    course_types: ['Shows'],
-    lesson_count: 7,
-    overview_link: null,
-    trailer_link: null,
-    configured_levels: ['beginner'],
-  },
-];
-
 @Component({
   selector: 'app-animation-style-2',
   imports: [RowScrollDirective],
@@ -139,8 +88,9 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
   private overviewRenderToken = 0;
   protected readonly carouselCourses = computed(() => {
     const featuredId = this.featured()?.id;
-    return this.courses().filter(course => course.id !== featuredId);
+    return this.courses().filter(course => !this.isPlatformCourse(course) && course.id !== featuredId);
   });
+  protected readonly platformCourses = computed(() => this.courses().filter(course => this.isPlatformCourse(course)));
   protected readonly carouselShows = computed(() => {
     const featuredId = this.featured()?.id;
     return this.shows().filter(show => show.id !== featuredId);
@@ -156,21 +106,10 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
   protected readonly returnSettled = signal(false);
   private readonly pendingReturn = this.transition.consumeReturn();
   private returnAnimationStarted = false;
-  protected readonly platformCourses: Course[] = Array.from({ length: 8 }, (_, index) => ({
-    id: -(index + 1),
-    title: ['Platform Foundations', 'Reading the Dashboard', 'Workspace Setup', 'Building Your Watchlist', 'Chart Tools Essentials', 'Alerts and Notifications', 'Using the Trade Journal', 'Platform Shortcuts'][index],
-    excerpt: 'Learn the tools and workflows that make the TC Nexus platform easier to use.',
-    thumbnail: `https://picsum.photos/seed/tcnexus-platform-${String(index + 1).padStart(2, '0')}/640/360`,
-    image: null,
-    course_types: ['Platform'],
-    lesson_count: 4 + (index % 4),
-    overview_link: null,
-    configured_levels: index % 3 === 0
-      ? ['beginner', 'intermediate', 'advanced']
-      : index % 2 === 0
-        ? ['beginner', 'intermediate']
-        : ['beginner'],
-  }));
+  protected isPlatformCourse(course: { course_types: string[] }): boolean {
+    return course.course_types.some(type =>
+      type.toLowerCase().replace(/[^a-z]/g, '').includes('platform'));
+  }
 
   protected courseLanguages(course: Course): Array<{ slug: string; label: string }> {
     const configured = Object.entries(course.languages ?? {}).map(([slug, language]) => ({ slug, label: language.label }));
@@ -214,8 +153,8 @@ export class AnimationStyle2Page implements AfterViewInit, OnDestroy {
       shows: this.coursesService.getShows().pipe(catchError(() => of([] as Course[]))),
     }).subscribe({
       next: ({ courses, shows }) => {
-        this.shows.set([...shows, ...DEMO_SHOWS].slice(0, 12));
-        const courseCandidates = courses.filter(course => !course.course_types.includes('Platform'));
+        this.shows.set(shows.slice(0, 12));
+        const courseCandidates = courses.filter(course => !this.isPlatformCourse(course));
         const showCandidates = shows;
         const available = [...courseCandidates, ...showCandidates];
         const queryFeaturedId = this.readQueryNumber('style2Featured');

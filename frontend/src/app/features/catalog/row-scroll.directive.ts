@@ -13,12 +13,14 @@ export interface ScrollEdges {
 export class RowScrollDirective implements AfterViewInit, OnDestroy {
   @Input({ required: true }) appRowScroll!: string;
   @Output() edgesChange = new EventEmitter<ScrollEdges>();
+  @Output() scrollSettled = new EventEmitter<void>();
 
   private readonly catalogScroll = inject(CatalogScrollService);
   private resizeObserver?: ResizeObserver;
   private mutationObserver?: MutationObserver;
   private savedPosition?: number;
   private readonly onScroll = () => this.measure();
+  private readonly onScrollEnd = () => this.scrollSettled.emit();
 
   constructor(private readonly el: ElementRef<HTMLElement>) {}
 
@@ -31,6 +33,7 @@ export class RowScrollDirective implements AfterViewInit, OnDestroy {
     this.restoreSavedPosition();
 
     track.addEventListener('scroll', this.onScroll, { passive: true });
+    track.addEventListener('scrollend', this.onScrollEnd);
     this.resizeObserver = new ResizeObserver(() => this.measure());
     this.resizeObserver.observe(track);
     // The track exists before async course data is rendered. Watch for the
@@ -44,6 +47,7 @@ export class RowScrollDirective implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.catalogScroll.save(this.appRowScroll, this.el.nativeElement.scrollLeft);
     this.el.nativeElement.removeEventListener('scroll', this.onScroll);
+    this.el.nativeElement.removeEventListener('scrollend', this.onScrollEnd);
     this.resizeObserver?.disconnect();
     this.mutationObserver?.disconnect();
   }

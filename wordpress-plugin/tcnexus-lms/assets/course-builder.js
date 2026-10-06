@@ -373,7 +373,7 @@
 
        var showCourseTypeWarning = function () {
          if (unsavedModalTitle) unsavedModalTitle.textContent = 'Course type required';
-         if (unsavedModalMessage) unsavedModalMessage.textContent = 'You must set a course type before leaving the Course Builder.';
+         if (unsavedModalMessage) unsavedModalMessage.textContent = 'You must set a course type before saving or publishing this course.';
          if (unsavedDiscardBtn) unsavedDiscardBtn.hidden = true;
          if (unsavedSaveBtn) unsavedSaveBtn.hidden = true;
          if (courseTypeCloseBtn) courseTypeCloseBtn.hidden = false;

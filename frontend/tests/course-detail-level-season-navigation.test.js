@@ -11,6 +11,7 @@ test('course detail exposes Level menu, current-variant heading, and alternate s
   assert.ok(template.includes('detail__level-trigger'), 'course Level trigger is rendered');
   assert.ok(template.includes('detail__season-menu'), 'show season options can be selected from the episode heading');
   assert.ok(template.includes('activeLessons(c)'), 'episode rows use the active variant');
+  assert.ok(template.includes('activeLessonCount(c)'), 'lesson badge uses the active variant count');
   assert.ok(component.includes('chooseSeason'), 'season choice updates detail state');
   assert.ok(component.includes("queryParams: { level: option.slug, season: null }"), 'level choice persists in the level query parameter');
   assert.ok(component.includes("queryParams: { season: option.slug, level: null }"), 'season choice persists in the season query parameter');

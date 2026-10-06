@@ -393,23 +393,20 @@ class TCNexus_Course_Builder {
 	}
 
 	public static function register() {
-		// Registered with a null parent so it's a real, addressable admin
-		// page (WordPress tracks it, capability-checks it, fires load-{hook}
-		// for it) without appearing under any menu — adding it under
-		// edit.php?post_type=tc_course and then remove_submenu_page()-ing it
-		// looks equivalent but isn't: WordPress resolves a page's "parent" by
-		// searching that same submenu list at request time, so a removed
-		// entry resolves to a different parent than it was registered with
-		// and access gets denied ("Sorry, you are not allowed to access this
-		// page.") even for a user who can otherwise edit courses fine.
-		self::$hook_suffix = add_submenu_page(
-			null,
-			'Course Builder',
-			'Course Builder',
+		self::$hook_suffix = add_menu_page(
+			'Courses',
+			'Courses',
 			'edit_posts',
 			self::PAGE_SLUG,
-			array( __CLASS__, 'render' )
+			array( __CLASS__, 'render' ),
+			'dashicons-welcome-learn-more',
+			3.1
 		);
+		add_submenu_page( self::PAGE_SLUG, 'All Courses', 'All Courses', 'edit_posts', self::PAGE_SLUG, array( __CLASS__, 'render' ) );
+		global $submenu;
+		$submenu[ self::PAGE_SLUG ][] = array( 'Add New Course', 'edit_posts', 'admin.php?page=' . self::PAGE_SLUG . '&new=1' );
+		$submenu[ self::PAGE_SLUG ][] = array( 'Course Types', 'manage_categories', 'edit-tags.php?taxonomy=course_type&post_type=tc_course' );
+		add_submenu_page( self::PAGE_SLUG, 'Media Library', 'Media Library', 'upload_files', 'tcnexus-media-library', array( 'TCNexus_Admin_Menu', 'render_media_library_page' ) );
 
 		// Reached through WordPress's own "All Courses" / "Add New Course"
 		// menu items (redirected below) instead of a separate menu entry.
@@ -421,7 +418,7 @@ class TCNexus_Course_Builder {
 		// calls the page callback.
 		add_action( 'load-' . self::$hook_suffix, array( __CLASS__, 'maybe_create_course' ) );
 		add_action( 'load-' . self::$hook_suffix, array( __CLASS__, 'set_page_title' ) );
-		self::$show_hook_suffix = add_menu_page( 'Shows', 'Shows', 'edit_posts', self::SHOW_PAGE_SLUG, array( __CLASS__, 'render' ), 'dashicons-format-video', 27 );
+		self::$show_hook_suffix = add_menu_page( 'Shows', 'Shows', 'edit_posts', self::SHOW_PAGE_SLUG, array( __CLASS__, 'render' ), 'dashicons-format-video', 3.2 );
 		add_action( 'load-' . self::$show_hook_suffix, array( __CLASS__, 'maybe_create_show' ) );
 		add_action( 'load-' . self::$show_hook_suffix, array( __CLASS__, 'set_page_title' ) );
 		add_action( 'load-edit.php', array( __CLASS__, 'redirect_course_list' ) );
@@ -788,7 +785,12 @@ class TCNexus_Course_Builder {
 			return;
 		}
 
-		$all_types   = get_terms( array( 'taxonomy' => 'course_type', 'hide_empty' => false ) );
+		$all_types = get_terms( array( 'taxonomy' => 'course_type', 'hide_empty' => false ) );
+		if ( ! self::is_show_mode() && ! is_wp_error( $all_types ) ) {
+			$all_types = array_values( array_filter( $all_types, function ( $term ) {
+				return self::SHOW_CATEGORY !== $term->slug;
+			} ) );
+		}
 		$languages_data = self::get_course_languages( $course_id );
 		$active_language = isset( $_GET['language'] ) && array_key_exists( sanitize_key( $_GET['language'] ), $languages_data ) ? sanitize_key( $_GET['language'] ) : 'en';
 		$levels_data = $languages_data[ $active_language ]['levels'];
@@ -862,6 +864,9 @@ class TCNexus_Course_Builder {
 		}
 		?>
 		<div class="wrap tcn-builder-wrap">
+			<?php if ( ! $is_show && isset( $_GET['course_type_required'] ) && '1' === $_GET['course_type_required'] ) : ?>
+				<div class="tcn-notice tcn-notice--warning tcn-course-type-required" role="alert">Choose a course type before saving this course.</div>
+			<?php endif; ?>
 			<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::builder_page() ) ); ?>" class="tcn-back-link">
 				<span aria-hidden="true">&larr;</span> Back To All <?php echo esc_html( self::content_label( true ) ); ?>
 			</a>
@@ -1287,6 +1292,7 @@ class TCNexus_Course_Builder {
 																							<label class="tcn-field__label">Description</label>
 																								<textarea name="levels[__LEVEL__][lessons][new][__INDEX__][description]" rows="2" placeholder="Short description shown with this lesson"></textarea>
 																							</div>
+																							</div>
 												<div class="tcn-lesson-card__row tcn-lesson-card__row--video">
 																	<?php self::render_video_source_toggle( 'levels[__LEVEL__][lessons][new][__INDEX__][video_source]', 'video_source___INDEX__', 'vimeo' ); ?>
 																	<input type="text" class="tcn-video-id-input" name="levels[__LEVEL__][lessons][new][__INDEX__][vimeo_id]" placeholder="Vimeo Video ID" />
@@ -1616,6 +1622,21 @@ class TCNexus_Course_Builder {
 		$active_language = isset( $_POST['active_language'] ) && array_key_exists( sanitize_key( $_POST['active_language'] ), self::LANGUAGES ) ? sanitize_key( $_POST['active_language'] ) : 'en';
 		$levels = self::sanitize_course_levels( wp_unslash( $_POST['levels'] ?? array() ) );
 		$is_show = self::is_show_mode();
+		if ( ! $is_show && empty( $levels['beginner']['course_types'] ) ) {
+			$redirect = add_query_arg(
+				array(
+					'page'                 => self::PAGE_SLUG,
+					'course_id'            => $course_id,
+					'language'             => $active_language,
+					'level'                => sanitize_key( $_POST['active_level'] ?? 'beginner' ),
+					'tab'                  => sanitize_key( $_POST['active_tab'] ?? 'basics' ),
+					'course_type_required' => '1',
+				),
+				admin_url( 'admin.php' )
+			);
+			wp_safe_redirect( $redirect );
+			exit;
+		}
 		$new_season = $is_show && ! empty( $_POST['new_season'] );
 		$return_level = sanitize_key( $_POST['active_level'] ?? ( $is_show ? 'season-1' : 'beginner' ) );
 		if ( $new_season ) {
@@ -1760,6 +1781,7 @@ class TCNexus_Course_Builder {
 				update_post_meta( $lesson_id, '_tcnexus_course_id', $course_id );
 				update_post_meta( $lesson_id, self::LEVEL_LESSON_META_KEY, $level_slug );
 				update_post_meta( $lesson_id, self::LANGUAGE_LESSON_META_KEY, $active_language );
+				TCNexus_Media_Library::assign_lesson_thumbnail( $lesson_id, $course_id, $level_slug );
 			}
 
 			$new_lessons = isset( $level_post['lessons']['new'] ) && is_array( $level_post['lessons']['new'] ) ? $level_post['lessons']['new'] : array();
@@ -1779,8 +1801,8 @@ class TCNexus_Course_Builder {
 
 				if ( ! is_wp_error( $new_id ) ) {
 					update_post_meta( $new_id, '_tcnexus_course_id', $course_id );
-				update_post_meta( $new_id, self::LEVEL_LESSON_META_KEY, $level_slug );
-				update_post_meta( $new_id, self::LANGUAGE_LESSON_META_KEY, $active_language );
+					update_post_meta( $new_id, self::LEVEL_LESSON_META_KEY, $level_slug );
+					update_post_meta( $new_id, self::LANGUAGE_LESSON_META_KEY, $active_language );
 					update_post_meta( $new_id, '_tcnexus_vimeo_id', sanitize_text_field( wp_unslash( $data['vimeo_id'] ?? '' ) ) );
 					update_post_meta( $new_id, '_tcnexus_video_source', self::sanitize_video_source( $data['video_source'] ?? 'vimeo' ) );
 					update_post_meta( $new_id, '_tcnexus_duration', sanitize_text_field( wp_unslash( $data['duration'] ?? '' ) ) );
@@ -1794,6 +1816,7 @@ class TCNexus_Course_Builder {
 					if ( ! empty( $data['thumbnail_id'] ) ) {
 						set_post_thumbnail( $new_id, absint( $data['thumbnail_id'] ) );
 					}
+					TCNexus_Media_Library::assign_lesson_thumbnail( $new_id, $course_id, $level_slug );
 				}
 			}
 		}
@@ -1817,7 +1840,23 @@ class TCNexus_Course_Builder {
 			$active_level = $return_level;
 			$redirect .= '&add_row=1&' . $redirect_parameter . '=' . rawurlencode( $active_level );
 		}
-		TCNexus_Media_Library::assign_posted_media( wp_unslash( $_POST ), self::is_show_mode() ? 'show' : 'course', $course_id );
+		if ( self::is_show_mode() ) {
+			$show_media = array();
+			foreach ( (array) ( $_POST['levels'] ?? array() ) as $posted_season ) {
+				if ( ! is_array( $posted_season ) ) { continue; }
+				unset( $posted_season['lessons'] );
+				$show_media[] = $posted_season;
+			}
+			TCNexus_Media_Library::assign_posted_media( wp_unslash( $show_media ), 'show', $course_id );
+		} else {
+			$course_media = array();
+			foreach ( (array) ( $_POST['levels'] ?? array() ) as $posted_level ) {
+				if ( ! is_array( $posted_level ) ) { continue; }
+				unset( $posted_level['lessons'] );
+				$course_media[] = $posted_level;
+			}
+			TCNexus_Media_Library::assign_posted_media( wp_unslash( $course_media ), 'course', $course_id );
+		}
 
 		wp_safe_redirect( $redirect );
 		exit;

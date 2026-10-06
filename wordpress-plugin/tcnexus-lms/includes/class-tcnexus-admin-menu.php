@@ -7,16 +7,24 @@ class TCNexus_Admin_Menu {
 
 	public static function register() {
 		add_menu_page(
-			'Membership',
-			'Membership',
+			'Memberships',
+			'Memberships',
 			'list_users',
 			'tcnexus-membership',
 			array( __CLASS__, 'render_membership_page' ),
 			'dashicons-groups',
-			26
+			3.4
 		);
-		add_submenu_page( 'edit.php?post_type=tc_course', 'Media Library', 'Media Library', 'upload_files', 'tcnexus-media-library', array( __CLASS__, 'render_media_library_page' ) );
 		TCNexus_Animations_Settings::register();
+	}
+
+	public static function enqueue_admin_menu_styles() {
+		wp_enqueue_style(
+			'tcnexus-admin-menu',
+			TCNEXUS_LMS_URL . 'assets/admin-menu.css',
+			array(),
+			TCNEXUS_LMS_VERSION
+		);
 	}
 
 	public static function redirect_native_media_library() {
@@ -67,12 +75,80 @@ class TCNexus_Admin_Menu {
 		wp_send_json_success();
 	}
 
+	public static function ajax_bulk_delete_media() {
+		check_ajax_referer( 'tcnexus_media_library', 'nonce' );
+		if ( ! current_user_can( 'delete_posts' ) && ! current_user_can( 'upload_files' ) ) { wp_send_json_error( array( 'message' => 'Permission denied.' ), 403 ); }
+		$folder = sanitize_key( $_POST['folder'] ?? 'unsorted' );
+		$valid_folders = wp_list_pluck( TCNexus_Media_Library::get_folders(), 'key' );
+		if ( ! in_array( $folder, $valid_folders, true ) ) { wp_send_json_error( array( 'message' => 'Invalid media folder.' ), 400 ); }
+		$raw_ids = $_POST['attachment_ids'] ?? array();
+		$attachment_ids = is_array( $raw_ids ) ? $raw_ids : json_decode( wp_unslash( $raw_ids ), true );
+		$attachment_ids = array_values( array_unique( array_filter( array_map( 'absint', (array) $attachment_ids ) ) ) );
+		if ( empty( $attachment_ids ) ) { wp_send_json_error( array( 'message' => 'Select at least one media file.' ), 400 ); }
+		$deleted = 0;
+		foreach ( $attachment_ids as $attachment_id ) {
+			if ( 'attachment' !== get_post_type( $attachment_id ) || TCNexus_Media_Library::attachment_folder_key( $attachment_id ) !== $folder ) { continue; }
+			if ( wp_delete_attachment( $attachment_id, true ) ) { ++$deleted; }
+		}
+		wp_send_json_success( array( 'deleted' => $deleted ) );
+	}
+
+	public static function ajax_upload_media() {
+		check_ajax_referer( 'tcnexus_media_library', 'nonce' );
+		if ( ! current_user_can( 'upload_files' ) ) { wp_send_json_error( array( 'message' => 'Permission denied.' ), 403 ); }
+		$folder = sanitize_key( $_POST['folder'] ?? 'unsorted' );
+		$valid_folders = wp_list_pluck( TCNexus_Media_Library::get_folders(), 'key' );
+		if ( ! in_array( $folder, $valid_folders, true ) ) { $folder = 'unsorted'; }
+		if ( empty( $_FILES['media_file'] ) || ! empty( $_FILES['media_file']['error'] ) ) { wp_send_json_error( array( 'message' => 'Choose a file to upload.' ), 400 ); }
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		require_once ABSPATH . 'wp-admin/includes/media.php';
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+		$attachment_id = media_handle_upload( 'media_file', 0 );
+		if ( is_wp_error( $attachment_id ) ) { wp_send_json_error( array( 'message' => $attachment_id->get_error_message() ), 400 ); }
+		TCNexus_Media_Library::assign_attachment( $attachment_id, $folder );
+		wp_send_json_success( array( 'id' => $attachment_id ) );
+	}
+
 	public static function enqueue_media_library_assets( $hook ) {
 		if ( false === strpos( $hook, '_page_tcnexus-media-library' ) ) { return; }
 		wp_enqueue_media();
 		wp_enqueue_style( 'tcnexus-media-library', TCNEXUS_LMS_URL . 'assets/media-library.css', array(), TCNEXUS_LMS_VERSION );
 		wp_enqueue_style( 'tcnexus-media-library-interactions', TCNEXUS_LMS_URL . 'assets/media-library-interactions.css', array( 'tcnexus-media-library' ), TCNEXUS_LMS_VERSION );
+		wp_enqueue_style( 'tcnexus-media-library-bulk', TCNEXUS_LMS_URL . 'assets/media-library-bulk.css', array( 'tcnexus-media-library-interactions' ), TCNEXUS_LMS_VERSION );
 		wp_enqueue_script( 'tcnexus-media-library', TCNEXUS_LMS_URL . 'assets/media-library.js', array(), TCNEXUS_LMS_VERSION, true );
+	}
+
+	private static function render_media_folder_tree( $folders, $selected ) {
+		$course_folders = array_values( array_filter( $folders, function ( $folder ) { return 'courses' === ( $folder['group'] ?? '' ); } ) );
+		$people_folders = array_values( array_filter( $folders, function ( $folder ) { return 'people' === ( $folder['group'] ?? '' ); } ) );
+		?>
+		<aside class="tcn-media-library-sidebar tcn-media-library-sidebar--tree" aria-label="Media folders">
+			<a class="tcn-media-folder <?php echo 'unsorted' === $selected ? 'is-active' : ''; ?>" href="<?php echo esc_url( admin_url( 'admin.php?page=tcnexus-media-library&folder=unsorted' ) ); ?>">▰ <span>Unsorted</span></a>
+			<p class="tcn-media-folder-heading">Courses</p>
+			<?php foreach ( $course_folders as $folder ) : if ( ! empty( $folder['parent'] ) ) { continue; } $children = array_values( array_filter( $course_folders, function ( $child ) use ( $folder ) { return ( $child['parent'] ?? '' ) === $folder['key']; } ) ); $is_open = $selected === $folder['key'] || (bool) array_filter( $children, function ( $child ) use ( $selected ) { return $child['key'] === $selected; } ); ?>
+				<div class="tcn-media-folder-tree" data-folder-tree>
+					<div class="tcn-media-folder-tree__root">
+						<a class="tcn-media-folder <?php echo $selected === $folder['key'] ? 'is-active' : ''; ?>" href="<?php echo esc_url( admin_url( 'admin.php?page=tcnexus-media-library&folder=' . rawurlencode( $folder['key'] ) ) ); ?>">▰ <span><?php echo esc_html( $folder['label'] ); ?></span></a>
+						<?php if ( $children ) : ?><button type="button" class="tcn-media-folder-tree__toggle" data-folder-toggle aria-expanded="<?php echo $is_open ? 'true' : 'false'; ?>" aria-label="Toggle <?php echo esc_attr( $folder['label'] ); ?> levels">▼</button><?php endif; ?>
+					</div>
+					<?php if ( $children ) : ?><div class="tcn-media-folder-tree__children" <?php echo $is_open ? '' : 'hidden'; ?>><?php foreach ( $children as $child ) : ?><a class="tcn-media-folder tcn-media-folder--level <?php echo $selected === $child['key'] ? 'is-active' : ''; ?>" href="<?php echo esc_url( admin_url( 'admin.php?page=tcnexus-media-library&folder=' . rawurlencode( $child['key'] ) ) ); ?>"><span><?php echo esc_html( $child['label'] ); ?></span></a><?php endforeach; ?></div><?php endif; ?>
+				</div>
+			<?php endforeach; ?>
+			<p class="tcn-media-folder-heading">Shows</p>
+			<?php $show_folders = array_values( array_filter( $folders, function ( $folder ) { return 'shows' === ( $folder['group'] ?? '' ); } ) ); ?>
+			<?php foreach ( $show_folders as $folder ) : if ( ! empty( $folder['parent'] ) ) { continue; } $children = array_values( array_filter( $show_folders, function ( $child ) use ( $folder ) { return ( $child['parent'] ?? '' ) === $folder['key']; } ) ); $is_open = $selected === $folder['key'] || (bool) array_filter( $children, function ( $child ) use ( $selected ) { return $child['key'] === $selected; } ); ?>
+				<div class="tcn-media-folder-tree" data-folder-tree>
+					<div class="tcn-media-folder-tree__root">
+						<a class="tcn-media-folder <?php echo $selected === $folder['key'] ? 'is-active' : ''; ?>" href="<?php echo esc_url( admin_url( 'admin.php?page=tcnexus-media-library&folder=' . rawurlencode( $folder['key'] ) ) ); ?>">▰ <span><?php echo esc_html( $folder['label'] ); ?></span></a>
+						<?php if ( $children ) : ?><button type="button" class="tcn-media-folder-tree__toggle" data-folder-toggle aria-expanded="<?php echo $is_open ? 'true' : 'false'; ?>" aria-label="Toggle <?php echo esc_attr( $folder['label'] ); ?> seasons">▼</button><?php endif; ?>
+					</div>
+					<?php if ( $children ) : ?><div class="tcn-media-folder-tree__children" <?php echo $is_open ? '' : 'hidden'; ?>><?php foreach ( $children as $child ) : ?><a class="tcn-media-folder tcn-media-folder--level <?php echo $selected === $child['key'] ? 'is-active' : ''; ?>" href="<?php echo esc_url( admin_url( 'admin.php?page=tcnexus-media-library&folder=' . rawurlencode( $child['key'] ) ) ); ?>"><span><?php echo esc_html( $child['label'] ); ?></span></a><?php endforeach; ?></div><?php endif; ?>
+				</div>
+			<?php endforeach; ?>
+			<p class="tcn-media-folder-heading">People</p>
+			<?php foreach ( $people_folders as $folder ) : ?><a class="tcn-media-folder <?php echo $folder['key'] === $selected ? 'is-active' : ''; ?>" href="<?php echo esc_url( admin_url( 'admin.php?page=tcnexus-media-library&folder=' . rawurlencode( $folder['key'] ) ) ); ?>">▰ <span><?php echo esc_html( $folder['label'] ); ?></span></a><?php endforeach; ?>
+		</aside>
+		<?php
 	}
 
 	public static function render_media_library_page() {
@@ -90,8 +166,10 @@ class TCNexus_Admin_Menu {
 		wp_localize_script( 'tcnexus-media-library', 'tcnexusMediaLibraryData', array( 'nonce' => wp_create_nonce( 'tcnexus_media_library' ), 'items' => wp_list_pluck( $media, 'ID' ) ) );
 		?>
 		<div class="wrap tcn-media-library-wrap">
-			<div class="tcn-media-library-header"><div><p class="tcn-media-library-eyebrow">Asset organization</p><h1>Media Library</h1><p class="tcn-media-library-subtitle">Keep every Course, Show, and profile asset easy to find.</p></div><button type="button" class="button tcn-media-library-upload" id="tcn-media-library-upload">Upload Media</button></div>
+			<div class="tcn-media-library-header"><div><p class="tcn-media-library-eyebrow">Asset organization</p><h1>Media Library</h1><p class="tcn-media-library-subtitle">Keep every Course, Show, and profile asset easy to find.</p></div><div class="tcn-media-library-header__actions"><button type="button" class="button tcn-media-library-upload" id="tcn-media-library-upload">Upload Media</button><button type="button" class="button tcn-media-library-bulk-select" id="tcn-media-library-bulk-select">Bulk Select</button></div></div>
+			<div class="tcn-media-library-bulk-toolbar" id="tcn-media-library-bulk-toolbar" aria-hidden="true"><label><input type="checkbox" id="tcn-media-library-select-all" /> Select all</label><span id="tcn-media-library-selection-count">0 selected</span><button type="button" class="button tcn-media-library-bulk-delete" id="tcn-media-library-bulk-delete" disabled>Delete selected</button><button type="button" class="button tcn-media-library-bulk-cancel" id="tcn-media-library-bulk-cancel">Cancel</button></div>
 			<div class="tcn-media-library-shell">
+				<?php self::render_media_folder_tree( $folders, $selected ); ?>
 				<aside class="tcn-media-library-sidebar" aria-label="Media folders"><a class="tcn-media-folder <?php echo 'unsorted' === $selected ? 'is-active' : ''; ?>" href="<?php echo esc_url( admin_url( 'admin.php?page=tcnexus-media-library&folder=unsorted' ) ); ?>">▰ <span>Unsorted</span></a><p class="tcn-media-folder-heading">Courses</p><?php foreach ( $folders as $folder ) : if ( 'courses' !== $folder['group'] ) { continue; } ?><a class="tcn-media-folder <?php echo $folder['key'] === $selected ? 'is-active' : ''; ?>" href="<?php echo esc_url( admin_url( 'admin.php?page=tcnexus-media-library&folder=' . rawurlencode( $folder['key'] ) ) ); ?>">▰ <span><?php echo esc_html( $folder['label'] ); ?></span></a><?php endforeach; ?><p class="tcn-media-folder-heading">Shows</p><?php foreach ( $folders as $folder ) : if ( 'shows' !== $folder['group'] ) { continue; } ?><a class="tcn-media-folder <?php echo $folder['key'] === $selected ? 'is-active' : ''; ?>" href="<?php echo esc_url( admin_url( 'admin.php?page=tcnexus-media-library&folder=' . rawurlencode( $folder['key'] ) ) ); ?>">▰ <span><?php echo esc_html( $folder['label'] ); ?></span></a><?php endforeach; ?><p class="tcn-media-folder-heading">People</p><?php foreach ( $folders as $folder ) : if ( 'people' !== $folder['group'] ) { continue; } ?><a class="tcn-media-folder <?php echo $folder['key'] === $selected ? 'is-active' : ''; ?>" href="<?php echo esc_url( admin_url( 'admin.php?page=tcnexus-media-library&folder=' . rawurlencode( $folder['key'] ) ) ); ?>">▰ <span><?php echo esc_html( $folder['label'] ); ?></span></a><?php endforeach; ?></aside>
 				<main class="tcn-media-library-content"><div class="tcn-media-library-toolbar"><div><p class="tcn-media-library-breadcrumb">Media Library / <?php echo esc_html( $selected_label ); ?></p><h2><?php echo esc_html( $selected_label ); ?></h2><span><?php echo esc_html( count( $media ) ); ?> items</span></div><form method="get"><input type="hidden" name="page" value="tcnexus-media-library" /><input type="hidden" name="folder" value="<?php echo esc_attr( $selected ); ?>" /><input type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="Search media…" /></form></div><div class="tcn-media-library-grid"><?php foreach ( $media as $item ) : $image = wp_get_attachment_image_url( $item->ID, 'medium' ); ?><article class="tcn-media-library-item"><?php if ( $image ) : ?><img src="<?php echo esc_url( $image ); ?>" alt="" /><?php else : ?><div class="tcn-media-library-item__empty">No preview</div><?php endif; ?><div class="tcn-media-library-item__meta"><strong><?php echo esc_html( $item->post_title ); ?></strong><span><?php echo esc_html( strtoupper( pathinfo( get_attached_file( $item->ID ), PATHINFO_EXTENSION ) ?: 'FILE' ) ); ?></span></div></article><?php endforeach; ?><?php if ( ! $media ) : ?><div class="tcn-media-library-empty">This folder is empty.</div><?php endif; ?></div></main>
 			</div>

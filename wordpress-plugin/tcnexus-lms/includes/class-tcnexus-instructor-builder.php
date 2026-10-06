@@ -19,7 +19,7 @@ class TCNexus_Instructor_Builder {
 
 	public static function register() {
 		self::$hook_suffix = add_submenu_page(
-			null,
+			TCNexus_Course_Builder::PAGE_SLUG,
 			'Instructors & Guests',
 			'Instructors & Guests',
 			'edit_posts',

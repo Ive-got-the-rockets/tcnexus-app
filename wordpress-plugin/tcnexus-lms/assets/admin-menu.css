@@ -1,0 +1,43 @@
+/* Keep the TC Nexus tools visually grouped without changing native wp-admin items. */
+#adminmenu .toplevel_page_tcnexus-course-builder > a,
+#adminmenu .toplevel_page_tcnexus-membership > a,
+#adminmenu .toplevel_page_tcnexus-global-lessons > a,
+#adminmenu .toplevel_page_tcnexus-animations > a,
+#adminmenu .toplevel_page_tcnexus-show-builder > a {
+	color: #5fc7a8;
+}
+
+#adminmenu .toplevel_page_tcnexus-course-builder > a .wp-menu-image::before,
+#adminmenu .toplevel_page_tcnexus-membership > a .wp-menu-image::before,
+#adminmenu .toplevel_page_tcnexus-global-lessons > a .wp-menu-image::before,
+#adminmenu .toplevel_page_tcnexus-animations > a .wp-menu-image::before,
+#adminmenu .toplevel_page_tcnexus-show-builder > a .wp-menu-image::before {
+	color: #5fc7a8;
+}
+
+#adminmenu .toplevel_page_tcnexus-course-builder:hover > a,
+#adminmenu .toplevel_page_tcnexus-membership:hover > a,
+#adminmenu .toplevel_page_tcnexus-global-lessons:hover > a,
+#adminmenu .toplevel_page_tcnexus-animations:hover > a,
+#adminmenu .toplevel_page_tcnexus-show-builder:hover > a,
+#adminmenu .toplevel_page_tcnexus-course-builder.wp-has-current-submenu > a,
+#adminmenu .toplevel_page_tcnexus-membership.wp-has-current-submenu > a,
+#adminmenu .toplevel_page_tcnexus-global-lessons.wp-has-current-submenu > a,
+#adminmenu .toplevel_page_tcnexus-animations.wp-has-current-submenu > a,
+#adminmenu .toplevel_page_tcnexus-show-builder.wp-has-current-submenu > a {
+	color: #12352c;
+	background: #5fc7a8;
+}
+
+#adminmenu .toplevel_page_tcnexus-course-builder:hover > a .wp-menu-image::before,
+#adminmenu .toplevel_page_tcnexus-membership:hover > a .wp-menu-image::before,
+#adminmenu .toplevel_page_tcnexus-global-lessons:hover > a .wp-menu-image::before,
+#adminmenu .toplevel_page_tcnexus-animations:hover > a .wp-menu-image::before,
+#adminmenu .toplevel_page_tcnexus-show-builder:hover > a .wp-menu-image::before,
+#adminmenu .toplevel_page_tcnexus-course-builder.wp-has-current-submenu > a .wp-menu-image::before,
+#adminmenu .toplevel_page_tcnexus-membership.wp-has-current-submenu > a .wp-menu-image::before,
+#adminmenu .toplevel_page_tcnexus-global-lessons.wp-has-current-submenu > a .wp-menu-image::before,
+#adminmenu .toplevel_page_tcnexus-animations.wp-has-current-submenu > a .wp-menu-image::before,
+#adminmenu .toplevel_page_tcnexus-show-builder.wp-has-current-submenu > a .wp-menu-image::before {
+	color: #12352c;
+}

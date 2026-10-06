@@ -1,6 +1,12 @@
 (function () {
   'use strict';
   var button = document.getElementById('tcn-media-library-upload');
+  var bulkButton = document.getElementById('tcn-media-library-bulk-select');
+  var bulkToolbar = document.getElementById('tcn-media-library-bulk-toolbar');
+  var selectAll = document.getElementById('tcn-media-library-select-all');
+  var selectionCount = document.getElementById('tcn-media-library-selection-count');
+  var bulkDeleteButton = document.getElementById('tcn-media-library-bulk-delete');
+  var bulkCancelButton = document.getElementById('tcn-media-library-bulk-cancel');
   var root = document.querySelector('.tcn-media-library-wrap');
   if (!root) return;
   var mediaData = window.tcnexusMediaLibraryData || { nonce: '', items: [] };
@@ -16,12 +22,36 @@
       else window.alert(r.data && r.data.message ? r.data.message : 'Media could not be deleted.');
     });
   }
+  function selectedItems() { return Array.prototype.slice.call(root.querySelectorAll('.tcn-media-library-item__select:checked')).map(function (input) { return input.value; }); }
+  function updateBulkState() {
+    var selected = selectedItems();
+    var total = root.querySelectorAll('.tcn-media-library-item__select').length;
+    if (selectionCount) selectionCount.textContent = selected.length + ' selected';
+    if (bulkDeleteButton) bulkDeleteButton.disabled = selected.length === 0;
+    if (selectAll) { selectAll.checked = total > 0 && selected.length === total; selectAll.indeterminate = selected.length > 0 && selected.length < total; }
+  }
+  function setBulkMode(active) {
+    root.classList.toggle('is-bulk-mode', active);
+    if (bulkToolbar) { bulkToolbar.setAttribute('aria-hidden', active ? 'false' : 'true'); }
+    if (bulkButton) bulkButton.textContent = active ? 'Bulk Select On' : 'Bulk Select';
+    if (!active) { root.querySelectorAll('.tcn-media-library-item__select').forEach(function (input) { input.checked = false; }); }
+    updateBulkState();
+  }
+  function bulkDelete() {
+    var ids = selectedItems();
+    if (!ids.length || !window.confirm('Delete ' + ids.length + ' selected media files permanently?')) return;
+    var folder = new URLSearchParams(window.location.search).get('folder') || 'unsorted';
+    post('tcnexus_media_library_bulk_delete', { attachment_ids: JSON.stringify(ids), folder: folder }).then(function (r) {
+      if (r.success) window.location.reload();
+      else window.alert(r.data && r.data.message ? r.data.message : 'Media could not be deleted.');
+    });
+  }
   function details(id) {
     post('tcnexus_media_library_details', { attachment_id: id }).then(function (r) {
       if (!r.success) return;
       var d = r.data, modal = document.createElement('div');
       modal.className = 'tcn-media-details';
-      modal.innerHTML = '<div class="tcn-media-details__panel"><button class="tcn-media-details__close" type="button">×</button>' + (d.url ? '<img src="' + d.url + '" alt="">' : '') + '<h2>' + d.title + '</h2><dl><dt>Type</dt><dd>' + d.type + '</dd><dt>Dimensions</dt><dd>' + d.dimensions + '</dd><dt>File size</dt><dd>' + d.size + '</dd><dt>Uploaded</dt><dd>' + d.date + '</dd><dt>Folder</dt><dd>' + d.folder + '</dd><dt>File URL</dt><dd><a class="tcn-media-details__file-url" href="' + d.file_url + '" data-copy-url>' + d.file_url + '</a></dd></dl><button class="tcn-media-details__delete" type="button">Delete Media</button></div>';
+      modal.innerHTML = '<div class="tcn-media-details__panel"><button class="tcn-media-details__close" type="button"><span aria-hidden="true">×</span></button>' + (d.url ? '<img src="' + d.url + '" alt="">' : '') + '<h2>' + d.title + '</h2><dl><dt>Type</dt><dd>' + d.type + '</dd><dt>Dimensions</dt><dd>' + d.dimensions + '</dd><dt>File size</dt><dd>' + d.size + '</dd><dt>Uploaded</dt><dd>' + d.date + '</dd><dt>Folder</dt><dd>' + d.folder + '</dd><dt>File URL</dt><dd><a class="tcn-media-details__file-url" href="' + d.file_url + '" data-copy-url>' + d.file_url + '</a></dd></dl><button class="tcn-media-details__delete" type="button">Delete Media</button></div>';
       document.body.appendChild(modal);
       modal.querySelector('button').onclick = function () { modal.remove(); };
       modal.querySelector('.tcn-media-details__delete').onclick = function () { deleteMedia(id, function () { modal.remove(); window.location.reload(); }); };
@@ -38,6 +68,13 @@
   document.querySelectorAll('.tcn-media-library-item').forEach(function (item, index) {
     item.dataset.id = mediaData.items[index] || '';
     item.draggable = true;
+    var selector = document.createElement('input');
+    selector.type = 'checkbox';
+    selector.className = 'tcn-media-library-item__select';
+    selector.value = item.dataset.id;
+    selector.setAttribute('aria-label', 'Select media');
+    selector.addEventListener('click', function (e) { e.stopPropagation(); updateBulkState(); });
+    item.appendChild(selector);
     var trash = document.createElement('button');
     trash.type = 'button';
     trash.className = 'tcn-media-library-item__delete';
@@ -48,7 +85,7 @@
     trash.addEventListener('click', function (e) { e.stopPropagation(); deleteMedia(item.dataset.id, function () { item.remove(); }); });
     item.addEventListener('dragstart', function (e) { item.classList.add('is-dragging'); e.dataTransfer.setData('text/plain', item.dataset.id); });
     item.addEventListener('dragend', function () { item.classList.remove('is-dragging'); });
-    item.addEventListener('click', function () { details(item.dataset.id); });
+    item.addEventListener('click', function () { if (!root.classList.contains('is-bulk-mode')) details(item.dataset.id); });
   });
   document.querySelectorAll('.tcn-media-folder').forEach(function (folder) {
     var folderUrl = new URL(folder.href, window.location.href);
@@ -57,5 +94,42 @@
     folder.addEventListener('dragleave', function () { folder.classList.remove('is-drop-target'); });
     folder.addEventListener('drop', function (e) { e.preventDefault(); folder.classList.remove('is-drop-target'); post('tcnexus_media_library_move', { attachment_id: e.dataTransfer.getData('text/plain'), folder: folder.dataset.folderKey }).then(function (r) { if (r.success) window.location.reload(); }); });
   });
-  if (button && window.wp && wp.media) button.addEventListener('click', function () { var frame = wp.media({ title: 'Upload Media', button: { text: 'Use this media' }, multiple: true }); frame.on('select', function () { window.location.reload(); }); frame.open(); });
+  document.querySelectorAll('[data-folder-toggle]').forEach(function (toggle) {
+    toggle.addEventListener('click', function () {
+      var children = toggle.closest('[data-folder-tree]').querySelector('.tcn-media-folder-tree__children');
+      var expanded = toggle.getAttribute('aria-expanded') === 'true';
+      toggle.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+      if (children) children.hidden = expanded;
+    });
+  });
+  if (button) button.addEventListener('click', function () {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.accept = 'image/*,video/*,audio/*,.pdf';
+    input.addEventListener('change', function () {
+      var files = Array.prototype.slice.call(input.files || []);
+      if (!files.length) return;
+      var folder = new URLSearchParams(window.location.search).get('folder') || 'unsorted';
+      button.disabled = true;
+      button.textContent = 'Uploading…';
+      files.reduce(function (promise, file) {
+        return promise.then(function () {
+          var body = new FormData();
+          body.append('action', 'tcnexus_media_library_upload');
+          body.append('nonce', nonce);
+          body.append('folder', folder);
+          body.append('media_file', file);
+          return fetch(window.ajaxurl, { method: 'POST', body: body }).then(function (r) { return r.json(); }).then(function (r) {
+            if (!r.success) throw new Error(r.data && r.data.message ? r.data.message : 'Media could not be uploaded.');
+          });
+        });
+      }, Promise.resolve()).then(function () { window.location.reload(); }).catch(function (error) { button.disabled = false; button.textContent = 'Upload Media'; window.alert(error.message); });
+    });
+    input.click();
+  });
+  if (bulkButton) bulkButton.addEventListener('click', function () { setBulkMode(!root.classList.contains('is-bulk-mode')); });
+  if (bulkCancelButton) bulkCancelButton.addEventListener('click', function () { setBulkMode(false); });
+  if (selectAll) selectAll.addEventListener('change', function () { root.querySelectorAll('.tcn-media-library-item__select').forEach(function (input) { input.checked = selectAll.checked; }); updateBulkState(); });
+  if (bulkDeleteButton) bulkDeleteButton.addEventListener('click', bulkDelete);
 }());

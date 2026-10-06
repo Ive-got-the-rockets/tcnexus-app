@@ -11,6 +11,7 @@ import { MorphRect, TransitionService } from '../../core/transition.service';
 import { RowScrollDirective, ScrollEdges } from '../catalog/row-scroll.directive';
 import { trailerEmbedUrl } from './trailer-embed-url';
 import { nextFeaturedIndex } from './featured-pagination';
+import { environment } from '../../../environments/environment';
 
 const EMPTY_EDGES: ScrollEdges = { atStart: true, atEnd: true };
 type CarouselKind = 'shows' | 'trading' | 'platform';
@@ -24,57 +25,6 @@ const STYLE3_FEATURED_IMAGE_URL = '/shows/the-primer-BG-ratio-8by3.jpg';
 interface ReturnOverlayState {
   thumbnailUrl: string;
 }
-
-const DEMO_SHOWS: Course[] = [
-  {
-    id: -101,
-    title: 'Demo Show 01',
-    excerpt: 'A sample show card for previewing the Shows carousel.',
-    thumbnail: 'https://picsum.photos/seed/tcnexus-demo-show-01/640/360',
-    image: null,
-    course_types: ['Shows'],
-    lesson_count: 6,
-    overview_link: null,
-    trailer_link: null,
-    configured_levels: ['beginner'],
-  },
-  {
-    id: -102,
-    title: 'Demo Show 02',
-    excerpt: 'A sample show card for previewing the Shows carousel.',
-    thumbnail: 'https://picsum.photos/seed/tcnexus-demo-show-02/640/360',
-    image: null,
-    course_types: ['Shows'],
-    lesson_count: 8,
-    overview_link: null,
-    trailer_link: null,
-    configured_levels: ['beginner', 'intermediate'],
-  },
-  {
-    id: -103,
-    title: 'Demo Show 03',
-    excerpt: 'A sample show card for previewing the Shows carousel.',
-    thumbnail: 'https://picsum.photos/seed/tcnexus-demo-show-03/640/360',
-    image: null,
-    course_types: ['Shows'],
-    lesson_count: 5,
-    overview_link: null,
-    trailer_link: null,
-    configured_levels: ['beginner', 'intermediate', 'advanced'],
-  },
-  {
-    id: -104,
-    title: 'Demo Show 04',
-    excerpt: 'A sample show card for previewing the Shows carousel.',
-    thumbnail: 'https://picsum.photos/seed/tcnexus-demo-show-04/640/360',
-    image: null,
-    course_types: ['Shows'],
-    lesson_count: 7,
-    overview_link: null,
-    trailer_link: null,
-    configured_levels: ['beginner'],
-  },
-];
 
 @Component({
   selector: 'app-layout-style-3',
@@ -103,10 +53,20 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
   private coursePreviewCloseTimer?: ReturnType<typeof setTimeout>;
   private overviewCloseTimer?: ReturnType<typeof setTimeout>;
   private trailerCloseTimer?: ReturnType<typeof setTimeout>;
+  private readonly scrollSettledTimers: Partial<Record<CarouselKind, ReturnType<typeof setTimeout>>> = {};
   private featuredWheelLockUntil = 0;
-  private readonly onScroll = () => this.measureEdges();
-  private readonly onPlatformScroll = () => this.measureEdges('platform');
-  private readonly onShowsScroll = () => this.measureEdges('shows');
+  private readonly onScroll = () => {
+    this.markCarouselScrolling('trading');
+    this.measureEdges();
+  };
+  private readonly onPlatformScroll = () => {
+    this.markCarouselScrolling('platform');
+    this.measureEdges('platform');
+  };
+  private readonly onShowsScroll = () => {
+    this.markCarouselScrolling('shows');
+    this.measureEdges('shows');
+  };
 
   protected readonly courses = signal<Course[]>([]);
   protected readonly shows = signal<Course[]>([]);
@@ -114,15 +74,19 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
   protected readonly tradingOnly = computed(() => this.landingMode() === 'trading');
   protected readonly platformOnly = computed(() => this.landingMode() === 'platform');
   protected readonly showsOnly = computed(() => this.landingMode() === 'shows');
+  protected readonly tradingCourseItems = computed(() => this.courses().filter(course =>
+    !this.isPlatformCourse(course) && !course.course_types.includes('Shows')));
+  protected readonly platformCourseItems = computed(() => this.courses().filter(course =>
+    this.isPlatformCourse(course)));
   protected readonly featured = signal<Course | null>(null);
   protected readonly featuredItems = computed(() => {
     const available = this.tradingOnly()
-      ? this.courses()
+      ? this.tradingCourseItems()
       : this.platformOnly()
-        ? this.platformCourses
+        ? this.platformCourseItems()
         : this.showsOnly()
           ? this.shows()
-          : [...this.courses(), ...this.shows()];
+          : [...this.tradingCourseItems(), ...this.shows()];
     return available.filter((item, index, all) => all.findIndex(candidate => candidate.id === item.id) === index);
   });
   protected readonly featuredIndex = signal(0);
@@ -147,6 +111,8 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
   protected readonly coursePreviewDetail = signal<CourseDetail | null>(null);
   protected readonly coursePreviewOpen = signal(false);
   protected readonly coursePreviewClosing = signal(false);
+  protected readonly coursePreviewLevel = signal<CourseLevelSlug | null>(null);
+  protected readonly coursePreviewLevelMenuOpen = signal(false);
   protected readonly overviewUrl = signal<string | null>(null);
   protected readonly overviewOpen = signal(false);
   protected readonly overviewClosing = signal(false);
@@ -164,6 +130,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
   });
   protected readonly languageMenuOpen = signal(false);
   protected readonly charactersOpen = signal(false);
+  protected readonly charactersExpanded = signal(false);
   protected readonly instructorOpen = signal(false);
   protected readonly selectedLanguage = signal('en');
   private overviewLoadingTask?: PDFDocumentLoadingTask;
@@ -173,7 +140,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
     const featuredId = this.featured()?.id;
     return this.platformOnly() || this.showsOnly()
       ? []
-      : this.courses().filter(course => course.id !== featuredId);
+      : this.tradingCourseItems().filter(course => course.id !== featuredId);
   });
   protected readonly carouselShows = computed(() => {
     const featuredId = this.featured()?.id;
@@ -183,7 +150,8 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
   });
   protected readonly carouselPlatformCourses = computed(() => {
     const featuredId = this.featured()?.id;
-    return this.platformCourses.filter(course => course.id !== featuredId);
+    return this.platformCourseItems()
+      .filter(course => course.id !== featuredId);
   });
   protected readonly edges = signal<ScrollEdges>(EMPTY_EDGES);
   protected readonly platformEdges = signal<ScrollEdges>(EMPTY_EDGES);
@@ -193,6 +161,11 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
     trading: signal(0),
     platform: signal(0),
   };
+  protected readonly scrolling = {
+    shows: signal(false),
+    trading: signal(false),
+    platform: signal(false),
+  };
   protected readonly leaving = signal(false);
   protected readonly returning = signal(false);
   protected readonly returnRevealed = signal(false);
@@ -201,21 +174,6 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
   protected readonly returnSettled = signal(false);
   private readonly pendingReturn = this.transition.consumeReturn();
   private returnAnimationStarted = false;
-  protected readonly platformCourses: Course[] = Array.from({ length: 8 }, (_, index) => ({
-    id: -(index + 1),
-    title: ['Platform Foundations', 'Reading the Dashboard', 'Workspace Setup', 'Building Your Watchlist', 'Chart Tools Essentials', 'Alerts and Notifications', 'Using the Trade Journal', 'Platform Shortcuts'][index],
-    excerpt: 'Learn the tools and workflows that make the TC Nexus platform easier to use.',
-    thumbnail: `https://picsum.photos/seed/tcnexus-platform-${String(index + 1).padStart(2, '0')}/640/360`,
-    image: null,
-    course_types: ['Platform'],
-    lesson_count: 4 + (index % 4),
-    overview_link: null,
-    configured_levels: index % 3 === 0
-      ? ['beginner', 'intermediate', 'advanced']
-      : index % 2 === 0
-        ? ['beginner', 'intermediate']
-        : ['beginner'],
-  }));
   protected readonly featuredCharacters: Person[] = [
     { id: 901, name: 'Mara Voss', photo: null },
     { id: 902, name: 'Julian Cross', photo: null },
@@ -235,8 +193,25 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
     document.body.style.overflow = '';
   }
 
+  protected toggleCharacters(): void {
+    this.charactersExpanded.update(open => !open);
+  }
+
   protected toggleInstructor(): void {
     this.instructorOpen.update(open => !open);
+  }
+
+  protected descriptionText(value: string): string {
+    return value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  protected descriptionNeedsMore(value: string): boolean {
+    return this.descriptionText(value).split(' ').filter(Boolean).length > 20;
+  }
+
+  protected shortDescription(value: string): string {
+    const words = this.descriptionText(value).split(' ').filter(Boolean);
+    return words.length > 20 ? `${words.slice(0, 20).join(' ')}…` : words.join(' ');
   }
 
   protected instructorLabel(detail: CourseDetail): string {
@@ -259,7 +234,8 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
       : kind === 'platform'
         ? this.carouselPlatformCourses().length
         : this.carouselCourses().length;
-    return Math.max(1, Math.ceil(length / 5));
+    const track = this.carouselTrack(kind);
+    return Math.max(1, Math.ceil(length / this.cardsPerPage(track)));
   }
 
   protected pageRange(count: number): number[] {
@@ -271,12 +247,19 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
   }
 
   protected goToPage(kind: CarouselKind, page: number): void {
-    const track = (kind === 'shows' ? this.showsTrack() : kind === 'platform' ? this.platformTrack() : this.track())?.nativeElement;
+    const track = this.carouselTrack(kind);
     if (!track) return;
     const cards = Array.from(track.querySelectorAll<HTMLElement>('.style-card'));
-    const target = cards[page * 5];
-    if (!target) return;
-    track.scrollTo({ left: Math.min(target.offsetLeft, track.scrollWidth - track.clientWidth), behavior: 'smooth' });
+    const cardsPerPage = this.cardsPerPage(track);
+    const pageTargets = this.carouselPageTargets(track, cards, cardsPerPage);
+    const target = pageTargets[page];
+    if (target === undefined) return;
+    this.pageIndex[kind].set(page);
+    this.markCarouselScrolling(kind);
+    track.scrollTo({
+      left: target,
+      behavior: 'smooth'
+    });
   }
 
   protected selectFeatured(direction: number): void {
@@ -288,7 +271,10 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
     this.featuredIndex.set(index);
     this.featured.set(item);
     this.featuredDetail.set(null);
+    this.charactersExpanded.set(false);
     this.instructorOpen.set(false);
+    this.descriptionExpanded.set(false);
+    this.descriptionMotion.set('closed');
     this.selectedLanguage.set(this.courseLanguages(item)[0]?.slug ?? 'en');
     this.coursesService.getCourse(item.id).subscribe({
       next: detail => {
@@ -356,19 +342,15 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
       shows: this.coursesService.getShows().pipe(catchError(() => of([] as Course[]))),
     }).subscribe({
       next: ({ courses, shows }) => {
-        const showItems = [...shows, ...DEMO_SHOWS].slice(0, 12);
+        const showItems = environment.production ? shows.slice(0, 12) : shows;
         this.shows.set(showItems);
-        const courseCandidates = this.tradingOnly()
-          ? courses.filter(course =>
-            !course.course_types.includes('Platform') && !course.course_types.includes('Shows'))
-          : this.platformOnly() || this.showsOnly()
-            ? []
-            : courses;
+        const courseCandidates = courses.filter(course =>
+          !this.isPlatformCourse(course) && !course.course_types.includes('Shows'));
         const showCandidates = this.showsOnly() ? showItems : shows;
         const available = this.tradingOnly()
           ? [...courseCandidates]
           : this.platformOnly()
-            ? [...this.platformCourses]
+            ? courses.filter(course => this.isPlatformCourse(course))
             : this.showsOnly()
               ? [...showCandidates]
               : [...courseCandidates, ...showCandidates];
@@ -383,7 +365,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
         const alternatingCandidates = this.tradingOnly()
           ? courseCandidates
           : this.platformOnly()
-            ? this.platformCourses
+            ? courses.filter(course => this.isPlatformCourse(course))
             : this.showsOnly()
               ? showCandidates
               : previousKind === 'show'
@@ -400,7 +382,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
         this.featuredIndex.set(Math.max(0, initialFeaturedIndex));
         this.writeSessionValue(STYLE2_FEATURED_KIND_STORAGE_KEY, featured && showCandidates.some(show => show.id === featured.id) ? 'show' : 'course');
         this.selectedLanguage.set(this.courseLanguages(featured)[0]?.slug ?? 'en');
-        this.courses.set(this.tradingOnly() ? courseCandidates.slice(0, 12) : this.platformOnly() || this.showsOnly() ? [] : courses.slice(0, 12));
+        this.courses.set(this.showsOnly() ? [] : environment.production ? courses.slice(0, 12) : courses);
         if (this.pendingReturn) {
           // Wait for Angular to commit the async course list to the DOM. The
           // track exists before the cards do, so restoring from rAF alone can
@@ -432,6 +414,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
     this.resizeObserver = new ResizeObserver(() => {
       this.measureEdges('trading');
       this.measureEdges('platform');
+      this.measureEdges('shows');
     });
     if (track) this.resizeObserver.observe(track);
     if (platformTrack) this.resizeObserver.observe(platformTrack);
@@ -467,23 +450,23 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
     if (this.trailerCloseTimer !== undefined) {
       clearTimeout(this.trailerCloseTimer);
     }
+    for (const timer of Object.values(this.scrollSettledTimers)) {
+      if (timer !== undefined) clearTimeout(timer);
+    }
     this.clearOverviewPdf();
     document.body.style.overflow = '';
   }
 
   protected scroll(direction: -1 | 1, kind: CarouselKind = 'trading'): void {
-    const track = (kind === 'shows' ? this.showsTrack() : kind === 'platform' ? this.platformTrack() : this.track())?.nativeElement;
+    const track = this.carouselTrack(kind);
     if (!track) return;
 
     // Calculate page positions from the actual cards. Browser snapping can
     // otherwise land between card groups, leaving too much of the previous
     // card visible beside the navigation arrow.
     const cards = Array.from(track.querySelectorAll<HTMLElement>('.style-card'));
-    const cardsPerPage = Number.parseInt(getComputedStyle(track).getPropertyValue('--cards-per-page'), 10) || 1;
-    const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
-    const pageTargets = cards
-      .filter((_, index) => index % cardsPerPage === 0)
-      .map(card => Math.min(maxScroll, Math.max(0, card.offsetLeft)));
+    const cardsPerPage = this.cardsPerPage(track);
+    const pageTargets = this.carouselPageTargets(track, cards, cardsPerPage);
     if (pageTargets.length < 2) return;
 
     let currentPage = 0;
@@ -491,12 +474,92 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
       if (target <= track.scrollLeft + 2) currentPage = index;
     });
     const nextPage = Math.max(0, Math.min(pageTargets.length - 1, currentPage + direction));
-    track.scrollTo({ left: pageTargets[nextPage], behavior: 'smooth' });
+    this.markCarouselScrolling(kind);
+    track.scrollTo({
+      left: pageTargets[nextPage],
+      behavior: 'smooth'
+    });
+  }
+
+  private carouselTrack(kind: CarouselKind): HTMLElement | undefined {
+    return (kind === 'shows' ? this.showsTrack() : kind === 'platform' ? this.platformTrack() : this.track())?.nativeElement;
+  }
+
+  protected onCarouselEdgesChange(kind: CarouselKind, edges: ScrollEdges): void {
+    (kind === 'shows' ? this.showsEdges : kind === 'platform' ? this.platformEdges : this.edges).set(edges);
+    this.updateNavigationOverlay(kind);
+    this.updateArtworkHeight(kind);
+    if (this.carouselTrack(kind)?.scrollLeft && !edges.atStart) {
+      this.markCarouselScrolling(kind);
+    }
+  }
+
+  protected onCarouselScrollSettled(kind: CarouselKind): void {
+    const timer = this.scrollSettledTimers[kind];
+    if (timer !== undefined) clearTimeout(timer);
+    delete this.scrollSettledTimers[kind];
+    this.balanceCarouselPartials(kind);
+    this.scrolling[kind].set(false);
+    this.measureEdges(kind);
+    this.updateNavigationOverlay(kind);
+  }
+
+  private balanceCarouselPartials(kind: CarouselKind): void {
+    const carousel = (kind === 'shows' ? this.showsCarousel() : kind === 'platform' ? this.platformCarousel() : this.carousel())?.nativeElement;
+    const track = this.carouselTrack(kind);
+    if (!carousel || !track) return;
+
+    const leftWidth = Number.parseFloat(carousel.style.getPropertyValue('--nav-prev-width'));
+    const rightWidth = Number.parseFloat(carousel.style.getPropertyValue('--nav-partial-width'));
+    if (!Number.isFinite(leftWidth) || !Number.isFinite(rightWidth)) return;
+
+    const difference = rightWidth - leftWidth;
+    if (Math.abs(difference) < 0.5) return;
+    const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
+    track.scrollLeft = Math.min(maxScroll, Math.max(0, track.scrollLeft - (difference / 2)));
+    this.updateNavigationOverlay(kind);
+  }
+
+  private markCarouselScrolling(kind: CarouselKind): void {
+    this.scrolling[kind].set(true);
+    const previousTimer = this.scrollSettledTimers[kind];
+    if (previousTimer !== undefined) clearTimeout(previousTimer);
+    this.scrollSettledTimers[kind] = setTimeout(() => {
+      this.onCarouselScrollSettled(kind);
+    }, 240);
+  }
+
+  private cardsPerPage(track?: HTMLElement): number {
+    const configured = track
+      ? Number.parseInt(getComputedStyle(track).getPropertyValue('--cards-per-page'), 10)
+      : Number.NaN;
+    if (Number.isFinite(configured) && configured > 0) return configured;
+    if (typeof window === 'undefined') return 5;
+    if (window.innerWidth >= 1600) return 6;
+    if (window.innerWidth >= 1200) return 5;
+    if (window.innerWidth >= 600) return 4;
+    return 2;
+  }
+
+  private carouselPageTargets(track: HTMLElement, cards: HTMLElement[], cardsPerPage: number): number[] {
+    const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
+    const edgeInset = this.carouselEdgeInset(track, cardsPerPage, cards);
+    return cards
+      .filter((_, index) => index % cardsPerPage === 0)
+      .map(card => Math.min(maxScroll, Math.max(0, card.offsetLeft - edgeInset)));
+  }
+
+  private carouselEdgeInset(track: HTMLElement, cardsPerPage: number, cards: HTMLElement[]): number {
+    const firstCard = cards[0];
+    if (!firstCard || cardsPerPage < 1) return 0;
+    const gap = Number.parseFloat(getComputedStyle(track).columnGap || getComputedStyle(track).gap) || 0;
+    const fullPageWidth = (firstCard.getBoundingClientRect().width * cardsPerPage) + (gap * Math.max(0, cardsPerPage - 1));
+    return Math.max(0, (track.clientWidth - fullPageWidth) / 2);
   }
 
   protected courseTypeLabel(course: Course): string {
     if (this.isShow(course)) return 'Show';
-    return course.course_types.includes('Platform') ? 'Platform Course' : 'Trading Course';
+    return this.isPlatformCourse(course) ? 'Platform Course' : 'Trading Course';
   }
 
   protected featuredLabel(course: Course): string {
@@ -505,6 +568,32 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
 
   protected isShow(course: Course): boolean {
     return course.course_types.includes('Shows') || this.shows().some(show => show.id === course.id);
+  }
+
+  protected playActionLabel(course: Course): string {
+    return this.isShow(course) ? 'Play Show' : 'Play Course';
+  }
+
+  protected featuredPlayTooltip(course: Course): string {
+    return this.playActionLabel(course);
+  }
+
+  protected featuredListTooltip(course: Course): string {
+    return this.isShow(course) ? 'List of Episodes' : 'List of Lessons';
+  }
+
+  protected viewActionLabel(course: Course): string {
+    return this.isShow(course) ? 'View Show' : 'View Course';
+  }
+
+  /**
+   * The API returns taxonomy display names, which may be "Platform" or
+   * "Platform Course" depending on how the WordPress term was named.
+   * Normalize the label so either value stays in the platform carousel.
+   */
+  protected isPlatformCourse(course: { course_types: string[] }): boolean {
+    return course.course_types.some(type =>
+      type.toLowerCase().replace(/[^a-z]/g, '').includes('platform'));
   }
 
   protected lessonListLabel(detail: CourseDetail | null = this.featuredDetail()): 'Episodes' | 'Lessons' {
@@ -619,6 +708,8 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
 
   private presentCoursePreview(detail: CourseDetail): void {
     this.coursePreviewDetail.set(detail);
+    this.coursePreviewLevel.set(this.coursePreviewLevelOptions(detail)[0]?.slug ?? null);
+    this.coursePreviewLevelMenuOpen.set(false);
     this.coursePreviewOpen.set(false);
     document.body.style.overflow = 'hidden';
 
@@ -638,6 +729,8 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
     this.coursePreviewOpen.set(false);
     this.coursePreviewCloseTimer = setTimeout(() => {
       this.coursePreviewDetail.set(null);
+      this.coursePreviewLevel.set(null);
+      this.coursePreviewLevelMenuOpen.set(false);
       this.coursePreviewClosing.set(false);
       this.coursePreviewCloseTimer = undefined;
       document.body.style.overflow = '';
@@ -652,12 +745,59 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
 
   protected coursePreviewImageUrl(detail: CourseDetail): string {
     return detail.image
+      ?? detail.landing_background
       ?? detail.thumbnail
       ?? `https://picsum.photos/seed/tcnexus-preview-${detail.id}/1200/675`;
   }
 
+  protected coursePreviewLevelOptions(detail: CourseDetail): Array<{ slug: CourseLevelSlug; label: string }> {
+    const labels: Record<CourseLevelSlug, string> = {
+      beginner: 'Beginner',
+      intermediate: 'Intermediate',
+      advanced: 'Advanced',
+    };
+    const configured = detail.configured_levels ?? [];
+    return (Object.keys(labels) as CourseLevelSlug[])
+      .filter(slug => {
+        const level = detail.levels?.[slug];
+        return Boolean(level?.enabled)
+          || configured.some(item => item === slug || item.endsWith(`-${slug}`));
+      })
+      .map(slug => ({ slug, label: detail.levels?.[slug]?.label ?? labels[slug] }));
+  }
+
+  protected coursePreviewSelectedLevel(detail: CourseDetail): CourseLevelSlug | null {
+    const options = this.coursePreviewLevelOptions(detail);
+    const selected = this.coursePreviewLevel();
+    return options.some(option => option.slug === selected) ? selected : options[0]?.slug ?? null;
+  }
+
+  protected coursePreviewHeadingLabel(detail: CourseDetail): string {
+    const selected = this.coursePreviewSelectedLevel(detail);
+    return this.coursePreviewLevelOptions(detail).find(option => option.slug === selected)?.label
+      ?? this.lessonListLabel(detail);
+  }
+
+  protected coursePreviewLessons(detail: CourseDetail): Lesson[] {
+    const level = this.coursePreviewSelectedLevel(detail);
+    return level ? detail.levels?.[level]?.lessons ?? detail.lessons : detail.lessons;
+  }
+
+  protected toggleCoursePreviewLevelMenu(): void {
+    this.coursePreviewLevelMenuOpen.update(open => !open);
+  }
+
+  protected closeCoursePreviewLevelMenu(): void {
+    this.coursePreviewLevelMenuOpen.set(false);
+  }
+
+  protected chooseCoursePreviewLevel(level: CourseLevelSlug): void {
+    this.coursePreviewLevel.set(level);
+    this.coursePreviewLevelMenuOpen.set(false);
+  }
+
   protected courseTypeLabelForDetail(detail: CourseDetail): string {
-    return detail.course_types.includes('Platform') ? 'Platform Course' : 'Trading Course';
+    return this.isPlatformCourse(detail) ? 'Platform Course' : 'Trading Course';
   }
 
   private syntheticCourseDetail(course: Course): CourseDetail {
@@ -1086,10 +1226,8 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
     };
     (kind === 'shows' ? this.showsEdges : kind === 'platform' ? this.platformEdges : this.edges).set(edges);
     const cards = Array.from(track.querySelectorAll<HTMLElement>('.style-card'));
-    const cardsPerPage = Number.parseInt(getComputedStyle(track).getPropertyValue('--cards-per-page'), 10) || 5;
-    const pageTargets = cards
-      .filter((_, index) => index % cardsPerPage === 0)
-      .map(card => Math.min(maxScroll, Math.max(0, card.offsetLeft)));
+    const cardsPerPage = this.cardsPerPage(track);
+    const pageTargets = this.carouselPageTargets(track, cards, cardsPerPage);
     let currentPage = 0;
     pageTargets.forEach((target, index) => {
       if (target <= track.scrollLeft + 2) currentPage = index;

@@ -54,7 +54,6 @@ export class CourseDetailPage implements OnDestroy {
   protected readonly levelMenuOpen = signal(false);
   protected readonly levelButtonMenuOpen = signal(false);
   protected readonly seasonMenuOpen = signal(false);
-  protected readonly instructorOpen = signal(false);
   protected readonly selectedLanguage = signal('en');
   protected readonly selectedLevel = signal<CourseLevelSlug>('beginner');
   protected readonly selectedSeason = signal('season-1');
@@ -103,7 +102,6 @@ export class CourseDetailPage implements OnDestroy {
     this.coursesService.getCourse(id).subscribe({
       next: (course) => {
         this.course.set(course);
-        this.instructorOpen.set(false);
         this.status.set('ready');
         this.selectedLanguage.set(this.courseLanguages(course)[0]?.slug ?? 'en');
         const requestedLevel = this.route.snapshot.queryParamMap.get('level') as CourseLevelSlug | null;
@@ -260,6 +258,10 @@ export class CourseDetailPage implements OnDestroy {
 
   protected activeLessons(course: CourseDetail): Lesson[] {
     return this.activeVariant(course)?.lessons ?? course.lessons;
+  }
+
+  protected activeLessonCount(course: CourseDetail): number {
+    return this.activeVariant(course)?.lesson_count ?? this.activeLessons(course).length;
   }
 
   protected activeTitle(course: CourseDetail): string {
@@ -421,20 +423,6 @@ export class CourseDetailPage implements OnDestroy {
 
   protected personPhotoUrl(person: Person): string {
     return person.photo || profilePlaceholderUrl(person.id);
-  }
-
-  protected toggleInstructor(): void {
-    this.instructorOpen.update(open => !open);
-  }
-
-  protected instructorLabel(detail: CourseDetail): string {
-    const instructorCount = detail.instructor?.length ?? 0;
-    const guestCount = detail.guest?.length ?? 0;
-    const instructorLabel = instructorCount === 1 ? 'Instructor' : 'Instructors';
-    const guestLabel = guestCount === 1 ? 'Guest' : 'Guests';
-    if (instructorCount === 0) return guestLabel;
-    if (guestCount === 0) return instructorLabel;
-    return `${instructorLabel} and ${guestLabel}`;
   }
 
   protected people(value: Person | Person[]): Person[] {

@@ -8,13 +8,13 @@ class TCNexus_Animations_Settings {
 
 	public static function register() {
 		add_menu_page(
-			'Animations',
-			'Animations',
+			'Animation',
+			'Animation',
 			'list_users',
 			'tcnexus-animations',
 			array( __CLASS__, 'render_page' ),
 			'dashicons-format-video',
-			27
+			3.5
 		);
 		add_submenu_page(
 			'tcnexus-animations',

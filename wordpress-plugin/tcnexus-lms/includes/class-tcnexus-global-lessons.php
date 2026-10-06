@@ -28,7 +28,7 @@ class TCNexus_Global_Lessons {
 			self::PAGE_SLUG,
 			array( __CLASS__, 'render' ),
 			'dashicons-playlist-video',
-			21
+			3.3
 		);
 	}
 
@@ -354,6 +354,15 @@ class TCNexus_Global_Lessons {
 		}
 
 		TCNexus_Course_Builder::persist_lesson_fields( $lesson_id, $_POST );
+
+		$course_id = (int) get_post_meta( $lesson_id, '_tcnexus_course_id', true );
+		if ( $course_id && in_array( get_post_type( $course_id ), array( 'tc_course', 'tc_show' ), true ) ) {
+			TCNexus_Media_Library::assign_lesson_thumbnail(
+				$lesson_id,
+				$course_id,
+				get_post_meta( $lesson_id, '_tcnexus_course_level', true ) ?: ( 'tc_show' === get_post_type( $course_id ) ? 'season-1' : 'beginner' )
+			);
+		}
 
 		wp_send_json_success( array(
 			'title'    => get_the_title( $lesson_id ),

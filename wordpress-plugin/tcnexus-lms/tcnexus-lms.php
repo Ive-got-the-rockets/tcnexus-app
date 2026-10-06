@@ -2,7 +2,7 @@
 /**
  * Plugin Name: TC Nexus LMS
  * Description: Headless course/lesson backend for the TC Nexus streaming site — tiers, gating, and the REST API the Angular front-end consumes.
- * Version: 0.1.59
+ * Version: 0.1.72
  * Author: TC Nexus
  * Text Domain: tcnexus-lms
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TCNEXUS_LMS_VERSION', '0.1.59' );
+define( 'TCNEXUS_LMS_VERSION', '0.1.72' );
 define( 'TCNEXUS_LMS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'TCNEXUS_LMS_URL', plugin_dir_url( __FILE__ ) );
 define( 'TCNEXUS_LMS_TABLE_VIEWS', 'tcnexus_lesson_views' );
@@ -44,10 +44,13 @@ add_action( 'rest_api_init', array( 'TCNexus_REST_API', 'register_routes' ) );
 add_action( 'admin_menu', array( 'TCNexus_Admin_Menu', 'register' ), 20 );
 add_action( 'admin_init', array( 'TCNexus_Admin_Menu', 'redirect_native_media_library' ) );
 add_action( 'admin_enqueue_scripts', array( 'TCNexus_Admin_Menu', 'enqueue_media_library_assets' ) );
+add_action( 'admin_enqueue_scripts', array( 'TCNexus_Admin_Menu', 'enqueue_admin_menu_styles' ) );
 add_action( 'wp_ajax_tcnexus_media_library_items', array( 'TCNexus_Admin_Menu', 'ajax_media_items' ) );
 add_action( 'wp_ajax_tcnexus_media_library_move', array( 'TCNexus_Admin_Menu', 'ajax_move_media' ) );
 add_action( 'wp_ajax_tcnexus_media_library_details', array( 'TCNexus_Admin_Menu', 'ajax_media_details' ) );
 add_action( 'wp_ajax_tcnexus_media_library_delete', array( 'TCNexus_Admin_Menu', 'ajax_delete_media' ) );
+add_action( 'wp_ajax_tcnexus_media_library_bulk_delete', array( 'TCNexus_Admin_Menu', 'ajax_bulk_delete_media' ) );
+add_action( 'wp_ajax_tcnexus_media_library_upload', array( 'TCNexus_Admin_Menu', 'ajax_upload_media' ) );
 add_action( 'admin_post_tcnexus_save_card_animation_settings', array( 'TCNexus_Animations_Settings', 'handle_save' ) );
 add_action( 'admin_menu', array( 'TCNexus_Registration_Settings', 'register' ), 21 );
 add_action( 'admin_menu', array( 'TCNexus_Visitor_Tracking', 'register' ), 22 );

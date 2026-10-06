@@ -199,18 +199,21 @@
   margin-bottom: 1.5rem;
   font-family: 'Inter', sans-serif;
   font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--paper);
+  font-weight: 500;
+  color: #fff;
+  opacity: 0.7;
   text-decoration: none;
-  padding: 0.55rem 1rem;
+  padding: 0;
   border: none;
-  border-radius: var(--button-radius);
-  background: rgba(51, 55, 61, 0.4);
-  transition: color 0.2s ease, background-color 0.2s ease;
+  border-radius: 0;
+  background: transparent;
+  transition: color 0.2s ease, opacity 0.2s ease;
 
-  &:hover {
-    color: #33373D;
-    background: #fff;
+  &:hover,
+  &:focus-visible {
+    color: #fff;
+    opacity: 1;
+    background: transparent;
   }
 }
 
@@ -281,7 +284,7 @@
   bottom: 0;
   width: 60px;
   height: 1px;
-  background: var(--paper-dim);
+  background: linear-gradient(90deg, var(--paper-dim) 0%, transparent 100%);
   opacity: 0.4;
   content: '';
 }
@@ -290,6 +293,7 @@
   display: flex;
   align-items: center;
   gap: 9px;
+  flex-wrap: wrap;
 }
 
 .detail__meta-item {
@@ -302,27 +306,30 @@
 /* Same pill badge as the catalog hero's .tag — kept as its own class since
    the two components don't share styles, but the values should stay in sync. */
 .detail__type-badge {
-  font-family: var(--font-mono);
+  color: var(--paper);
+  border: 0;
+  border-radius: 3.5px;
+  background: #33373D;
+  padding: 0.18rem 0.45rem;
+  font-family: 'Barlow', sans-serif;
   font-size: 0.625rem;
-  letter-spacing: 0.05em;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
   text-transform: uppercase;
-  color: var(--paper-dim);
-  border: 1px solid color-mix(in srgb, var(--paper-dim) 40%, transparent);
-  border-radius: 999px;
-  padding: 0.15rem 0.5rem;
   white-space: nowrap;
 }
 
 .detail__type-badge--current-level {
-  border-color: #A6AAA0;
-  background: #A6AAA0;
-  color: #0C0D0D;
+  border: 0;
+  background: #fff;
+  color: #33373D;
 }
 
 .detail__type-badge--highlighted {
-  border-color: #A6AAA0;
-  background: #A6AAA0;
-  color: #0C0D0D;
+  border: 0;
+  background: #33373D;
+  color: var(--paper);
 }
 
 .detail__meta-dot {
@@ -330,7 +337,11 @@
   height: 5px;
   flex-shrink: 0;
   border-radius: 999px;
-  background: var(--paper-dim);
+  background: #E8E8E8;
+}
+
+.detail__level-badge {
+  cursor: pointer;
 }
 
 .detail__actions {
@@ -625,11 +636,51 @@
   margin-top: 1rem;
   margin-bottom: 20px;
   padding-bottom: 25px;
-  color: var(--paper-dim);
-  font-family: 'Inter', sans-serif;
-  font-weight: 300;
+  color: #f7f7f7;
+  font-family: 'Barlow', sans-serif;
+  font-weight: 200;
   line-height: 1.7;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+}
+
+.detail__read-more {
+  display: block;
+  margin: 0.55rem 0 0;
+  border: 1px solid color-mix(in srgb, var(--paper-dim) 40%, transparent);
+  background: transparent;
+  color: var(--paper-dim);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  vertical-align: baseline;
+}
+
+.detail__read-more:hover,
+.detail__read-more:focus-visible {
+  border-color: var(--paper);
+  background: transparent;
+  color: var(--paper);
+}
+
+.detail__description--opening {
+  animation: detail-description-slide-down 0.6s ease both;
+}
+
+.detail__description--closing {
+  animation: detail-description-slide-up 0.6s ease both;
+}
+
+@keyframes detail-description-slide-down {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes detail-description-slide-up {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-10px); }
 }
 
 /* Right-aligned with a fixed gap from the edge instead of centered — an
@@ -656,6 +707,7 @@
   margin-top: 20px;
   color: var(--paper-dim);
   font-size: 1rem;
+  font-weight: 200;
   line-height: 1.65;
 
   p + p {
@@ -680,7 +732,16 @@
 }
 
 .detail__instructor-label,
-.detail__guests-label,
+.detail__guests-label {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--paper-dim);
+  margin-bottom: 10px;
+}
+
 .detail__characters-label {
   font-family: var(--font-ui);
   font-size: 14px;
@@ -688,7 +749,7 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--paper-dim);
-  margin-bottom: 0.5rem;
+  margin-bottom: 10px;
 }
 
 .detail__instructor-label--toggle {
@@ -724,7 +785,8 @@
 }
 
 .detail__guests-label {
-  margin-bottom: 0;
+  margin-top: 10px;
+  margin-bottom: 5px;
   color: var(--paper-dim);
 }
 
@@ -815,8 +877,8 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  margin: -6px -6px -9px -8px;
-  padding: 6px 6px 9px 8px;
+  margin: -3px -5px -6px -5px;
+  padding: 3px 6px 6px;
   border: 0;
   border-radius: var(--button-radius);
   background: transparent;

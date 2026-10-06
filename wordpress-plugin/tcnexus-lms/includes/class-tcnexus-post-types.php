@@ -16,7 +16,7 @@ class TCNexus_Post_Types {
 			),
 			'public'       => false,
 			'show_ui'      => true,
-			'show_in_menu' => true,
+			'show_in_menu' => false,
 			'show_in_rest' => true,
 			'rest_base'    => 'tc_course',
 			'supports'     => array( 'title', 'editor', 'thumbnail' ),

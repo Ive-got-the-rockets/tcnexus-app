@@ -5,13 +5,13 @@
   left: 0;
   right: 0;
   z-index: 20;
-  height: 60px;
+  height: 110px;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 1.5rem;
   padding-inline: clamp(1.25rem, 4vw, 3rem);
-  background: transparent;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0) 100%);
   transform: translateY(0);
   transition: transform 0.3s ease;
 }
@@ -28,7 +28,7 @@
 
 .wordmark {
   justify-self: start;
-  transform: translateY(20px);
+  transform: translateY(-5px);
   font-family: var(--font-display);
   font-size: 1.25rem;
   font-weight: 400;
@@ -45,33 +45,62 @@
 .site-header__nav {
   position: absolute;
   left: max(1.25rem, 12.5vw);
-  transform: translateY(20px);
+  transform: translateY(-5px);
   display: flex;
   align-items: center;
-  gap: 1.75rem;
-  font-family: var(--font-ui);
+  gap: 50px;
+  font-family: 'Barlow', sans-serif;
   font-size: 18px;
   font-weight: 200;
-  color: var(--paper);
+  color: #fff;
   white-space: nowrap;
 }
 
-.site-header__nav-link {
+.site-header__nav-link,
+.site-header__nav-label {
   position: relative;
   color: inherit;
+  opacity: 0.95;
   text-decoration: none;
-  transition: color 0.2s ease;
+  transition: color 0.2s ease, opacity 0.2s ease;
+
+  &::after {
+    position: absolute;
+    right: 0;
+    bottom: -6px;
+    left: 0;
+    height: 1px;
+    background: currentColor;
+    content: '';
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 0.2s ease;
+  }
 
   &:hover,
   &:focus-visible {
-    color: var(--signal);
+    color: inherit;
+    opacity: 1;
+
+    &::after {
+      transform: scaleX(1);
+    }
+  }
+}
+
+.site-header__nav-link--active {
+  color: #fff;
+  opacity: 1;
+
+  &::after {
+    transform: scaleX(1);
   }
 }
 
 .site-header__actions {
   position: absolute;
   right: 47px;
-  transform: translateY(20px);
+  transform: translateY(-5px);
   display: flex;
   align-items: center;
   gap: 1.25rem;
@@ -127,6 +156,7 @@
   color: var(--paper);
   font-family: var(--font-body);
   font-size: 0.875rem;
+  font-weight: 200;
   text-align: left;
   padding: 0.5rem 0.9rem;
   cursor: pointer;
@@ -201,6 +231,7 @@
   gap: 0.6rem;
   font-family: var(--font-body);
   font-size: 0.875rem;
+  font-weight: 200;
   color: var(--paper-dim);
   text-align: right;
 }

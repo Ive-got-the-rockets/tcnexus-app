@@ -457,7 +457,7 @@
   margin: 0;
   font-family: var(--font-ui);
   font-size: 28px;
-  font-weight: 300;
+  font-weight: 400;
 }
 
 .episode-panel__close {
@@ -1277,12 +1277,16 @@
 
 .style-course-modal__meta-badge,
 .style-course-modal__level-badge {
-  color: var(--amber);
-  border: 1px solid color-mix(in srgb, var(--amber) 40%, transparent);
-  border-radius: 999px;
-  padding: 0.15rem 0.5rem;
+  color: var(--paper);
+  border: 0;
+  border-radius: 3.5px;
+  background: #33373D;
+  padding: 0.18rem 0.45rem;
+  font-family: 'Barlow', sans-serif;
   font-size: 0.625rem;
-  letter-spacing: 0.05em;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
   text-transform: uppercase;
 }
 
@@ -1290,7 +1294,7 @@
   width: 5px;
   height: 5px;
   border-radius: 999px;
-  background: var(--signal);
+  background: #E8E8E8;
   color: transparent;
 }
 

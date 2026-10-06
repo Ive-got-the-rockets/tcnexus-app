@@ -59,11 +59,17 @@
               <div class="detail__meta-primary">
                 <span class="detail__type-badge detail__type-badge--highlighted">{{ courseTypeLabel(c) }}</span>
                 <span class="detail__meta-dot" aria-hidden="true"></span>
-                <span class="detail__type-badge">{{ activeLessons(c).length }} {{ isShow(c) ? 'Episodes' : 'Lessons' }}</span>
+                <span class="detail__type-badge">{{ activeLessonCount(c) }} {{ isShow(c) ? 'Episodes' : 'Lessons' }}</span>
                 @if (!isShow(c)) {
                   @for (level of courseLevelOptions(c); track level.slug) {
                     <span class="detail__meta-dot" aria-hidden="true"></span>
-                    <span class="detail__type-badge" [class.detail__type-badge--current-level]="level.slug === selectedLevel()">{{ level.label }}</span>
+                    <button
+                      type="button"
+                      class="detail__type-badge detail__level-badge"
+                      [class.detail__type-badge--current-level]="level.slug === selectedLevel()"
+                      [attr.aria-pressed]="level.slug === selectedLevel()"
+                      (click)="chooseLevel(level)"
+                    >{{ level.label }}</button>
                   }
                 }
               </div>
@@ -85,14 +91,8 @@
             @if ((c.instructor?.length ?? 0) || (c.guest?.length ?? 0)) {
               <div class="detail__people-row">
                 <div class="detail__people-group">
-                  <button
-                    type="button"
-                    class="detail__instructor-label detail__instructor-label--toggle"
-                    [attr.aria-expanded]="instructorOpen()"
-                    (click)="toggleInstructor()"
-                  >{{ instructorLabel(c) }}</button>
-                  @if (instructorOpen()) {
-                    @if (c.instructor?.length) {
+                  @if (c.instructor?.length) {
+                    <p class="detail__instructor-label">{{ c.instructor.length === 1 ? 'Instructor' : 'Instructors' }}</p>
                     <div class="detail__instructor-row">
                       @for (instructor of c.instructor ?? []; track instructor.id) {
                         <div class="detail__person-item">
@@ -101,20 +101,9 @@
                         </div>
                       }
                     </div>
-                    }
-                    @if (c.guest?.length) {
-                      @if (c.instructor?.length) {
-                        <p class="detail__guests-label">{{ c.guest?.length === 1 ? 'Guest' : 'Guests' }}</p>
-                      }
-                    <div class="detail__instructor-row">
-                      @for (guest of c.guest ?? []; track guest.id) {
-                        <div class="detail__person-item">
-                          <img class="detail__instructor-avatar" [src]="personPhotoUrl(guest)" [alt]="guest.name" />
-                          <span class="detail__instructor-name">{{ guest.name }}</span>
-                        </div>
-                      }
-                    </div>
-                    }
+                  }
+                  @if (c.guest?.length) {
+                    <p class="detail__guests-label">{{ c.guest.length === 1 ? 'Guest' : 'Guests' }}</p>
                   }
                 </div>
               </div>
@@ -163,7 +152,7 @@
                   </div>
                 }
               </div>
-              @if (!isShow(c) && alternateLevelOptions(c).length) {
+              @if (!isShow(c) && courseLevelOptions(c).length > 1) {
                 <div class="detail__level-picker" [class.detail__level-picker--open]="levelButtonMenuOpen()" (mouseleave)="closeLevelButtonMenu()">
                   <button type="button" class="detail__level-trigger" [attr.aria-expanded]="levelButtonMenuOpen()" aria-haspopup="listbox" (click)="toggleLevelButtonMenu()">
                     <span>Level</span>
@@ -185,7 +174,7 @@
         <section class="detail__body">
           <div class="detail__heading-picker" [class.detail__heading-picker--open]="seasonMenuOpen() || levelMenuOpen()" (mouseleave)="closeSeasonMenu(); closeLevelMenu()">
             <h2 class="detail__lessons-title" [class.detail__lessons-title--revealed]="rowsRevealed()" #lessonsTitleEl>
-              @if (isShow(c) ? alternateSeasonOptions(c).length : alternateLevelOptions(c).length) {
+              @if (isShow(c) ? alternateSeasonOptions(c).length : courseLevelOptions(c).length > 1) {
                 <button type="button" class="detail__heading-trigger" [attr.aria-expanded]="isShow(c) ? seasonMenuOpen() : levelMenuOpen()" (click)="isShow(c) ? toggleSeasonMenu() : toggleLevelMenu()">
                   <span class="detail__heading-label">{{ lessonListLabel(c) }}</span>
                   <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 2l6 4-6 4z" /></svg>
@@ -200,7 +189,7 @@
                   <button type="button" role="option" [attr.aria-selected]="selectedSeason() === season.slug" (click)="chooseSeason(season)">{{ season.label }}</button>
                 }
               </div>
-            } @else if (!isShow(c) && levelMenuOpen() && alternateLevelOptions(c).length) {
+            } @else if (!isShow(c) && levelMenuOpen() && courseLevelOptions(c).length > 1) {
               <div class="detail__heading-level-menu" role="listbox" aria-label="Available levels">
                 @for (level of courseLevelOptions(c); track level.slug) {
                   <button type="button" role="option" [attr.aria-selected]="selectedLevel() === level.slug" (click)="chooseLevel(level)">{{ level.label }}</button>

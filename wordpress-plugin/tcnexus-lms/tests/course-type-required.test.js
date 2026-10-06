@@ -10,8 +10,11 @@ assert.match(styles, /\.tcn-panel\[id\$="-basics"\] > \.tcn-row \+ \.tcn-field[\
 assert.match(styles, /\.tcn-field__label\[for\^="course_content_"\]\s*\{[^}]*margin-bottom: 15px;[^}]*\}/);
 assert.match(styles, /\.tcn-field__label\[for\^="course_content_"\]\s*\{[^}]*position: relative;[^}]*top: 15px;[^}]*\}/);
 assert.match(scripts, /courseTypeIsSet/);
-assert.match(scripts, /You must set a course type before leaving the Course Builder/);
+assert.match(scripts, /You must set a course type before saving or publishing this course/);
 assert.match(scripts, /mustSetCourseType/);
 assert.match(builder, /tcn-unsaved-modal-course-type-close/);
+assert.match(builder, /array_filter\(\s*\$all_types[\s\S]*SHOW_CATEGORY/);
+assert.match(builder, /course_type_required/);
+assert.match(builder, /Choose a course type before saving this course/);
 
 console.log('course type required contract passes');

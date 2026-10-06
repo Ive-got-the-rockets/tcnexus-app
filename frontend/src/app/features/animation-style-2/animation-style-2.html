@@ -264,6 +264,7 @@
     </div>
   </section>
 
+  @if (platformCourses().length > 0) {
   <section class="style-row style-row--platform" aria-labelledby="platform-courses-title">
     <div class="style-carousel" #platformCarousel [class.style-carousel--at-start]="platformEdges().atStart">
       <h2 id="platform-courses-title" class="style-row__title">Platform Courses</h2>
@@ -273,7 +274,7 @@
 
       <div class="style-carousel__viewport">
         <div class="style-carousel__track" #platformTrack [appRowScroll]="'animation-style-2-platform'">
-          @for (course of platformCourses; track course.id; let index = $index) {
+          @for (course of platformCourses(); track course.id; let index = $index) {
             <article
               class="style-card"
               [attr.data-course-id]="course.id"
@@ -332,6 +333,7 @@
       }
     </div>
   </section>
+  }
 </main>
 
 @if (trailerOpen() || trailerClosing()) {

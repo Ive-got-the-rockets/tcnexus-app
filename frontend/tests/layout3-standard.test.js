@@ -11,6 +11,8 @@ const layout3Styles = fs.readFileSync(path.join(root, 'src/app/features/layout-s
 const detailTemplate = fs.readFileSync(path.join(root, 'src/app/features/course-detail/course-detail.html'), 'utf8');
 const models = fs.readFileSync(path.join(root, 'src/app/core/models.ts'), 'utf8');
 const detailStyles = fs.readFileSync(path.join(root, 'src/app/features/course-detail/course-detail.scss'), 'utf8');
+const appStyles = fs.readFileSync(path.join(root, 'src/app/app.scss'), 'utf8');
+const catalogStyles = fs.readFileSync(path.join(root, 'src/app/features/catalog/course-catalog.scss'), 'utf8');
 
 assert.match(routes, /\{ path: '', component: LayoutStyle3Page \}/);
 assert.doesNotMatch(routes, /AnimationStyle2Page|animation-style-2/);
@@ -24,6 +26,15 @@ assert.match(layout3Template, /title_image/);
 assert.match(detailTemplate, /activeTitleImage\(c\)/);
 assert.match(detail, /if \(course\.course_types\.includes\('Shows'\)\) return 'Show';/);
 assert.match(detailStyles, /\.detail__hero[\s\S]*align-items: flex-start;/);
+assert.match(detailStyles, /\.detail__hero \.detail__description[\s\S]*color: #f7f7f7;/);
+assert.match(layout3Styles, /\.style-featured__description[\s\S]*color: #f7f7f7;/);
+assert.match(layout3Styles, /\.style-course-modal__description[\s\S]*color: #f7f7f7;/);
+assert.match(appStyles, /\.site-header__nav[\s\S]*font-weight: 200;/);
+assert.match(appStyles, /\.site-header__menu-item[\s\S]*font-weight: 200;/);
+assert.match(detailStyles, /\.detail__description \{[\s\S]*?font-weight: 200;/);
+assert.match(layout3Styles, /\.style-featured__description \{[\s\S]*?font-weight: 200;/);
+assert.match(layout3Styles, /\.style-course-modal__description \{[\s\S]*?font-weight: 200;/);
+assert.match(catalogStyles, /\.hero__description \{[\s\S]*?font-weight: 200;/);
 assert.match(detailStyles, /\.detail__hero[\s\S]*padding: var\(--hero-content-top\) clamp\(/);
 assert.match(detailStyles, /\.detail__body[\s\S]*margin-top: calc\(-92vh \+ var\(--hero-content-top\) \+ 51px\);/);
 assert.match(detailStyles, /rgba\(11, 13, 12, 0\.4\) 879px,[\s\S]*transparent 1521px/);
