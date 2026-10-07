@@ -264,13 +264,17 @@
                       <span class="style-card__meta-badge">Show</span>
                       <span class="style-card__meta-dot" aria-hidden="true"></span>
                       <span class="style-card__meta-badge">{{ show.lesson_count }} episodes</span>
-                      @for (level of courseLevelBadges(show); track level) {
-                        <span class="style-card__meta-level">
-                          <span class="style-card__meta-dot" aria-hidden="true"></span>
-                          <span class="style-card__level-badge">{{ level }}</span>
-                        </span>
-                      }
                     </div>
+                    @if (courseLevelBadges(show).length) {
+                      <div class="style-card__meta-levels">
+                        @for (level of courseLevelBadges(show); track level; let first = $first) {
+                          @if (!first) {
+                            <span class="style-card__meta-dot" aria-hidden="true"></span>
+                          }
+                          <span class="style-card__level-badge">{{ level }}</span>
+                        }
+                      </div>
+                      }
                   </div>
                 </div>
               </article>
@@ -349,13 +353,17 @@
                     <span class="style-card__meta-badge">{{ course.course_types[0] || 'Trading Course' }}</span>
                     <span class="style-card__meta-dot" aria-hidden="true"></span>
                     <span class="style-card__meta-badge">{{ course.lesson_count }} lessons</span>
-                    @for (level of courseLevelBadges(course); track level) {
-                      <span class="style-card__meta-level">
-                        <span class="style-card__meta-dot" aria-hidden="true"></span>
-                        <span class="style-card__level-badge">{{ level }}</span>
-                      </span>
-                    }
                   </div>
+                  @if (courseLevelBadges(course).length) {
+                    <div class="style-card__meta-levels">
+                      @for (level of courseLevelBadges(course); track level; let first = $first) {
+                        @if (!first) {
+                          <span class="style-card__meta-dot" aria-hidden="true"></span>
+                        }
+                        <span class="style-card__level-badge">{{ level }}</span>
+                      }
+                      </div>
+                    }
                 </div>
               </div>
             </article>
@@ -429,13 +437,17 @@
                     <span class="style-card__meta-badge">Platform Course</span>
                     <span class="style-card__meta-dot" aria-hidden="true"></span>
                     <span class="style-card__meta-badge">{{ course.lesson_count }} lessons</span>
-                    @for (level of courseLevelBadges(course); track level) {
-                      <span class="style-card__meta-level">
-                        <span class="style-card__meta-dot" aria-hidden="true"></span>
-                        <span class="style-card__level-badge">{{ level }}</span>
-                      </span>
-                    }
                   </div>
+                  @if (courseLevelBadges(course).length) {
+                    <div class="style-card__meta-levels">
+                      @for (level of courseLevelBadges(course); track level; let first = $first) {
+                        @if (!first) {
+                          <span class="style-card__meta-dot" aria-hidden="true"></span>
+                        }
+                        <span class="style-card__level-badge">{{ level }}</span>
+                      }
+                    </div>
+                    }
                 </div>
               </div>
             </article>

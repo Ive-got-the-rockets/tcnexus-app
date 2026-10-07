@@ -30,6 +30,8 @@ assert.match(template, /coursePreviewLevelOptions\(detail\)[\s\S]*?coursePreview
 assert.match(component, /coursePreviewLessons\(detail: CourseDetail\): Lesson\[\]/, 'Modal lesson rows must be derived from the selected level.');
 assert.match(styles, /\.style-course-modal__heading-trigger:hover[\s\S]*?background:\s*#fff;[\s\S]*?color:\s*#33373D;/, 'Modal level selector must use the single-page active treatment.');
 assert.match(styles, /\.style-card__meta-primary,\s*\.style-card__meta-levels\s*\{[\s\S]*?flex-wrap:\s*wrap;/, 'Expanded-card metadata must wrap multiple level badges.');
-assert.match(template, /class="style-card__meta-level"[\s\S]*?style-card__level-badge/, 'Each expanded-card level badge must stay grouped with its separator when wrapping.');
+assert.match(styles, /\.style-card__meta\s*\{[\s\S]*?flex-direction:\s*column;[\s\S]*?gap:\s*12px;[\s\S]*?margin-top:\s*3px;/, 'Expanded-card metadata must use the requested spacing between the button and metadata rows.');
+assert.match(template, /class="style-card__meta-levels"[\s\S]*?style-card__level-badge/, 'Expanded-card level badges must occupy their own row.');
+assert.doesNotMatch(template, /style-card__meta-level"[\s\S]*?style-card__level-badge/, 'Expanded-card level badges must not retain the old separator wrapper.');
 
 console.log('card detail controls contract passes');

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 144">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #33373d;
+      }
+
+      .cls-2 {
+        fill: #f2f0e8;
+      }
+    </style>
+  </defs>
+  <g id="Layer_1-2" data-name="Layer 1">
+    <g>
+      <circle class="cls-1" cx="72" cy="72" r="72"/>
+      <path class="cls-2" d="M101,106.63h-58c-6.62,0-12-5.38-12-12v-45.26c0-6.62,5.38-12,12-12h58c6.62,0,12,5.38,12,12v45.26c0,6.62-5.38,12-12,12ZM43,43.37c-3.31,0-6,2.69-6,6v45.26c0,3.31,2.69,6,6,6h58c3.31,0,6-2.69,6-6v-45.26c0-3.31-2.69-6-6-6h-58Z"/>
+      <path class="cls-2" d="M63.5,57.05l22.08,12.95c1.53.9,1.53,3.11,0,4.01l-22.08,12.95c-1.55.91-3.5-.21-3.5-2v-25.89c0-1.79,1.95-2.91,3.5-2Z"/>
+      <g>
+        <rect class="cls-2" x="43.59" y="50" width="8.81" height="6" rx=".83" ry=".83"/>
+        <rect class="cls-2" x="91.59" y="50" width="8.81" height="6" rx=".83" ry=".83"/>
+        <rect class="cls-2" x="43.59" y="69" width="8.81" height="6" rx=".83" ry=".83"/>
+        <rect class="cls-2" x="91.59" y="69" width="8.81" height="6" rx=".83" ry=".83"/>
+        <rect class="cls-2" x="43.59" y="88" width="8.81" height="6" rx=".83" ry=".83"/>
+        <rect class="cls-2" x="91.59" y="88" width="8.81" height="6" rx=".83" ry=".83"/>
+      </g>
+    </g>
+  </g>
+</svg>
