@@ -245,12 +245,9 @@ export class LessonPlayerPage implements OnDestroy {
   private tcLensBridgeLessonId: number | null = null;
   private tcLensSessionActive = false;
   private tcLensSeekPending = false;
+  private tcLensStatus: HTMLElement | null = null;
   private readonly onTcLensMessage = (event: MessageEvent): void => {
-    if (event.origin !== XRAY_PANEL_ORIGIN || !event.data || typeof event.data !== 'object') return;
-    if (event.data.type === 'tc-lens-ready') {
-      this.tcLensBridge?.markReady();
-      return;
-    }
+    if (event.origin !== XRAY_PANEL_ORIGIN || event.source !== this.xrayFrame?.contentWindow || !event.data || typeof event.data !== 'object') return;
     if (event.data.type === 'tc-lens-ack') {
       this.tcLensBridge?.handleIncoming(event.data);
     }
@@ -357,11 +354,13 @@ export class LessonPlayerPage implements OnDestroy {
     this.xrayDragCleanup?.();
     if (this.tcLensSessionActive) this.tcLensBridge?.close(this.player?.currentTime ?? 0);
     window.removeEventListener('message', this.onTcLensMessage);
+    this.tcLensBridge?.dispose();
     this.player?.destroy();
   }
 
   private resetTcLensTimeline(): void {
     if (this.tcLensSessionActive) this.tcLensBridge?.close(this.player?.currentTime ?? 0);
+    this.tcLensBridge?.dispose();
     this.tcLensBridge = null;
     this.tcLensBridgeLessonId = null;
     this.tcLensSessionActive = false;
@@ -754,8 +753,15 @@ export class LessonPlayerPage implements OnDestroy {
       this.tcLensBridge?.markReady();
     });
 
+    const lensStatus = document.createElement('div');
+    lensStatus.setAttribute('role', 'status');
+    lensStatus.setAttribute('aria-live', 'polite');
+    lensStatus.hidden = true;
+    lensStatus.style.cssText = 'position:absolute;top:52px;left:12px;right:12px;z-index:2;padding:10px;background:#202828;color:#fff;font-size:13px;';
+    this.tcLensStatus = lensStatus;
+
     actions.appendChild(closeButton);
-    panel.append(header, frame);
+    panel.append(header, frame, lensStatus);
     this.addXrayResizeHandles(panel);
     const bottomBar = document.createElement('div');
     bottomBar.className = 'tcn-xray-bottombar';
@@ -1067,6 +1073,7 @@ export class LessonPlayerPage implements OnDestroy {
     if (open && this.xrayFrame && lesson) {
       const url = buildTcLensUrl(XRAY_PANEL_URL, lesson.id);
       if (this.xrayFrame.getAttribute('src') !== url) {
+        this.tcLensBridge?.markNotReady();
         this.xrayFrame.setAttribute('src', url);
       }
       if (!this.tcLensBridge || this.tcLensBridgeLessonId !== lesson.id) {
@@ -1074,6 +1081,12 @@ export class LessonPlayerPage implements OnDestroy {
           lesson.id,
           lesson.tc_lens_timeline ?? [],
           (message) => this.xrayFrame?.contentWindow?.postMessage(message, XRAY_PANEL_ORIGIN),
+          (message) => {
+            if (this.tcLensStatus) {
+              this.tcLensStatus.textContent = message;
+              this.tcLensStatus.hidden = !message;
+            }
+          },
         );
         this.tcLensBridgeLessonId = lesson.id;
       }

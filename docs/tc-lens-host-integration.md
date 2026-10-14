@@ -1,115 +1,33 @@
-# TC Lens host integration contract
+# TC Lens host integration
 
-The TC Nexus frontend owns the lesson timeline, session lifecycle, responsive video/iframe layout, and delivery of timestamped cues. Arun’s app owns the simulator, LLM calls, chat rendering, and learning-state UI.
+The active player follows `TC Lens Stuff/tradecheetah-embed-guide.md` using direct iframe postMessage. No SDK is required for AI prompts. The app URL is https://app.tradecheetah.com with the WordPress lesson ID in videoId.
 
-## Message envelope
-
-Every message from the host includes:
+## Outgoing prompt
 
 ```json
 {
-  "protocolVersion": 1,
-  "lessonId": "35",
-  "sessionId": "uuid"
+  "type": "tc-lens-time-update",
+  "videoId": "35",
+  "chapter": "cue-1",
+  "message": "Explain this trade and its risks.\n\nTrade context: ...",
+  "workflow": "ask"
 }
 ```
 
-The receiver should validate `event.origin` against the approved TC Nexus origin and ignore unsupported protocol versions.
+The host resolves CMS timestamps; the app does not track the video clock. Both LLM and trade cues use read-only ask. Structured scene, learning-level and trade fields become text in message. Existing free-text prompts are preserved. No unsupported session, seek, state-sync or trade-data messages are sent. The optional operate mode and navigation SDK are not enabled by this integration.
 
-## Host-to-app messages
+## Replies and delivery
 
-### Session start
+Only trust messages with the exact app origin and the embedded frame as source. Replies have type tc-lens-ack, echoed videoId/chapter and state running, finished, rejected or error. The host sends one prompt, waits through running, and releases the next only after finished. Rejected/error replies clear queued work, stop further automatic delivery and show reason in the panel. Close and reopen the panel after resolving a failure to resume future cues.
 
-```json
-{
-  "type": "tc-lens-session-start",
-  "protocolVersion": 1,
-  "lessonId": "35",
-  "sessionId": "session-1",
-  "currentTime": 160
-}
-```
+The unique chapter identifies each request; it is not a timestamp. Invalid or unrelated replies are ignored. A 90-second missing reply shows a connection/sign-in message and leaves the queue blocked, because the remote request could still be running. A subsequent matching completion can resume it. Never retry an action based only on elapsed time.
 
-Opening late does not replay old LLM answers.
+## Player lifecycle
 
-### State sync
+Iframe load is the available readiness signal; Arun's guide specifies no ready handshake. Opening at a timestamp sends cues at exactly that timestamp and active trade cues. Ordinary forward playback sends newly crossed cues in timestamp order, once per panel session. Seeking clears unsent queued work and does not replay old LLM answers; an unsent active trade cue at the destination can be sent. Closing drops queued work but does not cancel the remote request. Reopening waits for any in-flight request before sending new work. Switching lessons disposes the bridge and loads the new iframe URL.
 
-```json
-{
-  "type": "tc-lens-state-sync",
-  "protocolVersion": 1,
-  "lessonId": "35",
-  "sessionId": "session-1",
-  "currentTime": 160,
-  "activeTradeCues": []
-}
-```
+## Live prerequisites
 
-This is for reconstructing currently active trade state. It is not a request to replay historical LLM answers.
+The viewer must sign in inside the frame according to the supplied guide. Arun's email confirms that only https://dev.tcnexus.tv is allowlisted; localhost and other domains require him to add their origins. His email says the app integration will go live with his next deploy, so wait for his deployment confirmation before expecting live replies. The guide does not specify a listener-ready event, an authentication-ready event or cancellation. The local fixture verifies the documented message shape and acknowledgements; it does not verify live login or remote AI behavior.
 
-### Trade cue
-
-```json
-{
-  "type": "tc-lens-trade-cue",
-  "protocolVersion": 1,
-  "lessonId": "35",
-  "sessionId": "session-1",
-  "sequence": 1,
-  "eventId": "trade-1",
-  "startTime": 120,
-  "endTime": 180,
-  "data": {
-    "underlying": "SPY",
-    "strategy": "Long Call",
-    "legs": [],
-    "strikes": ["500"],
-    "expiration": "2026-12-18",
-    "quantity": 1,
-    "entryPrice": 3,
-    "assumptions": "Learning and recalculation only."
-  }
-}
-```
-
-The app should load the example for inspection and recalculation. It must not place an order automatically.
-
-### LLM cue
-
-```json
-{
-  "type": "tc-lens-llm-cue",
-  "protocolVersion": 1,
-  "lessonId": "35",
-  "sessionId": "session-1",
-  "sequence": 2,
-  "eventId": "llm-1",
-  "startTime": 150,
-  "endTime": null,
-  "data": {
-    "question": "Why does delta change here?",
-    "sceneContext": "The underlying moves from 50 to 51.",
-    "learningLevel": "beginner"
-  }
-}
-```
-
-The app should send the prepared question to its LLM and display the answer while retaining any existing trade and conversation state.
-
-### Seek and close
-
-`tc-lens-seek` tells the app to reconcile state at a new timestamp without replaying already delivered cues. `tc-lens-session-close` means automatic updates stop until a new session starts.
-
-## App-to-host messages
-
-The app may send `tc-lens-ready` after it has installed its message listener, and `tc-lens-ack` after accepting a cue. An acknowledgement must include the active `sessionId` and `eventId`.
-
-## Current host-side guarantees
-
-- Cues are authored and normalized in WordPress.
-- Trade and LLM cues are separate event types.
-- Cues are ordered by their scheduled timestamp and emitted once per session.
-- Late opens state-sync active trades without replaying historical LLM answers.
-- Backward and forward seeks do not duplicate already delivered events.
-- Closing the panel stops the host scheduler.
-- The responsive Layout 2 shell keeps the video, side frame, and bottom frame together.
+Historical structured protocol helpers remain in the source, but are not used by the active host bridge.

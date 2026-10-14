@@ -48,9 +48,9 @@ test('the TC Lens handoff contract includes a local receiver fixture', () => {
   const fixture = fs.readFileSync(new URL('tests/tc-lens-receiver-fixture.html', frontendRoot), 'utf8');
   const contract = fs.readFileSync(new URL('docs/tc-lens-host-integration.md', projectRoot), 'utf8');
 
-  assert.match(fixture, /tc-lens-ready/);
+  assert.match(fixture, /tc-lens-time-update/);
   assert.match(fixture, /tc-lens-ack/);
-  assert.match(contract, /tc-lens-trade-cue/);
-  assert.match(contract, /tc-lens-llm-cue/);
+  assert.match(contract, /tc-lens-time-update/);
+  assert.match(contract, /read-only ask/);
   assert.match(contract, /does not replay old LLM answers/);
 });
