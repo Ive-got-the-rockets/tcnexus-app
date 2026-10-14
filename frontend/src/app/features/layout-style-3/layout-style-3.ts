@@ -137,21 +137,17 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
   private overviewPdf?: PDFDocumentProxy;
   private overviewRenderToken = 0;
   protected readonly carouselCourses = computed(() => {
-    const featuredId = this.featured()?.id;
     return this.platformOnly() || this.showsOnly()
       ? []
-      : this.tradingCourseItems().filter(course => course.id !== featuredId);
+      : this.tradingCourseItems();
   });
   protected readonly carouselShows = computed(() => {
-    const featuredId = this.featured()?.id;
     return this.tradingOnly() || this.platformOnly()
       ? []
-      : this.shows().filter(show => show.id !== featuredId);
+      : this.shows();
   });
   protected readonly carouselPlatformCourses = computed(() => {
-    const featuredId = this.featured()?.id;
-    return this.platformCourseItems()
-      .filter(course => course.id !== featuredId);
+    return this.platformCourseItems();
   });
   protected readonly edges = signal<ScrollEdges>(EMPTY_EDGES);
   protected readonly platformEdges = signal<ScrollEdges>(EMPTY_EDGES);
@@ -344,8 +340,8 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
       next: ({ courses, shows }) => {
         const showItems = environment.production ? shows.slice(0, 12) : shows;
         this.shows.set(showItems);
-        const courseCandidates = courses.filter(course =>
-          !this.isPlatformCourse(course) && !course.course_types.includes('Shows'));
+        const allCourseCandidates = courses.filter(course => !course.course_types.includes('Shows'));
+        const courseCandidates = allCourseCandidates.filter(course => !this.isPlatformCourse(course));
         const showCandidates = this.showsOnly() ? showItems : shows;
         const available = this.tradingOnly()
           ? [...courseCandidates]
@@ -353,7 +349,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
             ? courses.filter(course => this.isPlatformCourse(course))
             : this.showsOnly()
               ? [...showCandidates]
-              : [...courseCandidates, ...showCandidates];
+              : [...allCourseCandidates, ...showCandidates];
         const featuredItems = available
           .filter((item, index, all) => all.findIndex(candidate => candidate.id === item.id) === index);
         const queryFeaturedId = this.readQueryNumber('style2Featured');
@@ -369,7 +365,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
             : this.showsOnly()
               ? showCandidates
               : previousKind === 'show'
-                ? courseCandidates
+                ? allCourseCandidates
                 : previousKind === 'course'
                   ? showCandidates
                   : available;
