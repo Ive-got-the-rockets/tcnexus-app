@@ -399,8 +399,13 @@
             <article
               class="style-card"
               [attr.data-course-id]="course.id"
+              role="link"
+              tabindex="0"
               (mouseenter)="onCardEnter($event, 'platform')"
               (mouseleave)="onCardLeave()"
+              (click)="openCourse(course, $event)"
+              (keydown.enter)="openCourse(course, $event)"
+              (keydown.space)="openCourse(course, $event); $event.preventDefault()"
             >
               <div class="style-card__art" title="View Course">
                 <img [src]="thumbnailUrl(course, index)" [alt]="course.title" loading="lazy" (error)="onImageError($event)" />

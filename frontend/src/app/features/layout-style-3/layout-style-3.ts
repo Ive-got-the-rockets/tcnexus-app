@@ -86,7 +86,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
         ? this.platformCourseItems()
         : this.showsOnly()
           ? this.shows()
-          : [...this.tradingCourseItems(), ...this.shows()];
+          : [...this.tradingCourseItems(), ...this.platformCourseItems(), ...this.shows()];
     return available.filter((item, index, all) => all.findIndex(candidate => candidate.id === item.id) === index);
   });
   protected readonly featuredIndex = signal(0);
