@@ -1336,6 +1336,278 @@
   display: none;
 }
 
+/* Structured TC Lens trade editor; same cream/mint palette as lesson fields. */
+.wp-core-ui .tcn-tc-lens-timeline select {
+  appearance: none;
+  -webkit-appearance: none;
+  max-width: none;
+  min-height: 39px;
+  padding: 0 32px 0 10px;
+  border: 1px solid var(--tcn-border, #e5e2d9);
+  border-radius: 6px;
+  background-color: var(--tcn-bg-sunken, #f1efe7);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%237a756c' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-position: right 10px center;
+  background-size: 15px;
+  background-repeat: no-repeat;
+  color: var(--tcn-text, #201f1c);
+  cursor: pointer;
+}
+
+.wp-core-ui .tcn-tc-lens-timeline select:focus {
+  border-color: var(--tcn-primary-strong, #5fc7a8);
+  box-shadow: 0 0 0 2px #8fd8c23d;
+  outline: none;
+}
+
+.tcn-trade-editor input[data-leg-field="expiration"] {
+  padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%237a756c' stroke-width='1.7' stroke-linecap='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M16 3v4M8 3v4M3 11h18'/%3E%3C/svg%3E");
+  background-position: right 10px center;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.tcn-trade-editor input[type="date"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  right: 8px;
+  opacity: 0;
+  cursor: pointer;
+}
+.tcn-trade-editor input[type="date"] { position: relative; }
+
+/* App-owned calendar, mounted outside expanding panels to avoid clipping. */
+.tcn-trade-calendar {
+  position: fixed;
+  z-index: 100100;
+  box-sizing: border-box;
+  width: 302px;
+  max-width: calc(100vw - 16px);
+  padding: 14px;
+  border: 1px solid #e5e2d9;
+  border-radius: 12px;
+  background: #fffdf9;
+  color: #201f1c;
+  font: 12px 'Plus Jakarta Sans', -apple-system, sans-serif;
+  box-shadow: 0 4px 12px #201f1c0d, 0 14px 36px #201f1c1a;
+}
+
+.tcn-trade-calendar__header { display: grid; grid-template-columns: 28px minmax(0, 1fr) 66px 28px; gap: 6px; align-items: center; }
+.wp-core-ui .tcn-trade-calendar select,
+.wp-core-ui .tcn-trade-calendar input {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  max-width: none;
+  min-height: 34px;
+  height: 34px;
+  margin: 0;
+  padding: 0 7px;
+  border: 1px solid #e5e2d9;
+  border-radius: 6px;
+  background-color: #f1efe7;
+  color: #201f1c;
+  font: inherit;
+}
+.wp-core-ui .tcn-trade-calendar select {
+  appearance: none;
+  padding-right: 24px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%237a756c' stroke-width='1.7'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-position: right 6px center;
+  background-repeat: no-repeat;
+  background-size: 14px;
+}
+.tcn-trade-calendar button { display: grid; place-items: center; min-height: 32px; margin: 0; padding: 0; border: 0; border-radius: 6px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.tcn-trade-calendar__header > button { font-size: 23px; }
+.tcn-trade-calendar__week,
+.tcn-trade-calendar__days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+.tcn-trade-calendar__week { margin: 12px 0 5px; text-align: center; color: #7a756c; font-size: 10px; }
+.tcn-trade-calendar button:hover { background: #f1efe7; }
+.tcn-trade-calendar button[aria-current="date"] { box-shadow: inset 0 0 0 1px #78b5a3; }
+.tcn-trade-calendar button.is-selected { background: #8fd8c2; color: #12352c; font-weight: 600; }
+.tcn-trade-calendar button:disabled { opacity: .35; cursor: default; }
+.tcn-trade-calendar button:focus-visible,
+.wp-core-ui .tcn-trade-calendar select:focus,
+.wp-core-ui .tcn-trade-calendar input:focus { outline: 2px solid #5fc7a8; outline-offset: 1px; box-shadow: none; border-color: #78b5a3; }
+.tcn-trade-calendar__footer { display: flex; justify-content: space-between; gap: 8px; border-top: 1px solid #e5e2d9; margin-top: 10px; padding-top: 8px; }
+.tcn-trade-calendar__footer button { padding: 0 9px; color: #47695e; }
+
+.tcn-trade-editor {
+  grid-column: 1 / -1;
+  min-width: 0;
+  container-type: inline-size;
+}
+
+.tcn-trade-editor__heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 15px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tcn-trade-editor__heading::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--tcn-border);
+}
+
+.tcn-trade-editor label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tcn-trade-editor label small,
+.tcn-trade-editor__options-heading > small,
+.tcn-trade-editor__hint {
+  color: var(--tcn-text-dim);
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.tcn-trade-editor__ticker { max-width: 270px; }
+.tcn-trade-editor__ticker input { text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
+
+.tcn-trade-editor__underlying {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) 42px;
+  align-items: end;
+  gap: 14px;
+  margin-top: 17px;
+}
+
+.tcn-trade-editor input,
+.tcn-trade-editor select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 39px;
+  margin: 0;
+  padding: 0 10px;
+  border: 1px solid var(--tcn-border);
+  border-radius: 6px;
+  background: var(--tcn-bg-sunken);
+  color: var(--tcn-text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.tcn-trade-editor input:focus,
+.tcn-trade-editor select:focus {
+  outline: 2px solid var(--tcn-primary);
+  outline-offset: 1px;
+}
+
+.tcn-trade-editor__add {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  margin-bottom: 1px;
+  padding: 0;
+  border: 1px solid #70bea6;
+  border-radius: 50%;
+  background: var(--tcn-primary);
+  color: var(--tcn-primary-text);
+  font-size: 25px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tcn-trade-editor__add > span { transform: translateY(-2px); }
+.tcn-trade-editor__add:hover { background: var(--tcn-primary-strong); }
+
+.tcn-trade-editor__options-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 23px 0 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tcn-trade-editor__symbol {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 4px 8px;
+  border-radius: 20px;
+  background: #e5f2eb;
+  color: #47695e;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.tcn-trade-leg {
+  --leg-accent: #78b5a3;
+  display: grid;
+  grid-template-columns: minmax(75px, .85fr) minmax(130px, 1.45fr) minmax(65px, .7fr) minmax(75px, .85fr) minmax(140px, 1.2fr) minmax(75px, .85fr) 30px;
+  align-items: end;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 15px 12px 15px 16px;
+  border: 1px solid var(--tcn-border);
+  border-left: 3px solid var(--leg-accent);
+  border-bottom: 1px solid var(--leg-accent);
+  border-radius: 8px;
+  background: #faf9f4;
+}
+
+.tcn-trade-leg[data-side="put"] { --leg-accent: var(--tcn-error, #efa79c); }
+.tcn-trade-leg label { font-size: 11px; }
+.tcn-trade-leg input,
+.tcn-trade-leg select { height: 37px; background-color: var(--tcn-bg); }
+
+.tcn-trade-leg__remove {
+  display: grid;
+  place-items: center;
+  align-self: end;
+  width: 30px;
+  height: 30px;
+  margin-bottom: 3.5px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #b65c50;
+  cursor: pointer;
+}
+
+.tcn-trade-leg__remove:hover { background: #efa79c33; color: #6b2a1e; }
+.tcn-trade-leg__remove:focus-visible,
+.tcn-trade-editor__add:focus-visible { outline: 2px solid var(--tcn-primary-strong); outline-offset: 2px; }
+.tcn-trade-editor__hint { margin: 14px 0 6px; }
+.tcn-tc-lens-payload__trade > .tcn-tc-lens-event__field--wide { grid-column: 1 / -1; }
+.tcn-tc-lens-event__remove { color: #b65c50; }
+
+@container (max-width: 820px) {
+  .tcn-trade-leg { grid-template-columns: repeat(3, minmax(0, 1fr)) 30px; }
+  .tcn-trade-leg__remove { grid-column: 4; grid-row: 1 / 3; align-self: center; margin-bottom: 0; }
+}
+
+@container (max-width: 520px) {
+  .tcn-trade-leg { grid-template-columns: repeat(2, minmax(0, 1fr)) 30px; }
+  .tcn-trade-leg__remove { grid-column: 3; grid-row: 1 / 4; }
+}
+
+@media (max-width: 1100px) {
+  .tcn-trade-leg { grid-template-columns: repeat(3, minmax(0, 1fr)) 30px; }
+  .tcn-trade-leg__remove { grid-column: 4; grid-row: 1 / 3; align-self: center; margin-bottom: 0; }
+}
+
+@media (max-width: 650px) {
+  .tcn-trade-editor__ticker { max-width: none; }
+  .tcn-trade-editor__underlying { grid-template-columns: repeat(3, minmax(0, 1fr)) 38px; gap: 8px; }
+  .tcn-trade-leg { grid-template-columns: repeat(2, minmax(0, 1fr)) 30px; gap: 10px; padding: 12px; }
+  .tcn-trade-leg__remove { grid-column: 3; grid-row: 1 / 4; }
+}
+
 .tcn-lesson-person-picker {
   display: flex;
   align-items: center;

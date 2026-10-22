@@ -516,7 +516,7 @@ class TCNexus_Course_Builder {
 			'tcnexus-course-builder',
 			TCNEXUS_LMS_URL . 'assets/course-builder.css',
 			array(),
-			TCNEXUS_LMS_VERSION
+			TCNEXUS_LMS_VERSION . '.' . filemtime( TCNEXUS_LMS_DIR . 'assets/course-builder.css' )
 		);
 
 		wp_enqueue_script(
@@ -542,6 +542,7 @@ class TCNexus_Course_Builder {
 		);
 
 		TCNexus_Media::localize( 'tcnexus-course-builder' );
+		wp_enqueue_script( 'tcnexus-tc-lens-trade-editor', TCNEXUS_LMS_URL . 'assets/tc-lens-trade-editor.js', array( 'tcnexus-course-builder' ), TCNEXUS_LMS_VERSION . '.' . filemtime( TCNEXUS_LMS_DIR . 'assets/tc-lens-trade-editor.js' ), true );
 	}
 
 	public static function render() {
@@ -1493,13 +1494,29 @@ class TCNexus_Course_Builder {
 		?>
 		<div class="tcn-tc-lens-payload" data-tc-lens-payload>
 			<div class="tcn-tc-lens-payload__trade" data-tc-lens-payload-panel="trade">
-				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Underlying</label><small class="tcn-tc-lens-field__help">Ticker or asset used in the example.</small><input<?php echo $attr; ?> type="text" name="<?php echo esc_attr( $event_prefix . '[trade][underlying]' ); ?>" value="<?php echo esc_attr( $trade['underlying'] ?? '' ); ?>" placeholder="SPY" /></div>
-				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Strategy</label><small class="tcn-tc-lens-field__help">Name the trade or options strategy.</small><input<?php echo $attr; ?> type="text" name="<?php echo esc_attr( $event_prefix . '[trade][strategy]' ); ?>" value="<?php echo esc_attr( $trade['strategy'] ?? '' ); ?>" placeholder="Long Call" /></div>
-				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Strikes</label><small class="tcn-tc-lens-field__help">Strike prices used by the trade.</small><input<?php echo $attr; ?> type="text" name="<?php echo esc_attr( $event_prefix . '[trade][strikes]' ); ?>" value="<?php echo esc_attr( implode( ', ', (array) ( $trade['strikes'] ?? array() ) ) ); ?>" placeholder="500, 510" /></div>
-				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Expiration</label><small class="tcn-tc-lens-field__help">Expiration date for the position.</small><input<?php echo $attr; ?> type="text" name="<?php echo esc_attr( $event_prefix . '[trade][expiration]' ); ?>" value="<?php echo esc_attr( $trade['expiration'] ?? '' ); ?>" placeholder="2026-12-18" /></div>
-				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Quantity</label><small class="tcn-tc-lens-field__help">Number of contracts or units.</small><input<?php echo $attr; ?> type="number" min="0" step="any" name="<?php echo esc_attr( $event_prefix . '[trade][quantity]' ); ?>" value="<?php echo esc_attr( $trade['quantity'] ?? '' ); ?>" /></div>
-				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Entry price</label><small class="tcn-tc-lens-field__help">Price paid when the trade starts.</small><input<?php echo $attr; ?> type="number" min="0" step="any" name="<?php echo esc_attr( $event_prefix . '[trade][entryPrice]' ); ?>" value="<?php echo esc_attr( $trade['entryPrice'] ?? '' ); ?>" /></div>
-				<div class="tcn-tc-lens-event__field tcn-tc-lens-event__field--wide"><label class="tcn-field__label">Legs</label><small class="tcn-tc-lens-field__help">Add one trade leg per line.</small><textarea<?php echo $attr; ?> name="<?php echo esc_attr( $event_prefix . '[trade][legs]' ); ?>" rows="2" placeholder="One leg per line: buy | call | 1 | 500 | 2026-12-18"><?php echo esc_textarea( self::format_tc_lens_legs( $trade['legs'] ?? array() ) ); ?></textarea></div>
+				<div class="tcn-trade-editor" data-tc-lens-trade-editor>
+					<h4 class="tcn-trade-editor__heading">Underlying</h4>
+					<label class="tcn-trade-editor__ticker">Ticker<small>Enter manually. All positions below use this ticker.</small><input<?php echo $attr; ?> data-trade-ticker type="text" name="<?php echo esc_attr( $event_prefix . '[trade][underlying]' ); ?>" value="<?php echo esc_attr( $trade['underlying'] ?? '' ); ?>" placeholder="SPY" autocomplete="off" spellcheck="false" /></label>
+					<div class="tcn-trade-editor__underlying">
+						<label>Shares<input<?php echo $attr; ?> type="number" min="0" step="any" name="<?php echo esc_attr( $event_prefix . '[trade][quantity]' ); ?>" value="<?php echo esc_attr( $trade['quantity'] ?? '' ); ?>" /></label>
+						<label>Type<select<?php echo $attr; ?> name="<?php echo esc_attr( $event_prefix . '[trade][assetType]' ); ?>"><option value="stock" <?php selected( $trade['assetType'] ?? 'stock', 'stock' ); ?>>Stock</option><option value="crypto" <?php selected( $trade['assetType'] ?? 'stock', 'crypto' ); ?>>Crypto</option></select></label>
+						<label>Price ($)<input<?php echo $attr; ?> type="number" min="0" step="any" name="<?php echo esc_attr( $event_prefix . '[trade][entryPrice]' ); ?>" value="<?php echo esc_attr( $trade['entryPrice'] ?? '' ); ?>" /></label>
+						<button type="button" class="tcn-trade-editor__add" data-trade-add aria-label="Add option leg" title="Add Call or Put"><span aria-hidden="true">+</span></button>
+					</div>
+					<div class="tcn-trade-editor__options-heading"><span>Options <span class="tcn-trade-editor__symbol" data-trade-symbol><?php echo esc_html( strtoupper( $trade['underlying'] ?? '' ) ?: 'No ticker' ); ?></span></span><small>Use + to add a Call or Put</small></div>
+					<input<?php echo $attr; ?> type="hidden" name="<?php echo esc_attr( $event_prefix . '[trade][legs]' ); ?>" value="" />
+					<div data-trade-legs>
+						<?php foreach ( (array) ( $trade['legs'] ?? array() ) as $leg_index => $leg ) : ?>
+							<?php if ( is_array( $leg ) ) self::render_tc_lens_trade_leg( $event_prefix . '[trade][legs][' . $leg_index . ']', $leg, $disabled ); ?>
+						<?php endforeach; ?>
+					</div>
+					<template data-trade-leg-template><?php self::render_tc_lens_trade_leg( '', array(), true ); ?></template>
+					<p class="tcn-trade-editor__hint">Changing the ticker applies to the underlying and every option row.</p>
+					<?php // Retain earlier authored context without exposing the superseded fields. ?>
+					<input<?php echo $attr; ?> type="hidden" name="<?php echo esc_attr( $event_prefix . '[trade][strategy]' ); ?>" value="<?php echo esc_attr( $trade['strategy'] ?? '' ); ?>" />
+					<input<?php echo $attr; ?> type="hidden" name="<?php echo esc_attr( $event_prefix . '[trade][strikes]' ); ?>" value="<?php echo esc_attr( implode( ', ', (array) ( $trade['strikes'] ?? array() ) ) ); ?>" />
+					<input<?php echo $attr; ?> type="hidden" name="<?php echo esc_attr( $event_prefix . '[trade][expiration]' ); ?>" value="<?php echo esc_attr( $trade['expiration'] ?? '' ); ?>" />
+				</div>
 				<div class="tcn-tc-lens-event__field tcn-tc-lens-event__field--wide"><label class="tcn-field__label">Lesson assumptions</label><small class="tcn-tc-lens-field__help">Context TC Lens should use for the calculation.</small><textarea<?php echo $attr; ?> name="<?php echo esc_attr( $event_prefix . '[trade][assumptions]' ); ?>" rows="2" placeholder="Learning and recalculation assumptions"><?php echo esc_textarea( $trade['assumptions'] ?? '' ); ?></textarea></div>
 			</div>
 			<div class="tcn-tc-lens-payload__llm" data-tc-lens-payload-panel="llm">
@@ -1507,6 +1524,26 @@ class TCNexus_Course_Builder {
 				<div class="tcn-tc-lens-event__field tcn-tc-lens-event__field--wide"><label class="tcn-field__label">Scene context</label><small class="tcn-tc-lens-field__help">What is happening in the video here.</small><textarea<?php echo $attr; ?> name="<?php echo esc_attr( $event_prefix . '[llm][sceneContext]' ); ?>" rows="2" placeholder="What is happening in the video at this moment?"><?php echo esc_textarea( $llm['sceneContext'] ?? '' ); ?></textarea></div>
 				<div class="tcn-tc-lens-event__field"><label class="tcn-field__label">Learning level</label><small class="tcn-tc-lens-field__help">Sets the depth of the LLM explanation.</small><select<?php echo $attr; ?> name="<?php echo esc_attr( $event_prefix . '[llm][learningLevel]' ); ?>" class="tcn-select"><option value="beginner" <?php selected( $llm['learningLevel'] ?? 'beginner', 'beginner' ); ?>>Beginner</option><option value="intermediate" <?php selected( $llm['learningLevel'] ?? '', 'intermediate' ); ?>>Intermediate</option><option value="advanced" <?php selected( $llm['learningLevel'] ?? '', 'advanced' ); ?>>Advanced</option><option value="expert" <?php selected( $llm['learningLevel'] ?? '', 'expert' ); ?>>Expert</option></select></div>
 			</div>
+		</div>
+		<?php
+	}
+
+	private static function render_tc_lens_trade_leg( $prefix, $leg = array(), $disabled = false ) {
+		$attr = $disabled ? ' disabled' : '';
+		$side = strtolower( $leg['side'] ?? 'call' );
+		$action = strtolower( str_replace( array( ' ', '-' ), '_', $leg['action'] ?? 'buy_to_open' ) );
+		// Earlier text legs used buy/sell without an open/close suffix.
+		if ( in_array( $action, array( 'buy', 'sell' ), true ) ) $action .= '_to_open';
+		$actions = array( 'buy_to_open' => 'Buy to Open', 'sell_to_open' => 'Sell to Open', 'buy_to_close' => 'Buy to Close', 'sell_to_close' => 'Sell to Close' );
+		if ( ! isset( $actions[ $action ] ) ) $actions[ $action ] = ucwords( str_replace( '_', ' ', $action ) );
+		?>
+		<div class="tcn-trade-leg" data-side="<?php echo esc_attr( $side ); ?>" role="group" aria-label="Option leg">
+			<label>Option<select<?php echo $attr; ?> data-leg-field="side" <?php if ( $prefix ) : ?>name="<?php echo esc_attr( $prefix . '[side]' ); ?>"<?php endif; ?>><option value="call" <?php selected( $side, 'call' ); ?>>Call</option><option value="put" <?php selected( $side, 'put' ); ?>>Put</option></select></label>
+			<label>Action<select<?php echo $attr; ?> data-leg-field="action" <?php if ( $prefix ) : ?>name="<?php echo esc_attr( $prefix . '[action]' ); ?>"<?php endif; ?>><?php foreach ( $actions as $value => $label ) : ?><option value="<?php echo esc_attr( $value ); ?>" <?php selected( $action, $value ); ?>><?php echo esc_html( $label ); ?></option><?php endforeach; ?></select></label>
+			<?php foreach ( array( 'quantity' => 'Contracts', 'strike' => 'Strike ($)', 'expiration' => 'Expiry', 'entryPrice' => 'Premium ($)' ) as $key => $label ) : ?>
+				<label><?php echo esc_html( $label ); ?><input<?php echo $attr; ?> data-leg-field="<?php echo esc_attr( $key ); ?>" <?php if ( $prefix ) : ?>name="<?php echo esc_attr( $prefix . '[' . $key . ']' ); ?>"<?php endif; ?> type="<?php echo 'expiration' === $key ? 'date' : 'number'; ?>" <?php if ( 'expiration' !== $key ) : ?>min="<?php echo 'quantity' === $key ? '1' : '0'; ?>" step="<?php echo 'quantity' === $key ? '1' : 'any'; ?>"<?php endif; ?> value="<?php echo esc_attr( $leg[ $key ] ?? ( 'quantity' === $key ? 1 : '' ) ); ?>" /></label>
+			<?php endforeach; ?>
+			<button type="button" class="tcn-trade-leg__remove" data-trade-remove aria-label="Remove option leg" title="Remove option leg"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7" /></svg></button>
 		</div>
 		<?php
 	}
@@ -1958,6 +1995,7 @@ class TCNexus_Course_Builder {
 			$raw_legs = preg_split( '/\r\n|\r|\n/', $raw_legs );
 		}
 		foreach ( (array) $raw_legs as $leg ) {
+			if ( is_string( $leg ) && '' === trim( $leg ) ) continue;
 			if ( is_string( $leg ) ) {
 				$parts = array_map( 'trim', explode( '|', $leg ) );
 				$leg = array(
@@ -1988,6 +2026,7 @@ class TCNexus_Course_Builder {
 
 		return array(
 			'underlying' => sanitize_text_field( wp_unslash( (string) ( $trade['underlying'] ?? '' ) ) ),
+			'assetType'  => 'crypto' === ( $trade['assetType'] ?? 'stock' ) ? 'crypto' : 'stock',
 			'strategy'   => sanitize_text_field( wp_unslash( (string) ( $trade['strategy'] ?? '' ) ) ),
 			'legs'       => $legs,
 			'strikes'    => array_values( array_filter( array_map( function ( $strike ) { return sanitize_text_field( wp_unslash( (string) $strike ) ); }, (array) $raw_strikes ) ) ),

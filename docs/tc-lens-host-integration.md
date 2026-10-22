@@ -16,7 +16,19 @@ The active player follows `TC Lens Stuff/tradecheetah-embed-guide.md` using dire
 
 The host resolves CMS timestamps; the app does not track the video clock. Both LLM and trade cues use read-only ask. Structured scene, learning-level and trade fields become text in message. Existing free-text prompts are preserved. No unsupported session, seek, state-sync or trade-data messages are sent. The optional operate mode and navigation SDK are not enabled by this integration.
 
-## Replies and delivery
+## Trade editor handoff note for Arun (2026-10-22)
+
+Diego requested that we retain this explanation for a later handoff to Arun. The approved trade editor has a manual ticker, shares, Stock/Crypto (Stock default), underlying price, and repeatable Call/Put option rows with action, contracts, strike, expiry and premium. Styling, chevrons and the custom calendar do not change delivery or date storage.
+
+- Ticker maps to `data.underlying`; Stock/Crypto to `data.assetType` (`stock` or `crypto`).
+- Shares map to `data.quantity`; underlying price maps to `data.entryPrice`.
+- Options map to `data.legs[]`: `side` (`call`/`put`), `action` (`buy_to_open`, `sell_to_open`, `buy_to_close`, `sell_to_close`), `quantity` (contracts), `strike`, `expiration` (`YYYY-MM-DD`), and `entryPrice` (premium).
+- Lesson assumptions map to `data.assumptions`. Older strategy, strikes and top-level expiration context is retained for existing lessons.
+- These are the editor's structured trade fields. On the active wire path they are JSON-stringified inside the **text `message`**, after `Trade context:`. They are **not** new top-level postMessage fields or a separate structured trade event.
+- The envelope remains `{ type: 'tc-lens-time-update', videoId: '<lesson ID>', chapter: '<unique cue label>', message: '<prompt and trade context>', workflow: 'ask' }`, sent directly to the TradeCheetah iframe with `postMessage`.
+- Local row behavior and PHP form round-trip checks pass. Live interpretation of asset type, explicit open/close actions and premiums by Arun's app still needs an end-to-end check; do not claim it is confirmed.
+
+## Replies and delivery details
 
 Only trust messages with the exact app origin and the embedded frame as source. Replies have type tc-lens-ack, echoed videoId/chapter and state running, finished, rejected or error. The host sends one prompt, waits through running, and releases the next only after finished. Rejected/error replies clear queued work, stop further automatic delivery and show reason in the panel. Close and reopen the panel after resolving a failure to resume future cues.
 

@@ -88,6 +88,7 @@ export interface TcLensTradeLeg {
 
 export interface TcLensTradeData {
   underlying: string;
+  assetType?: 'stock' | 'crypto';
   strategy: string;
   legs: TcLensTradeLeg[];
   strikes: Array<number | string>;

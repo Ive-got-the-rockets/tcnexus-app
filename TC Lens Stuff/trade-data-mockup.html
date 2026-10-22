@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TC Lens · Trade data mockup</title>
+<style>
+:root{--bg:#fffdf9;--sunken:#f1efe7;--border:#e5e2d9;--text:#201f1c;--dim:#7a756c;--mint:#8fd8c2;--strong:#5fc7a8;--green:#12352c}
+*{box-sizing:border-box}body{margin:0;background:#f1efe9;color:var(--text);font:14px 'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}main{max-width:1152px;margin:40px auto;padding:0 24px}.context{display:flex;align-items:center;justify-content:space-between;color:var(--dim);font-size:12px;margin-bottom:16px}.context span:last-child{border:1px solid #d5d1c6;border-radius:20px;padding:5px 10px}article{background:var(--bg);border:1px solid var(--border);border-radius:16px;box-shadow:0 4px 12px #201f1c0d;overflow:hidden}header{padding:24px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}h1{font-size:23px;letter-spacing:-.6px;font-weight:600;margin:0 0 5px}p{color:var(--dim);line-height:1.5;margin:0;font-size:12px}.ghost{background:transparent;border:1px solid #d8d4c9;padding:9px 14px;border-radius:25px;font-weight:500;font-size:12px}.body{padding:24px}.event{border:1px solid var(--border);border-radius:10px;padding:20px;background:var(--bg)}.timing{display:grid;grid-template-columns:180px 145px 145px 1fr 30px;gap:16px;align-items:start;padding-bottom:22px;border-bottom:1px solid var(--border)}label{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:500;min-width:0}label small{font-weight:400;color:var(--dim);font-size:10px;margin-top:-3px}input,select,textarea{width:100%;min-width:0;height:39px;border:1px solid var(--border);border-radius:6px;background:var(--sunken);padding:0 10px;font-size:13px;outline:none}select{cursor:pointer}input:focus,select:focus,textarea:focus{border-color:var(--strong);box-shadow:0 0 0 2px #8fd8c23d}input[type=number]{appearance:textfield}input::-webkit-inner-spin-button{appearance:none}.remove{width:30px;height:30px;display:grid;place-items:center;border:0;border-radius:6px;background:transparent;color:var(--dim);align-self:center}.remove:hover{background:#efa79c33;color:#6b2a1e}.remove svg{width:16px;height:16px}.section-title{margin:20px 0 15px;display:flex;gap:10px;align-items:center;font-size:14px;font-weight:600}.section-title .line{height:1px;flex:1;background:var(--border)}.ticker{max-width:270px}.ticker input{text-transform:uppercase;font-weight:600;letter-spacing:.5px}.underlying{display:grid;grid-template-columns:1fr 1fr 1fr 42px;gap:14px;align-items:end;margin-top:17px}.plus{border-radius:50%;width:38px;height:38px;border:1px solid #70bea6;background:var(--mint);color:var(--green);display:grid;place-items:center;font-size:25px;font-weight:400;line-height:1;margin-bottom:1px}.plus:hover{background:var(--strong)}.options-head{display:flex;align-items:center;justify-content:space-between;margin:23px 0 10px}.options-head span{font-size:12px;font-weight:500}.options-head small{font-size:11px;color:var(--dim)}.leg{position:relative;display:grid;grid-template-columns:100px 1.45fr .7fr .85fr 1.2fr .85fr 28px;gap:12px;padding:15px 12px 15px 16px;border:1px solid var(--border);border-left:3px solid #78b5a3;border-radius:8px;background:#faf9f4;margin-top:10px;align-items:end}.leg[data-side=Put]{border-left-color:#b6a0bd}.leg label{font-size:11px}.leg input,.leg select{background:var(--bg);height:37px}.leg .remove{margin-bottom:3px}.notes{margin-top:22px}.notes textarea{height:70px;padding:10px;resize:vertical}.notes small{margin-bottom:1px}footer{padding-top:16px;display:flex;align-items:center;gap:7px;color:var(--dim);font-size:11px}footer svg{width:14px;height:14px;flex-shrink:0}.legend{display:flex;justify-content:space-between;padding:18px 4px;color:var(--dim);font-size:11px}.empty{padding:18px;border:1px dashed var(--border);border-radius:8px;color:var(--dim);font-size:12px}.badge{color:#47695e;background:#e5f2eb;font-size:11px;padding:4px 8px;border-radius:20px;margin-left:4px}
+@media(max-width:760px){main{margin:20px auto;padding:0 12px}header{padding:20px;gap:14px}.body{padding:12px}.event{padding:14px}.timing{grid-template-columns:1fr 1fr}.timing>label:first-child{grid-column:1/-1}.timing>.remove{position:absolute;right:30px}.timing>div{display:none}.underlying{gap:9px;grid-template-columns:1fr 1fr 1fr 38px}.leg{grid-template-columns:1fr 1fr;gap:12px;padding-right:40px}.leg>.remove{position:absolute;right:6px;top:12px}.ticker{max-width:none}.legend{gap:16px;line-height:1.5}.options-head small{font-size:10px}h1{font-size:20px}}
+/* Review refinements: keep glyph positioning independent of the button. */
+.plus > span { transform: translateY(-2px); }
+.leg { --leg-accent: #78b5a3; border-left-color: var(--leg-accent); border-bottom: 1px solid var(--leg-accent); }
+.leg[data-side="Put"] { --leg-accent: #efa79c; border-left-color: var(--leg-accent); }
+.remove { color: #b65c50; }
+.leg .remove { align-self: end; margin-bottom: 3.5px; }
+.timing > .remove { align-self: end; margin-bottom: 4.5px; }
+@media (max-width: 760px) { .leg > .remove { top: 50%; transform: translateY(-50%); margin-bottom: 0; } }
+</style>
+</head>
+<body>
+<main>
+<div class="context"><span>Course builder / Lesson editor</span><span>Interactive mockup · v1</span></div>
+<article>
+<header><div><h1>TC Lens timeline</h1><p>Send independent LLM or trade-data messages at selected video times.</p></div><span class="ghost">+ Add message</span></header>
+<div class="body"><section class="event" aria-label="Trade data message">
+<div class="timing">
+<label>Type<small>Choose what TC Lens should receive.</small><select aria-label="Message type"><option>Trade data</option></select></label>
+<label>Start time<small>When this trade appears.</small><input aria-label="Start time" value="00:30"></label>
+<label>End time<small>Optional</small><input aria-label="End time" placeholder="No end"></label><div></div>
+<span class="remove" title="Message controls shown for context" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/></svg></span>
+</div>
+<div class="section-title">Underlying<span class="line"></span></div>
+<label class="ticker">Ticker<small>Enter manually. All positions below use this ticker.</small><input id="ticker" aria-label="Ticker" value="AAPL" autocomplete="off" spellcheck="false"></label>
+<div class="underlying">
+<label>Shares<input type="number" aria-label="Shares" min="0" step="any" value="100"></label>
+<label>Type<select aria-label="Asset type"><option selected>Stock</option><option>Crypto</option></select></label>
+<label>Price ($)<input type="number" aria-label="Underlying price" min="0" step="0.01" value="258.11"></label>
+<button class="plus" id="add" aria-label="Add option leg" title="Add Call or Put"><span aria-hidden="true">+</span></button>
+</div>
+<div class="options-head"><span>Options <span class="badge" id="symbol">AAPL</span></span><small>Use + to add a Call or Put</small></div>
+<div id="legs" aria-live="polite"></div>
+<label class="notes">Lesson assumptions<small>Context TC Lens should use for the calculation.</small><textarea aria-label="Lesson assumptions" placeholder="Add learning or recalculation assumptions…"></textarea></label>
+<footer><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v1"/></svg>Changing the ticker applies to the underlying and every option row.</footer>
+</section></div>
+</article>
+<div class="legend"><span>Preview only · Example values · Changes are not saved</span><span>Add rows, change Call/Put, or open the expiry calendar.</span></div>
+</main>
+<script>
+const legs=document.getElementById('legs');let sequence=0;
+const trash='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/></svg>';
+function addLeg(side='Call',action='Buy to Open',strike='',premium=''){
+ legs.querySelector('.empty')?.remove();const row=document.createElement('div');row.className='leg';row.dataset.side=side;row.setAttribute('role','group');row.setAttribute('aria-label','Option leg '+(++sequence));
+ row.innerHTML=`<label>Option<select aria-label="Option type"><option>Call</option><option>Put</option></select></label><label>Action<select aria-label="Option action"><option>Buy to Open</option><option>Sell to Open</option><option>Buy to Close</option><option>Sell to Close</option></select></label><label>Contracts<input aria-label="Contracts" type="number" min="1" step="1" value="1"></label><label>Strike ($)<input aria-label="Strike" type="number" min="0" step="0.01" placeholder="0.00"></label><label>Expiry<input aria-label="Expiry" type="date"></label><label>Premium ($)<input aria-label="Premium" type="number" min="0" step="0.01" placeholder="0.00"></label><button class="remove" aria-label="Remove option leg" title="Remove option leg">${trash}</button>`;
+ const selects=row.querySelectorAll('select');selects[0].value=side;selects[1].value=action;selects[0].onchange=()=>row.dataset.side=selects[0].value;
+ row.querySelector('[aria-label="Strike"]').value=strike;row.querySelector('[aria-label="Premium"]').value=premium;
+ if(strike)row.querySelector('[type=date]').value='2026-11-20';
+ row.querySelector('button').onclick=()=>{row.remove();if(!legs.children.length)legs.innerHTML='<div class="empty">No options added. Use the + beside Price to add a Call or Put.</div>'};
+ legs.append(row);return row;
+}
+document.getElementById('add').onclick=()=>addLeg().querySelector('select').focus();
+document.getElementById('ticker').oninput=e=>{document.getElementById('symbol').textContent=e.target.value.trim().toUpperCase()||'No ticker'};
+addLeg('Call','Sell to Open','275.00','12.05');addLeg('Put','Buy to Open','265.00','20.30');
+</script>
+</body>
+</html>
