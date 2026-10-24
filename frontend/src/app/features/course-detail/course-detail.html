@@ -121,7 +121,7 @@
                   <span>Trailer</span>
                 </button>
               }
-              @if (c.overview_link) {
+              @if (activeVariant(c)?.overview_link || c.overview_link) {
                 <button type="button" class="detail__overview-btn" (click)="openOverview()">Course Overview</button>
               }
               <div
@@ -282,3 +282,5 @@
     </section>
   </div>
 }
+
+<app-course-overview />

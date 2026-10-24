@@ -1,7 +1,7 @@
+import { CourseOverview } from '../../core/course-overview';
 import { AfterViewInit, Component, ElementRef, HostListener, Injector, OnDestroy, afterNextRender, computed, inject, signal, viewChild } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
-import type { PDFDocumentLoadingTask, PDFDocumentProxy } from 'pdfjs-dist';
 import { catchError, forkJoin, of } from 'rxjs';
 import { Course, CourseDetail, CourseLevelSlug, Lesson, Person } from '../../core/models';
 import { profilePlaceholderUrl } from '../../core/profile-placeholders';
@@ -19,7 +19,6 @@ type LandingMode = 'home' | 'trading' | 'platform' | 'shows';
 const PAGE_EXIT_DURATION = 280;
 const STYLE2_SCROLL_STORAGE_KEY = 'tcnexus-style2-trading-scroll';
 const STYLE2_FEATURED_KIND_STORAGE_KEY = 'tcnexus-style2-featured-kind';
-const COURSE_OVERVIEW_PDF_URL = '/course-overviews/Market-Mavericks.pdf';
 const STYLE3_FEATURED_IMAGE_URL = '/shows/the-primer-BG-ratio-8by3.jpg';
 
 interface ReturnOverlayState {
@@ -28,7 +27,7 @@ interface ReturnOverlayState {
 
 @Component({
   selector: 'app-layout-style-3',
-  imports: [RowScrollDirective],
+  imports: [RowScrollDirective, CourseOverview],
   templateUrl: './layout-style-3.html',
   styleUrl: './layout-style-3.scss'
 })
@@ -46,7 +45,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
   private readonly platformCarousel = viewChild<ElementRef<HTMLElement>>('platformCarousel');
   private readonly showsTrack = viewChild<ElementRef<HTMLElement>>('showsTrack');
   private readonly showsCarousel = viewChild<ElementRef<HTMLElement>>('showsCarousel');
-  private readonly overviewViewer = viewChild<ElementRef<HTMLElement>>('overviewViewer');
+  private readonly overviewDialog = viewChild(CourseOverview);
   private resizeObserver?: ResizeObserver;
   private pageExitTimer?: ReturnType<typeof setTimeout>;
   private descriptionCloseTimer?: ReturnType<typeof setTimeout>;
@@ -133,9 +132,6 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
   protected readonly charactersExpanded = signal(false);
   protected readonly instructorOpen = signal(false);
   protected readonly selectedLanguage = signal('en');
-  private overviewLoadingTask?: PDFDocumentLoadingTask;
-  private overviewPdf?: PDFDocumentProxy;
-  private overviewRenderToken = 0;
   protected readonly carouselCourses = computed(() => {
     return this.platformOnly() || this.showsOnly()
       ? []
@@ -449,7 +445,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
     for (const timer of Object.values(this.scrollSettledTimers)) {
       if (timer !== undefined) clearTimeout(timer);
     }
-    this.clearOverviewPdf();
+    this.overviewDialog()?.close();
     document.body.style.overflow = '';
   }
 
@@ -891,138 +887,12 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
     requestAnimationFrame(() => requestAnimationFrame(() => this.lessonsRevealed.set(true)));
   }
 
-  protected openOverview(_course: Course): void {
-    const overviewUrl = COURSE_OVERVIEW_PDF_URL;
-    this.overviewUrl.set(overviewUrl);
-    this.overviewOpen.set(false);
-    this.overviewClosing.set(false);
-    document.body.style.overflow = 'hidden';
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      if (this.overviewUrl() === overviewUrl) {
-        this.overviewOpen.set(true);
-        void this.renderOverviewPdf();
-      }
-    }));
+  protected openOverview(course: Course, event?: Event): void {
+    event?.stopPropagation();
+    this.overviewDialog()?.show(course.overview_link);
   }
 
-  protected closeOverview(): void {
-    if (!this.overviewUrl()) return;
-    this.overviewClosing.set(true);
-    this.overviewOpen.set(false);
-    this.overviewCloseTimer = setTimeout(() => {
-      this.clearOverviewPdf();
-      this.overviewUrl.set(null);
-      this.overviewClosing.set(false);
-      this.overviewCloseTimer = undefined;
-      document.body.style.overflow = '';
-    }, 650);
-  }
-
-  private async renderOverviewPdf(): Promise<void> {
-    const viewer = this.overviewViewer()?.nativeElement;
-    if (!viewer) return;
-
-    const token = ++this.overviewRenderToken;
-    this.overviewPdfLoading.set(true);
-    viewer.replaceChildren();
-
-    try {
-      const { getDocument, GlobalWorkerOptions, TextLayer } = await import('pdfjs-dist');
-      GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
-      const loadingTask = getDocument({ url: COURSE_OVERVIEW_PDF_URL });
-      this.overviewLoadingTask = loadingTask;
-      const pdf = await loadingTask.promise;
-      if (token !== this.overviewRenderToken) {
-        await loadingTask.destroy();
-        return;
-      }
-      this.overviewPdf = pdf;
-
-      for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
-        if (token !== this.overviewRenderToken) return;
-        const page = await pdf.getPage(pageNumber);
-        const baseViewport = page.getViewport({ scale: 1 });
-        const innerWidth = Math.max(320, (viewer.clientWidth || 900) - 28);
-        const scale = Math.min(1.45, Math.max(0.75, innerWidth / baseViewport.width));
-        const viewport = page.getViewport({ scale });
-        const deviceScale = Math.min(window.devicePixelRatio || 1, 2);
-
-        const pageElement = document.createElement('article');
-        pageElement.className = 'style-overview-pdf-page';
-        pageElement.style.width = `${viewport.width}px`;
-        pageElement.style.height = `${viewport.height}px`;
-        pageElement.setAttribute('aria-label', `Course overview page ${pageNumber}`);
-
-        const canvas = document.createElement('canvas');
-        canvas.className = 'style-overview-pdf-canvas';
-        canvas.width = Math.ceil(viewport.width * deviceScale);
-        canvas.height = Math.ceil(viewport.height * deviceScale);
-        canvas.style.width = `${viewport.width}px`;
-        canvas.style.height = `${viewport.height}px`;
-        const context = canvas.getContext('2d');
-        if (!context) continue;
-        pageElement.append(canvas);
-
-        const textLayerElement = document.createElement('div');
-        textLayerElement.className = 'style-overview-pdf-text-layer textLayer';
-        textLayerElement.style.setProperty('--total-scale-factor', String(scale));
-        pageElement.append(textLayerElement);
-
-        const linkLayerElement = document.createElement('div');
-        linkLayerElement.className = 'style-overview-pdf-link-layer annotationLayer';
-        pageElement.append(linkLayerElement);
-        viewer.append(pageElement);
-
-        await page.render({
-          canvasContext: context,
-          canvas,
-          viewport,
-          transform: [deviceScale, 0, 0, deviceScale, 0, 0],
-        }).promise;
-
-        const textContent = await page.getTextContent();
-        const textLayer = new TextLayer({
-          textContentSource: textContent,
-          container: textLayerElement,
-          viewport,
-        });
-        await textLayer.render();
-
-        const annotations = await page.getAnnotations({ intent: 'display' });
-        for (const annotation of annotations) {
-          const url = annotation.url ?? annotation.unsafeUrl;
-          if (!url || !annotation.rect) continue;
-          const [x1, y1] = viewport.convertToViewportPoint(annotation.rect[0], annotation.rect[1]);
-          const [x2, y2] = viewport.convertToViewportPoint(annotation.rect[2], annotation.rect[3]);
-          const link = document.createElement('a');
-          link.className = 'style-overview-pdf-link';
-          link.href = url;
-          link.target = '_blank';
-          link.rel = 'noopener noreferrer';
-          link.setAttribute('aria-label', 'Open linked resource');
-          link.style.left = `${Math.min(x1, x2)}px`;
-          link.style.top = `${Math.min(y1, y2)}px`;
-          link.style.width = `${Math.abs(x2 - x1)}px`;
-          link.style.height = `${Math.abs(y2 - y1)}px`;
-          linkLayerElement.append(link);
-        }
-      }
-      this.overviewPdfLoading.set(false);
-    } catch (error) {
-      console.error('Unable to render course overview PDF', error);
-      this.overviewPdfLoading.set(false);
-    }
-  }
-
-  private clearOverviewPdf(): void {
-    this.overviewRenderToken += 1;
-    void this.overviewLoadingTask?.destroy();
-    this.overviewLoadingTask = undefined;
-    void this.overviewPdf?.cleanup();
-    this.overviewPdf = undefined;
-    this.overviewViewer()?.nativeElement.replaceChildren();
-    this.overviewPdfLoading.set(true);
-  }
+  protected closeOverview(): void { this.overviewDialog()?.close(); }
 
   private navigateToCourse(course: Course, rect?: DOMRect): void {
     const track = this.track()?.nativeElement;

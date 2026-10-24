@@ -1653,7 +1653,8 @@
 
 .style-card__play,
 .style-card__trailer,
-.style-card__list {
+.style-card__list,
+.style-card__overview {
   position: relative;
 }
 
@@ -1683,12 +1684,15 @@
 .style-card__trailer:hover .style-card__tooltip,
 .style-card__trailer:focus-visible .style-card__tooltip,
 .style-card__list:hover .style-card__tooltip,
-.style-card__list:focus-visible .style-card__tooltip {
+.style-card__list:focus-visible .style-card__tooltip,
+.style-card__overview:hover .style-card__tooltip,
+.style-card__overview:focus-visible .style-card__tooltip {
   opacity: 1;
   transform: translate(-50%, 0);
 }
 
-.style-card__list {
+.style-card__list,
+.style-card__overview {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2839,4 +2843,17 @@
 .style-page .style-featured__background-link:focus-visible {
   background: transparent !important;
   color: transparent;
+}
+
+.style-card__overview {
+  flex: 0 0 28px;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+
+  &:focus-visible {
+    outline: 2px solid var(--paper);
+    outline-offset: 3px;
+  }
 }

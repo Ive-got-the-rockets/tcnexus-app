@@ -1,3 +1,4 @@
+import { CourseOverview } from '../../core/course-overview';
 import { Component, ElementRef, Injector, OnDestroy, afterNextRender, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -17,7 +18,7 @@ type PageStatus = 'loading' | 'error' | 'ready';
 
 @Component({
   selector: 'app-course-detail',
-  imports: [RouterLink],
+  imports: [RouterLink, CourseOverview],
   templateUrl: './course-detail.html',
   styleUrl: './course-detail.scss'
 })
@@ -341,11 +342,11 @@ export class CourseDetailPage implements OnDestroy {
     return this.activeVariant(course)?.image ?? course.image ?? course.thumbnail ?? `https://picsum.photos/seed/tcnexus-${course.id}/1600/900`;
   }
 
+  private readonly overviewDialog = viewChild(CourseOverview);
+
   protected openOverview(): void {
-    const link = this.course()?.overview_link;
-    if (link) {
-      window.open(link, '_blank', 'noopener');
-    }
+    const course = this.course();
+    if (course) this.overviewDialog()?.show(this.activeVariant(course)?.overview_link || course.overview_link);
   }
 
   protected startWatching(): void {
