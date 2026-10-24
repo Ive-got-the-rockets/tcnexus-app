@@ -4,10 +4,24 @@ import { Component, ElementRef, OnDestroy, inject, signal, viewChild } from '@an
 @Component({
  selector: 'app-course-overview',
  template: `<dialog #dialog aria-label="Course overview" (click)="backdrop($event)" (close)="closed()">
- <header><span>Course Overview</span><button type="button" autofocus aria-label="Close course overview" (click)="close()">&#215;</button></header>
+ <div class="overview-controls">
+   <a [href]="sourceUrl()" target="_blank" rel="noopener noreferrer" aria-label="Open overview in a new tab" title="Open overview in a new tab"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6M21 3l-9 9M15 3h6v6" /></svg></a>
+   <button type="button" autofocus aria-label="Close course overview" title="Close course overview" (click)="close()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button>
+ </div>
  @if (loaded()) { <iframe [src]="embedUrl()" allow="fullscreen" allowfullscreen title="Course overview presentation"></iframe> }
- <footer><a [href]="sourceUrl()" target="_blank" rel="noopener noreferrer">Open overview in a new tab</a></footer></dialog>`,
- styles: `dialog {width:min(1400px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 32px);padding:0;border:1px solid #ffffff30;border-radius:12px;background:#141414;color:#fff;box-sizing:border-box} dialog::backdrop {background:#000b} header,footer {display:flex;align-items:center;justify-content:space-between;padding:12px 18px;font-family:var(--font-ui,sans-serif)} button {width:44px;height:44px;border:0;background:transparent;color:inherit;font-size:30px;cursor:pointer} button:hover {background:#ffffff15} button:focus-visible,a:focus-visible {outline:2px solid #fff;outline-offset:2px} iframe {display:block;width:100%;height:min(70dvh,720px);border:0;background:#fff} a {color:inherit;font-size:13px} @media(max-width:600px){iframe{height:65dvh} header,footer{padding:8px 12px}}`
+ </dialog>`,
+ styles: `
+ dialog {width:min(1400px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 32px);padding:0;border:1px solid #ffffff30;border-radius:12px;background:#141414;color:#fff;box-sizing:border-box;overflow:hidden}
+ dialog::backdrop {background:#000b}
+ .overview-controls {position:absolute;top:8px;right:18px;z-index:1;display:flex;align-items:center;gap:6px;padding:4px;border-radius:6px;background:transparent}
+ button,a {display:grid;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:0;border-radius:var(--button-radius,4.8px);background:transparent;color:var(--paper,#f4f1e9);cursor:pointer;transition:background .2s ease,color .2s ease}
+ button:hover,a:hover,button:focus-visible,a:focus-visible {background:#fff;color:#33373d}
+ button:focus-visible,a:focus-visible {outline:2px solid #fff;outline-offset:2px}
+ button:active,a:active {background:#e5e5e5;color:#33373d}
+ svg {width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+ iframe {display:block;width:100%;height:min(70dvh,720px);border:0;background:#fff}
+ @media(max-width:600px){iframe{height:65dvh}}
+ `
 })
 export class CourseOverview implements OnDestroy {
  private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
