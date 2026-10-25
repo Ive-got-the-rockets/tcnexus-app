@@ -273,7 +273,7 @@
       aria-label="Trailer"
       (click)="$event.stopPropagation()"
     >
-      <button type="button" class="detail__trailer-close" aria-label="Close trailer" (click)="closeTrailer()"><span aria-hidden="true">×</span></button>
+      <button type="button" class="detail__trailer-close" aria-label="Close trailer" title="Close trailer" (click)="closeTrailer()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button>
       @if (trailerVideoUrl(); as videoUrl) {
         <video class="detail__trailer-video" [src]="videoUrl" autoplay controls playsinline></video>
       } @else if (trailerEmbedUrl(); as embedUrl) {

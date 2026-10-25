@@ -1154,30 +1154,35 @@
 
 .style-trailer-modal__close {
   position: absolute;
-  top: 0.8rem;
-  right: 0.8rem;
-  z-index: 1;
+  top: 12px;
+  right: 22px;
+  z-index: 2;
   display: grid;
-  width: 34px;
-  height: 34px;
-  place-items: center;
-  border: 1px solid color-mix(in srgb, var(--paper) 45%, transparent);
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--ink) 76%, transparent);
-  color: var(--paper);
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--button-radius, 4.8px);
+  background: transparent;
+  color: var(--paper, #f4f1e9);
   cursor: pointer;
-  font-family: var(--font-ui);
-  font-size: 24px;
-  font-weight: 300;
-  line-height: 1;
+  transition: background .2s ease, color .2s ease;
 
-  &:hover,
-  &:focus-visible { border-color: var(--signal); color: var(--signal); }
-}
+  &:hover, &:focus-visible {background: #fff; color: #33373d;}
+  &:focus-visible {outline: 2px solid #fff; outline-offset: 2px;}
+  &:active {background: #e5e5e5; color: #33373d;}
 
-.style-trailer-modal__close > span {
-  position: relative;
-  top: -1px;
+  svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
 }
 
 .style-trailer-modal__video {
