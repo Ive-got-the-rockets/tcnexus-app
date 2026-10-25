@@ -20,7 +20,7 @@ export class CoursesService {
   getShows(): Observable<Course[]> {
     return this.withTransientRetry(this.http.get<Course[]>(`${this.baseUrl}/shows`)).pipe(
       map(shows => shows.map(show => show.title === 'The Primer'
-        ? { ...show, course_types: ['Shows'], lesson_count: Math.max(1, show.lesson_count), trailer_link: PRIMER_TEST_VIDEO_URL }
+        ? { ...show, course_types: ['Shows'], lesson_count: Math.max(1, show.lesson_count) }
         : show))
     );
   }
@@ -32,7 +32,6 @@ export class CoursesService {
         return {
           ...detail,
           course_types: detail.course_types.length ? detail.course_types : ['Shows'],
-          trailer_link: PRIMER_TEST_VIDEO_URL,
           lessons: [{
             id: 38201,
             title: 'The Primer — Episode 1',
