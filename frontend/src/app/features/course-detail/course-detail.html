@@ -270,9 +270,18 @@
       class="detail__trailer-modal"
       role="dialog"
       aria-modal="true"
-      aria-label="Trailer"
+      aria-labelledby="detail-trailer-title"
       (click)="$event.stopPropagation()"
     >
+      @if (course(); as trailer) {
+        <div class="detail__trailer-title" id="detail-trailer-title">
+          @if (activeTitleImage(trailer); as titleImage) {
+            <img [src]="titleImage" [alt]="activeTitle(trailer)" />
+          } @else {
+            <span>{{ activeTitle(trailer) }}</span>
+          }
+        </div>
+      }
       <button type="button" class="detail__trailer-close" aria-label="Close trailer" title="Close trailer" (click)="closeTrailer()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button>
       @if (trailerVideoUrl(); as videoUrl) {
         <video class="detail__trailer-video" [src]="videoUrl" autoplay controls playsinline></video>

@@ -2872,3 +2872,29 @@
     outline-offset: 3px;
   }
 }
+
+.style-trailer-modal__title {
+  position: absolute;
+  top: 20px;
+  left: 22px;
+  z-index: 1;
+  width: clamp(120px, 20vw, 260px);
+  max-width: calc(100% - 100px);
+  pointer-events: none;
+  color: var(--paper, #f4f1e9);
+  font-family: var(--font-ui, sans-serif);
+  font-size: clamp(14px, 2vw, 22px);
+  line-height: 1.2;
+  text-shadow: 0 2px 8px #0009;
+
+  img {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: 80px;
+    object-fit: contain;
+    object-position: left top;
+    filter: drop-shadow(0 2px 6px #0006);
+  }
+}
