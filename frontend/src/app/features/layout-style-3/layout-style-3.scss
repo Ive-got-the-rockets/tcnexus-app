@@ -1257,17 +1257,27 @@
 .style-featured-pagination {
   position: absolute;
   top: 18.75vw;
-  right: 7px;
+  right: 0;
   z-index: 25;
+  width: 120px;
+  height: 240px;
+  transform: translateY(-50%);
+}
+
+.style-featured-pagination__track {
+  position: absolute;
+  top: 50%;
+  right: 7px;
   width: 25px;
   height: 100px;
   transform: translateY(-50%);
-  transform-origin: center;
+  transform-origin: right center;
   transition: transform 0.28s ease;
 }
 
-.style-featured-pagination:hover {
-  transform: translateY(-50%) scale(1.35);
+.style-featured-pagination:hover .style-featured-pagination__track,
+.style-featured-pagination:focus-within .style-featured-pagination__track {
+  transform: translateY(-50%) scale(2);
 }
 
 .style-featured-pagination__item {

@@ -23,6 +23,7 @@
 >
   @if (featuredPaginationItems().length > 1) {
     <nav class="style-featured-pagination" aria-label="Featured content" (wheel)="onFeaturedPaginationWheel($event)">
+      <div class="style-featured-pagination__track">
       @for (entry of featuredPaginationItems(); track entry.item.id) {
         <button
           type="button"
@@ -36,6 +37,7 @@
         (click)="selectFeatured(entry.distance)"
         ></button>
       }
+      </div>
     </nav>
   }
 
