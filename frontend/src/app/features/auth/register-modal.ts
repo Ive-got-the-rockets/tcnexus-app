@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, ElementRef, inject, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, inject, isDevMode, signal, viewChild } from '@angular/core';
 
 import { AccessService } from '../../core/access.service';
 import { AuthModalService } from '../../core/auth-modal.service';
@@ -15,6 +15,10 @@ type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error';
   styleUrl: './register-modal.scss'
 })
 export class RegisterModal {
+  protected readonly previewEpisodes = (() => {
+    const count = isDevMode() ? Number(new URLSearchParams(window.location.search).get('episodes') ?? 15) : 15;
+    return Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 15;
+  })();
   protected readonly authModal = inject(AuthModalService);
   protected readonly visitor = inject(VisitorService);
   private readonly accessService = inject(AccessService);

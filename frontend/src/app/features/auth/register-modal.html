@@ -1,6 +1,6 @@
 @if (authModal.isOpen()) {
   <div class="auth-modal-overlay" [class.auth-modal-overlay--choice]="authModal.mode() === 'choice'" (click)="close()">
-    <div class="auth-modal" [class.auth-modal--choice]="authModal.mode() === 'choice'" [class.auth-modal--paid]="authModal.mode() === 'paid'" (click)="$event.stopPropagation()">
+    <div class="auth-modal" [class.auth-modal--registration]="authModal.mode() === 'register'" [class.auth-modal--choice]="authModal.mode() === 'choice'" [class.auth-modal--paid]="authModal.mode() === 'paid'" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Membership">
       @if (authModal.mode() !== 'choice' && authModal.mode() !== 'paid') {
         <button type="button" class="auth-modal__close" aria-label="Close" (click)="close()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -9,7 +9,34 @@
         </button>
       }
 
-      @if (authModal.mode() === 'paid') {
+      @if (authModal.mode() === 'register') {
+        <section class="registration-body">
+          <h2 class="registration-title">The best is yet to play.</h2>
+          <p class="registration-reassurance">No credit card required. Your company is quite enough.</p>
+          <p class="registration-intro">Your next <strong>{{ previewEpisodes }} {{ previewEpisodes === 1 ? 'episode' : 'episodes' }}</strong> are on us. Just add your name and email.</p>
+          <p class="registration-privacy">We will only email you when new free episodes arrive. Your inbox has suffered enough.</p>
+          <form class="registration-form" (submit)="submit($event)">
+            <input id="registration-name" name="name" type="text" autocomplete="name" required aria-label="Name" placeholder="Your name" class="auth-modal__input" [disabled]="status() !== 'idle' && status() !== 'error'" />
+            <input #emailInput id="registration-email" name="email" type="email" autocomplete="email" required aria-label="Email" placeholder="you@example.com" class="auth-modal__input" [disabled]="status() !== 'idle' && status() !== 'error'" />
+            <p class="registration-curiosity">Stay curious. We insist.</p>
+            @if (status() === 'error') { <p class="auth-modal__error" role="alert">{{ errorMessage() }}</p> }
+            <button type="submit" class="auth-modal__submit" [disabled]="status() === 'submitting' || status() === 'success'">
+              @if (status() === 'submitting') { Creating profile… } @else if (status() === 'success') { Profile Created } @else { Keep Watching Free }
+            </button>
+          </form>
+          <section class="registration-membership">
+            <p class="registration-invitation">Have you got somewhere better to be, or shall we keep going?</p>
+            <p>Your curiosity has negotiated a better price</p>
+            <ul>
+              <li><strong>40% off your subscription</strong> when you pay monthly.</li>
+              <li><strong>60% off your subscription</strong> when you pay for a full year upfront.</li>
+            </ul>
+            <p>Either way, you also get <strong>20% off a TradeCheetah membership</strong> and <strong>30% off the TradeCheetah Store</strong>. Both discounts remain yours for as long as you are a TCNexus.tv member.</p>
+            <button type="button" class="auth-modal__submit registration-reward" (click)="authModal.open('paid')">Reward My Curiosity</button>
+            <p class="registration-curiosity registration-restraint">Restraint is admirable. Only occasionally.</p>
+          </section>
+        </section>
+      } @else if (authModal.mode() === 'paid') {
         @let pricing = settings().pricing;
         <section class="auth-modal__paid-card">
           <button type="button" class="auth-modal__close" [attr.aria-label]="pricing.close_label" (click)="close()">{{ pricing.close_label }}</button>
