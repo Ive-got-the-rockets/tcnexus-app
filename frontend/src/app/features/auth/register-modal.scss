@@ -358,7 +358,7 @@ form {
 @keyframes registration-offer-enter { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
 .registration-shimmer {
   font-size: 22px;
-  background-image: linear-gradient(110deg, #00cce6 35%, #ff3319 50%, #00cce6 65%);
+  background-image: linear-gradient(110deg, #00cce6 35%, #ff00ff 50%, #00cce6 65%);
   background-size: 300% 100%;
   background-position: 100% 0;
   background-clip: text;
