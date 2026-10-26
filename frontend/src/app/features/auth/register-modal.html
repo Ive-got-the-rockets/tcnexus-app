@@ -38,7 +38,10 @@
               <li><strong class="registration-shimmer">30% off the TradeCheetah Store</strong></li>
             </ul>
             <p>Yours for as long as you're a TCNexus.tv member.</p>
-            <button type="button" class="auth-modal__submit registration-reward" (click)="authModal.open('paid')">Reward My Curiosity</button>
+            <div class="registration-offer-actions">
+              <button type="button" class="auth-modal__submit registration-reward" (click)="authModal.open('paid')">Reward My Curiosity</button>
+              <button type="button" class="auth-modal__submit registration-reward" (click)="close()">No thanks, keep watching free</button>
+            </div>
             <p class="registration-curiosity registration-restraint">Restraint is admirable. Only occasionally.</p>
           </section>
         </section>

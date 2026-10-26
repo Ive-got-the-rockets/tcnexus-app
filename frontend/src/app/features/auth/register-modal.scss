@@ -331,6 +331,8 @@ form {
 .registration-curiosity { margin: 10px 0 0; font-size: 12px; line-height: 1.6; color: #e0ecec; }
 .registration-membership .registration-invitation { color: #e0ecec; font-size: 14px; }
 .registration-membership .registration-reward { width: 100%; }
+.registration-offer-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.registration-offer-actions .registration-reward { flex: 1 1 220px; width: auto; }
 .registration-membership .registration-restraint { margin: 12px 0 0; text-align: center; font-size: 12px; }
 .registration-membership .registration-title + .registration-restraint { margin: 0 0 24px; }
 .registration-annual-offer { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
