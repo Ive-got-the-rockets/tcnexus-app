@@ -15,7 +15,8 @@ type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error';
   styleUrl: './register-modal.scss'
 })
 export class RegisterModal {
-  protected readonly animationTestMode = isDevMode() && new URLSearchParams(window.location.search).get('popup-preview') === 'register';
+  // Temporary frontend test mode, including the live site, until backend integration.
+  protected readonly animationTestMode = true;
   protected readonly previewEpisodes = (() => {
     const count = isDevMode() ? Number(new URLSearchParams(window.location.search).get('episodes') ?? 15) : 15;
     return Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 15;
