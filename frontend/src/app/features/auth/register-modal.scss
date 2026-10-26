@@ -259,31 +259,37 @@ form {
 @media (max-width: 760px) { .auth-modal--paid { max-height: calc(100vh - 2rem); overflow-y: auto; }.auth-modal__paid-heading { align-items: flex-start; flex-direction: column; padding-right: 2rem; }.auth-modal__paid-grid { grid-template-columns: 1fr; }.auth-modal__paid-tier--featured { transform: none; } }
 
 .auth-modal--registration {
-  width: min(1120px, calc(100vw - 64px));
+  width: min(800px, calc(100vw - 64px));
+  box-sizing: border-box;
   max-width: none;
   max-height: calc(100dvh - 48px);
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 0;
   border: 1px solid #294046;
   border-radius: 12px;
-  background: #030b0e url('/auth/neon-cheetah.png') left center / cover no-repeat;
+  background-color: #030b0e;
+  background-image: url('/auth/neon-cheetah.png');
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
   color: #f5f5f1;
 }
 .auth-modal--registration .auth-modal__close { z-index: 2; width: 36px; height: 36px; color: #c7d4d5; background: #071316b3; }
-.auth-modal--registration::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 0 35%;
-  pointer-events: none;
-  background: linear-gradient(90deg, rgba(3, 11, 14, 0), rgba(3, 11, 14, 0.85) 18%);
-}
 .registration-body {
   position: relative;
-  width: 50%;
-  margin-left: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 40px;
+  width: 100%;
+  transform: translateX(calc(50% - 24px));
+  transition: transform 650ms cubic-bezier(0.22, 1, 0.36, 1);
   padding: 48px 44px 40px;
   box-sizing: border-box;
 }
+.registration-body--revealed { transform: translateX(0); }
+.registration-membership { visibility: hidden; opacity: 0; transition: opacity 450ms ease, visibility 450ms; }
+.registration-body--revealed .registration-membership { visibility: visible; opacity: 1; }
 .registration-title { margin: 0 0 16px; font-family: var(--font-display); font-size: clamp(28px, 2.7vw, 38px); font-weight: 500; line-height: 1.12; letter-spacing: -.035em; }
 .registration-intro { margin: 0; color: #c5d1d3; font-size: 14px; line-height: 1.65; }
 .registration-intro strong { color: #fff; font-weight: 600; }
@@ -295,6 +301,8 @@ form {
 .registration-membership .registration-reward {
   margin-top: 10px;
   min-height: 46px;
+  box-sizing: border-box;
+  max-width: 100%;
   font-weight: 600;
   border: 0;
   border-radius: var(--button-radius, 4.8px);
@@ -312,8 +320,11 @@ form {
 .registration-form .auth-modal__submit:active:not(:disabled) { transform: translateY(1px); }
 .registration-reassurance { margin: 0 0 16px; font-size: 12px; line-height: 1.6; color: #cbd5d5; }
 .registration-privacy { margin: 20px 0 0; color: #94a6aa; font-size: 12px; line-height: 1.65; }
-.registration-membership { margin: 21px 0 0; padding-top: 20px; border-top: 1px solid #ffffff26; color: #acbbbe; font-size: 12px; line-height: 1.75; }
+.registration-free { min-width: 0; }
+.registration-membership[hidden] { display: none; }
+.registration-membership { min-width: 0; margin: 0; padding-left: 40px; border-left: 1px solid #ffffff26; color: #acbbbe; font-size: 12px; line-height: 1.75; }
 .registration-membership em { color: white; }
+.registration-membership .registration-title { color: #fff; }
 .registration-membership strong { font-weight: 600; color: #e0ecec; }
 .registration-membership p { margin: 0 0 12px; }
 .registration-membership ul { margin: 0 0 12px; padding-left: 18px; }
@@ -324,9 +335,142 @@ form {
 .auth-modal--registration .auth-modal__close { border-radius: var(--button-radius, 4.8px); background: rgba(51, 55, 61, 0.4); color: var(--paper); }
 .auth-modal--registration .auth-modal__close:hover { background: #fff; color: #33373d; }
 .auth-modal--registration :is(input, button):focus-visible { outline: 2px solid #65e8ff; outline-offset: 3px; }
-@media (max-width: 700px) {
-  .auth-modal--registration { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); background-size: auto 310px; background-position: left top; }
-  .auth-modal--registration::before { display: none; }
-  .registration-body { width: 100%; margin-top: 200px; padding: 28px 24px; background: rgba(3, 11, 14, 0.85); }
+.auth-modal--registration {
+  color: #fff;
+
+  :is(h2, p, li, strong, em, label, input, button) { color: #fff !important; }
+  input::placeholder { color: #fff; opacity: 1; }
+  button:hover:not(:disabled), button:focus-visible {
+    color: #fff;
+    background: #33373d !important;
+  }
 }
-@media (prefers-reduced-motion: reduce) { .auth-modal-overlay { animation: none; } }
+@media (max-width: 700px) {
+  .auth-modal--registration { width: min(800px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); }
+  .registration-body { display: block; width: 100%; transform: none; padding: 48px 24px 28px; }
+  .registration-membership { padding: 28px 0 0; border-left: 0; border-top: 1px solid #ffffff26; }
+  .registration-membership[aria-hidden='true'] { display: none; }
+  .registration-body--revealed .registration-membership { margin-top: 28px; animation: registration-offer-enter 650ms cubic-bezier(0.22, 1, 0.36, 1); }
+}
+@keyframes registration-offer-enter { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+.registration-shimmer {
+  font-size: 22px;
+  background-image: linear-gradient(110deg, #00cce6 35%, #ff3319 50%, #00cce6 65%);
+  background-size: 300% 100%;
+  background-position: 100% 0;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: registration-discount-shimmer 5s ease-in-out infinite;
+}
+@keyframes registration-discount-shimmer {
+  0%, 15% { background-position: 100% 0; }
+  60%, 100% { background-position: 0% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-modal-overlay { animation: none; }
+  .registration-shimmer { animation: none; background: none; -webkit-text-fill-color: #00cce6; }
+  .registration-body, .registration-membership { transition: none; }
+  .registration-body--revealed .registration-membership { animation: none; }
+}
+
+/* Replace the registration panel with the offer inside a fixed shared frame. */
+.registration-body {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  transform: none;
+  transition: none;
+}
+.registration-free, .registration-membership {
+  grid-area: 1 / 1;
+  box-sizing: border-box;
+  align-self: start;
+  transition: transform 650ms cubic-bezier(0.22, 1, 0.36, 1), opacity 450ms ease, visibility 650ms;
+}
+.registration-free { width: 50%; margin-left: auto; transform: translateX(0); opacity: 1; }
+.registration-membership {
+  width: 75%;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  font-size: 18px;
+  line-height: 1.7;
+  transform: translateX(110%);
+  visibility: hidden;
+  opacity: 0;
+}
+.registration-body--revealed .registration-free { transform: translateX(-110%); opacity: 0; visibility: hidden; }
+.registration-body--revealed .registration-membership { transform: translateX(0); opacity: 1; visibility: visible; }
+.registration-next { min-height: 1.6em; margin: 12px 0 0; font-size: 16px; font-weight: 600; }
+.registration-form .auth-modal__spinner { display: inline-block; margin-right: 8px; border-color: #ffffff40; border-top-color: #fff; vertical-align: middle; }
+@media (max-width: 700px) {
+  .registration-body { display: grid; }
+  .registration-free, .registration-membership { width: 100%; margin: 0; }
+  .registration-membership[aria-hidden='true'] { display: block; }
+  .registration-body--revealed .registration-membership { margin-top: 0; animation: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .registration-free, .registration-membership { transition: none; }
+  .registration-form .auth-modal__spinner { animation: none; }
+}
+
+.registration-body--leaving .registration-free {
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.88);
+  transform-origin: right center;
+}
+.registration-interlude {
+  position: absolute;
+  inset: 0 0 0 50%;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 44px 40px 0;
+  background: none;
+  text-align: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 450ms ease, visibility 450ms;
+}
+.registration-interlude p {
+  max-width: 520px;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4vw, 40px);
+  line-height: 1.2;
+  font-weight: 500;
+  opacity: 0;
+  transform: scale(1.15);
+  transition: opacity 450ms ease, transform 650ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.registration-body--interlude .registration-interlude {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 400ms;
+}
+.registration-body--interlude .registration-interlude p { opacity: 1; transform: scale(1); transition-delay: 700ms; }
+@media (prefers-reduced-motion: reduce) {
+  .registration-interlude, .registration-interlude p { transition: none; }
+}
+
+.auth-modal--registration::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 65%;
+  background: linear-gradient(90deg, transparent, rgba(3, 11, 14, 0.7) 18%);
+  pointer-events: none;
+  transition: width 650ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.auth-modal--registration:has(.registration-body--revealed)::before { width: 90%; }
+.registration-body { z-index: 1; }
+@media (max-width: 700px) {
+  .registration-interlude { inset: 0; padding: 48px 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-modal--registration::before { transition: none; }
+  .registration-body--leaving .registration-free, .registration-interlude p { transform: none; }
+}
