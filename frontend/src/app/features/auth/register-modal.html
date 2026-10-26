@@ -30,12 +30,14 @@
             <p>Have you got somewhere better to be, or shall we keep going?</p>
           </div>
           <section class="registration-membership" [attr.inert]="membershipRevealed() ? null : ''" [attr.aria-hidden]="!membershipRevealed()">
-            <h2 class="registration-title">Your curiosity has negotiated a better price</h2>
+            <h2 class="registration-title">Your curiosity has negotiated a better price!</h2>
+            <p>Save <strong class="registration-shimmer">60%</strong> when you pay for the year, or <strong class="registration-shimmer">40%</strong> when you pay monthly.</p>
+            <p><em>Plus perks that stay with you:</em></p>
             <ul>
-              <li><strong class="registration-shimmer">40% off your subscription</strong> when you pay monthly.</li>
-              <li><strong class="registration-shimmer">60% off your subscription</strong> when you pay for a full year upfront.</li>
+              <li><strong class="registration-shimmer">20% off a TradeCheetah membership</strong></li>
+              <li><strong class="registration-shimmer">30% off the TradeCheetah Store</strong></li>
             </ul>
-            <p>Either way, you also get <strong class="registration-shimmer">20% off a TradeCheetah membership</strong> and <strong class="registration-shimmer">30% off the TradeCheetah Store</strong>. Both discounts remain yours for as long as you are a TCNexus.tv member.</p>
+            <p>Yours for as long as you're a TCNexus.tv member.</p>
             <button type="button" class="auth-modal__submit registration-reward" (click)="authModal.open('paid')">Reward My Curiosity</button>
             <p class="registration-curiosity registration-restraint">Restraint is admirable. Only occasionally.</p>
           </section>
