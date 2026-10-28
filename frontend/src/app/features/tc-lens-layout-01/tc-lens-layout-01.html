@@ -1,0 +1,24 @@
+<main class="tc-lens-layout" aria-label="TC Lens Layout 01">
+  <header class="tc-lens-frame tc-lens-layout__account" data-region="account">
+    <strong>TC Nexus</strong>
+    <span>Local layout preview · account details</span>
+  </header>
+
+  <section class="tc-lens-frame tc-lens-layout__video" data-region="video" aria-labelledby="tc-lens-video-title">
+    <div class="tc-lens-placeholder">
+      <span>Video</span>
+      <h1 id="tc-lens-video-title">Lesson video frame</h1>
+    </div>
+  </section>
+
+  <section class="tc-lens-frame tc-lens-layout__llm" data-region="llm" aria-labelledby="tc-lens-llm-title">
+    <div class="tc-lens-placeholder">
+      <span>LLM</span>
+      <h2 id="tc-lens-llm-title">Lesson assistant frame</h2>
+    </div>
+  </section>
+
+  <section class="tc-lens-frame tc-lens-layout__app" data-region="app" aria-label="TC Lens app frame">
+    <iframe title="TC Lens app" [src]="tcLensUrl" allow="clipboard-read; clipboard-write" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+  </section>
+</main>
