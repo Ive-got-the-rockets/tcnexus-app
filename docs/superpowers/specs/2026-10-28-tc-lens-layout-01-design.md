@@ -9,8 +9,8 @@ Create a separate local Angular page named **TC Lens Layout 01** at `/tc-lens-la
 The desktop page contains four regions:
 
 1. A thin, full-width top frame for TC Nexus login and account details.
-2. An upper-left frame reserved for the lesson video.
-3. A lower-left frame reserved for the LLM experience. This frame must never be shorter than `300px`.
+2. An upper-left frame containing the Mastering the Greeks lesson 1 test video from Vimeo (`1068479580`).
+3. A lower-left frame reserved for the LLM experience. This frame must never be taller than `300px`.
 4. A tall right-hand frame containing the existing TC Lens app iframe. Its current source and app behavior remain unchanged.
 
 The top account frame spans both columns. Below it, the video and LLM frames form a stacked left column while the app iframe spans the combined height of both left frames.
@@ -19,7 +19,7 @@ The top account frame spans both columns. Below it, the video and LLM frames for
 
 Add a focused, standalone Angular component for this layout and register it as the `/tc-lens-layout-01` route. Do not add a mode to the existing `LessonPlayerPage`; that component and its routes remain unchanged.
 
-The new component owns only layout presentation and initial placeholder content. Existing TC Lens URL-building behavior should be reused for the app iframe rather than duplicated. The app iframe uses the same current TC Lens target used by the existing experience.
+The new component owns the layout presentation, Vimeo lesson embed, and initial LLM placeholder content. Existing TC Lens URL-building behavior should be reused for the app iframe rather than duplicated. The app iframe uses the same current TC Lens target used by the existing experience.
 
 ## Responsive Behavior
 
@@ -32,12 +32,12 @@ At narrow widths, the grid becomes one column in this order:
 3. LLM frame
 4. App iframe
 
-The page must not create horizontal scrolling. The video placeholder preserves a 16:9 aspect ratio. The LLM frame retains its `300px` minimum height at every width. The app iframe receives a practical mobile minimum height so it does not collapse.
+The page must not create horizontal scrolling. The video embed preserves a 16:9 aspect ratio. The LLM frame retains its `300px` maximum height at every width. The app iframe receives a practical mobile minimum height so it does not collapse.
 
 ## Initial Content and States
 
 - The login/account frame contains clearly labeled local placeholder account details.
-- The video frame is a labeled placeholder for the future video player.
+- The video frame loads Vimeo video `1068479580`, the local Mastering the Greeks lesson 1 test clip, through an embeddable player URL.
 - The LLM frame is a labeled placeholder for the future LLM interface.
 - The right frame loads the existing TC Lens app in a real iframe.
 - Each iframe has an accessible title.
@@ -54,7 +54,7 @@ Automated tests will verify:
 - `/tc-lens-layout-01` resolves to the new page.
 - The four regions render in the approved semantic order.
 - The right region contains the existing TC Lens app URL.
-- The LLM region has a `300px` minimum height.
+- The LLM region has a `300px` maximum height on desktop and narrow layouts.
 - The new component does not alter the existing lesson-player route.
 
 Browser verification will check the desktop grid, the narrow stacked layout, horizontal overflow, iframe sizing, and the browser console.
@@ -62,7 +62,7 @@ Browser verification will check the desktop grid, the narrow stacked layout, hor
 ## Out of Scope
 
 - Replacing the existing lesson player.
-- Implementing the actual video player in the upper-left frame.
+- Adding course-data loading or lesson switching to the video frame.
 - Implementing the LLM chat experience in the lower-left frame.
 - Changing TC Lens authentication, messaging, or iframe application behavior.
 - Adding production navigation to this prototype route.
