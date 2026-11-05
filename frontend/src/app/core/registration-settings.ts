@@ -1,4 +1,5 @@
 import { AccessCheckResult, CardAnimationSettings, MembershipTierSettings, PaidMembershipSettings, RegistrationCopy, RegistrationMedia, RegistrationSettings } from './models';
+import { normalizePopupEditor } from './popup-editor-settings';
 
 export const DEFAULT_CARD_ANIMATION_SETTINGS: CardAnimationSettings = {
   id: 'preset-01',
@@ -8,7 +9,7 @@ export const DEFAULT_CARD_ANIMATION_SETTINGS: CardAnimationSettings = {
   close: 0.5,
 };
 
-const DEFAULT_TIERS: [MembershipTierSettings, MembershipTierSettings, MembershipTierSettings] = [
+const DEFAULT_TIERS: MembershipTierSettings[] = [
   { visible: true, name: 'Starter', description: 'A focused path into the core library.', monthly_price: 15, button_label: 'Choose Starter', bullets: ['Core free library', 'Weekly market notes', 'Member profile'] },
   { visible: true, name: 'Trader', description: 'The complete learning path for serious traders.', monthly_price: 29, button_label: 'Choose Trader', bullets: ['Everything in Starter', 'All registered lessons', 'Live market sessions'] },
   { visible: true, name: 'Pro Desk', description: 'Premium access for advanced market work.', monthly_price: 79, button_label: 'Choose Pro Desk', bullets: ['Everything in Trader', 'Paid video library', 'Priority member support'] },
@@ -25,18 +26,6 @@ export const DEFAULT_REGISTRATION_SETTINGS: RegistrationSettings = {
     button_label: 'Create Profile',
     media: { type: 'none', url: '', alt: '' },
   },
-  final_free: {
-    heading: 'This will be your last free lesson.',
-    message: 'Register your email to keep watching free lessons.',
-    button_label: 'Create Profile',
-    media: { type: 'none', url: '', alt: '' },
-  },
-  paid_member: {
-    heading: 'Become a paid member',
-    message: 'Become a paid member to access locked content and more.',
-    button_label: 'Become a Paid Member',
-    media: { type: 'none', url: '', alt: '' },
-  },
   pricing: DEFAULT_PAID_MEMBERSHIP_SETTINGS,
   animations: { card_carousel: DEFAULT_CARD_ANIMATION_SETTINGS },
 };
@@ -45,8 +34,6 @@ export function normalizeRegistrationSettings(value: Partial<RegistrationSetting
   const source = (value ?? {}) as Partial<RegistrationSettings> & {
     media?: RegistrationMedia;
     registration?: Partial<RegistrationCopy>;
-    final_free?: Partial<RegistrationCopy>;
-    paid_member?: Partial<RegistrationCopy>;
     pricing?: Partial<PaidMembershipSettings>;
     animations?: { card_carousel?: Partial<CardAnimationSettings> };
   };
@@ -58,8 +45,7 @@ export function normalizeRegistrationSettings(value: Partial<RegistrationSetting
   });
   return {
     registration: normalizeCopy(source.registration, DEFAULT_REGISTRATION_SETTINGS.registration),
-    final_free: normalizeCopy(source.final_free, DEFAULT_REGISTRATION_SETTINGS.final_free),
-    paid_member: normalizeCopy(source.paid_member, DEFAULT_REGISTRATION_SETTINGS.paid_member),
+    editor: normalizePopupEditor(source.editor),
     pricing: normalizePaidMembershipSettings(source.pricing),
     animations: { card_carousel: normalizeCardAnimationSettings(source.animations?.card_carousel) },
   };
@@ -88,8 +74,10 @@ export function normalizePaidMembershipSettings(value: Partial<PaidMembershipSet
   const source = value ?? {};
   const savePercent = Math.min(100, Math.max(0, Number(source.save_percent ?? DEFAULT_PAID_MEMBERSHIP_SETTINGS.save_percent) || 0));
   const inputTiers = Array.isArray(source.tiers) ? source.tiers : [];
-  const tiers = DEFAULT_TIERS.map((fallback, index) => {
-    const tier = (inputTiers[index] ?? {}) as Partial<MembershipTierSettings>;
+  const sourceTiers = inputTiers.length ? inputTiers : DEFAULT_TIERS;
+  const tiers = sourceTiers.map((sourceTier, index) => {
+    const fallback = DEFAULT_TIERS[index] ?? DEFAULT_TIERS[0];
+    const tier = sourceTier as Partial<MembershipTierSettings>;
     const bullets = Array.isArray(tier.bullets) ? tier.bullets.map((bullet) => String(bullet).trim()).filter(Boolean) : [];
     return {
       visible: tier.visible !== false,
@@ -99,7 +87,7 @@ export function normalizePaidMembershipSettings(value: Partial<PaidMembershipSet
       button_label: String(tier.button_label ?? fallback.button_label).trim() || fallback.button_label,
       bullets: bullets.length ? bullets : [fallback.bullets[0]],
     };
-  }) as [MembershipTierSettings, MembershipTierSettings, MembershipTierSettings];
+  });
   return {
     heading: String(source.heading ?? DEFAULT_PAID_MEMBERSHIP_SETTINGS.heading).trim() || DEFAULT_PAID_MEMBERSHIP_SETTINGS.heading,
     message: String(source.message ?? DEFAULT_PAID_MEMBERSHIP_SETTINGS.message).trim() || DEFAULT_PAID_MEMBERSHIP_SETTINGS.message,

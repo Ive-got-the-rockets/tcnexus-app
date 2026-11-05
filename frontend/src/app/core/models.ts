@@ -43,6 +43,10 @@ export interface Course {
   image: string | null;
   /** Desktop landing-page background image (8:3), when configured in the builder. */
   landing_background?: string | null;
+  mobile_image?: string | null;
+  mobile_landing_background?: string | null;
+  mobile_thumbnail?: string | null;
+  mobile_title_image?: string | null;
   /** Optional 600x160 title artwork used in featured and single-page hero areas. */
   title_image?: string | null;
   course_types: string[];
@@ -89,6 +93,7 @@ export interface TcLensTradeLeg {
 export interface TcLensTradeData {
   underlying: string;
   assetType?: 'stock' | 'crypto';
+  stockLegs?: Array<{ quantity: number | null; entryPrice: number | null }>;
   strategy: string;
   legs: TcLensTradeLeg[];
   strikes: Array<number | string>;
@@ -146,6 +151,7 @@ export interface CourseDetail {
   image: string | null;
   /** Desktop landing-page background image (8:3), when configured in the builder. */
   landing_background?: string | null;
+  mobile_landing_background?: string | null;
   /** Optional 600x160 title artwork used in featured and single-page hero areas. */
   title_image?: string | null;
   course_types: string[];
@@ -169,6 +175,7 @@ export interface CourseDetail {
 export type AccessReason = 'ok' | 'requires_registration' | 'requires_payment';
 
 export interface AccessCheckResult {
+  user_id?: number | null;
   granted: boolean;
   reason: AccessReason;
   tier: AccessTier;
@@ -202,9 +209,8 @@ export interface CardAnimationSettings {
 }
 
 export interface RegistrationSettings {
+  editor?: Partial<import('./popup-editor-settings').PopupEditorSettings>;
   registration: RegistrationCopy;
-  final_free: RegistrationCopy;
-  paid_member: RegistrationCopy;
   pricing: PaidMembershipSettings;
   animations?: {
     card_carousel: CardAnimationSettings;
@@ -226,10 +232,11 @@ export interface PaidMembershipSettings {
   save_percent: number;
   currency: string;
   close_label: string;
-  tiers: [MembershipTierSettings, MembershipTierSettings, MembershipTierSettings];
+  tiers: MembershipTierSettings[];
 }
 
 export interface RegisterResult {
   success: boolean;
   token: string;
+  user_id?: number | null;
 }

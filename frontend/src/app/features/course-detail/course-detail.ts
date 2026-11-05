@@ -450,7 +450,7 @@ export class CourseDetailPage implements OnDestroy {
         }
         if (isAnonymousFreeLimitReached(access, this.visitor.isRegistered())) {
           this.pendingLesson.set(lesson);
-          this.authModal.open('choice');
+			this.authModal.open('register');
           return;
         }
         this.router.navigate(['/courses', course.id, 'lessons', lesson.id]);

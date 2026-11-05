@@ -237,8 +237,9 @@ form {
 
 }
 
-.auth-modal--paid { width: min(58rem, calc(100% - 2.5rem)); max-width: none; padding: 0; background: transparent; box-shadow: none; }
-.auth-modal__paid-card { position: relative; padding: 2rem; background: var(--ink-raised); border: 1px solid color-mix(in srgb, var(--paper) 13%, transparent); border-radius: .45rem; box-shadow: 0 24px 60px -12px rgba(0,0,0,.85); }
+.auth-modal--paid { width: min(68rem, calc(100% - 2.5rem)); max-width: none; padding: 0; background: transparent; box-shadow: none; border: 1px solid #294046; border-radius: 14px; overflow: hidden; }
+.auth-modal__paid-card { position: relative; padding: 2.7rem; isolation: isolate; background: #030b0e url('/auth/neon-cheetah.png') center / cover no-repeat; border-radius: 13px; box-shadow: 0 30px 90px rgba(0,0,0,.85); color: #fff; }
+.auth-modal__paid-card::before { content: ''; position: absolute; inset: 0; z-index: -1; background: rgba(3,11,14,.85); }
 .auth-modal__paid-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 1.5rem; padding-right: 2rem; }
 .auth-modal__paid-heading .auth-modal__title { margin: 0; }
 .auth-modal__billing { display: flex; gap: .2rem; padding: .25rem; border: 1px solid color-mix(in srgb, var(--paper) 20%, transparent); border-radius: 999px; background: var(--ink); }
@@ -247,8 +248,8 @@ form {
 .auth-modal__billing button.active span { color: var(--ink); }
 .auth-modal__billing span { margin-left: .25rem; color: var(--signal); font-size: .65rem; letter-spacing: .08em; }
 .auth-modal__save-active { color: var(--ink) !important; }
-.auth-modal__paid-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; margin-top: 1.5rem; align-items: stretch; }
-.auth-modal__paid-tier { position: relative; min-height: 19rem; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; padding: 1.25rem; border: 1px solid color-mix(in srgb, var(--paper) 13%, transparent); border-radius: .25rem; background: color-mix(in srgb, var(--ink) 75%, var(--ink-raised)); }
+.auth-modal__paid-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: .9rem; margin-top: 1.8rem; align-items: stretch; }
+.auth-modal__paid-tier { position: relative; min-height: 19rem; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; padding: 1.35rem; border: 1px solid rgba(165,235,241,.28); border-radius: .7rem; background: rgba(5,15,19,.91); }
 .auth-modal__paid-tier--featured { border-color: var(--signal); border-top-width: 3px; background: linear-gradient(160deg, color-mix(in srgb, var(--signal) 11%, var(--ink-raised)), var(--ink-raised)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--signal) 20%, transparent), 0 18px 45px rgba(0,0,0,.4); transform: translateY(-.55rem); }
 .auth-modal__paid-badge { position: absolute; top: -.75rem; left: 1rem; padding: .3rem .6rem; border-radius: 999px; background: var(--signal); color: var(--ink); font-size: .62rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .auth-modal__paid-tier h3 { margin: 0 0 .5rem; font-family: var(--font-display); font-size: 1.35rem; font-weight: 400; }.auth-modal__paid-description { min-height: 2.8rem; margin: 0; color: var(--paper-dim); font-size: .8rem; line-height: 1.45; }
@@ -259,7 +260,7 @@ form {
 @media (max-width: 760px) { .auth-modal--paid { max-height: calc(100vh - 2rem); overflow-y: auto; }.auth-modal__paid-heading { align-items: flex-start; flex-direction: column; padding-right: 2rem; }.auth-modal__paid-grid { grid-template-columns: 1fr; }.auth-modal__paid-tier--featured { transform: none; } }
 
 .auth-modal--registration {
-  width: min(800px, calc(100vw - 64px));
+  width: min(var(--popup-width, 800px), calc(100vw - 64px));
   box-sizing: border-box;
   max-width: none;
   max-height: calc(100dvh - 48px);
@@ -269,9 +270,9 @@ form {
   border: 1px solid #294046;
   border-radius: 12px;
   background-color: #030b0e;
-  background-image: url('/auth/neon-cheetah.png');
+  background-image: var(--popup-image, url('/auth/neon-cheetah.png'));
   background-position: center;
-  background-size: contain;
+  background-size: var(--popup-fit, contain);
   background-repeat: no-repeat;
   color: #f5f5f1;
 }
@@ -333,7 +334,7 @@ form {
 .registration-membership .registration-reward { width: 100%; }
 .registration-offer-actions { display: flex; flex-wrap: wrap; gap: 12px; }
 .registration-offer-actions .registration-reward { flex: 1 1 220px; width: auto; }
-.registration-membership .registration-restraint { margin: 12px 0 0; text-align: center; font-size: 12px; }
+.registration-membership .registration-restraint { margin: 12px 0 0; text-align: center; font-size: var(--popup-footer-size, 12px); }
 .registration-membership .registration-title + .registration-restraint { margin: 0 0 24px; }
 .registration-annual-offer { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
 .registration-subscribe { background: rgba(51, 55, 61, 0.4); border-radius: var(--button-radius, 4.8px); }
@@ -343,15 +344,15 @@ form {
 .auth-modal--registration {
   color: #fff;
 
-  :is(h2, p, li, strong, em, label, input, button) { color: #fff !important; }
-  input::placeholder { color: #fff; opacity: 1; }
+  :is(h2, p, li, strong, em, label, input, button) { color: var(--popup-text, #fff) !important; }
+  input::placeholder { color: var(--popup-text, #fff); opacity: 1; }
   button:hover:not(:disabled), button:focus-visible {
     color: #fff;
     background: #33373d !important;
   }
 }
 @media (max-width: 700px) {
-  .auth-modal--registration { width: min(800px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); }
+  .auth-modal--registration { width: min(var(--popup-width, 800px), calc(100vw - 24px)); max-height: calc(100dvh - 24px); }
   .registration-body { display: block; width: 100%; transform: none; padding: 48px 24px 28px; }
   .registration-membership { padding: 28px 0 0; border-left: 0; border-top: 1px solid #ffffff26; }
   .registration-membership[aria-hidden='true'] { display: none; }
@@ -359,14 +360,15 @@ form {
 }
 @keyframes registration-offer-enter { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
 .registration-shimmer {
-  font-size: 22px;
-  background-image: linear-gradient(110deg, #00cce6 35%, #ff00ff 50%, #00cce6 65%);
+  font-size: var(--popup-discount-size, 22px);
+  background-image: linear-gradient(110deg, var(--popup-cyan, #00cce6) 35%, var(--popup-shine, #ff00ff) 50%, var(--popup-cyan, #00cce6) 65%);
   background-size: 300% 100%;
   background-position: 100% 0;
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: registration-discount-shimmer 5s ease-in-out infinite;
+  animation-play-state: var(--popup-shimmer, running);
 }
 @keyframes registration-discount-shimmer {
   0%, 15% { background-position: 100% 0; }
@@ -374,7 +376,7 @@ form {
 }
 @media (prefers-reduced-motion: reduce) {
   .auth-modal-overlay { animation: none; }
-  .registration-shimmer { animation: none; background: none; -webkit-text-fill-color: #00cce6; }
+  .registration-shimmer { animation: none; background: none; -webkit-text-fill-color: var(--popup-cyan, #00cce6); }
   .registration-body, .registration-membership { transition: none; }
   .registration-body--revealed .registration-membership { animation: none; }
 }
@@ -398,7 +400,7 @@ form {
   margin-left: auto;
   padding: 0;
   border: 0;
-  font-size: 18px;
+  font-size: var(--popup-body-size, 18px);
   line-height: 1.7;
   transform: translateX(110%);
   visibility: hidden;
@@ -465,14 +467,14 @@ form {
   content: '';
   position: absolute;
   inset: 0 0 0 auto;
-  width: 65%;
-  background: linear-gradient(90deg, transparent, rgba(3, 11, 14, 0.7) 18%);
+  width: var(--popup-coverage, 65%);
+  background: linear-gradient(90deg, transparent, rgba(3, 11, 14, var(--popup-overlay, 0.7)) 18%);
   pointer-events: none;
   transition: width 650ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .auth-modal--registration:has(.registration-body--revealed)::before {
   width: 100%;
-  background: rgba(3, 11, 14, 0.85);
+  background: rgba(3, 11, 14, var(--popup-offer-overlay, 0.85));
 }
 .registration-body--revealed .registration-membership {
   width: 100%;
