@@ -240,6 +240,16 @@ form {
 .auth-modal--paid { width: min(68rem, calc(100% - 2.5rem)); max-width: none; padding: 0; background: transparent; box-shadow: none; border: 1px solid #294046; border-radius: 14px; overflow: hidden; }
 .auth-modal__paid-card { position: relative; padding: 2.7rem; isolation: isolate; background: #030b0e url('/auth/neon-cheetah.png') center / cover no-repeat; border-radius: 13px; box-shadow: 0 30px 90px rgba(0,0,0,.85); color: #fff; }
 .auth-modal__paid-card::before { content: ''; position: absolute; inset: 0; z-index: -1; background: rgba(3,11,14,.85); }
+.auth-modal--paid { --signal: #00cce6; --paper: #f8ffff; --paper-dim: #c7d1d3; --ink: #030b0e; --ink-raised: #050f13; }
+.auth-modal__paid-heading .auth-modal__title { font-family: Georgia, serif; font-size: clamp(2rem, 4vw, 3.15rem); font-weight: 500; }
+.auth-modal__paid-heading .auth-modal__text { color: #c7d1d3; }
+.auth-modal__billing { background: #071114cc; border-color: rgba(165,235,241,.28); }
+.auth-modal__billing button.active { background: #00cce6; color: #00161b; }
+.auth-modal__paid-tier--featured { border-color: #00cce6; background: rgba(5,15,19,.94); box-shadow: 0 0 0 1px rgba(0,204,230,.28), 0 18px 45px rgba(0,0,0,.55); }
+.auth-modal__paid-badge { background: #00cce6; color: #00161b; }
+.auth-modal__paid-tier li::before { color: #00cce6; }
+.auth-modal__paid-button { background: #33373d; border-radius: 6px; }
+.auth-modal__paid-tier--featured .auth-modal__paid-button { background: #00cce6; color: #00161b; }
 .auth-modal__paid-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 1.5rem; padding-right: 2rem; }
 .auth-modal__paid-heading .auth-modal__title { margin: 0; }
 .auth-modal__billing { display: flex; gap: .2rem; padding: .25rem; border: 1px solid color-mix(in srgb, var(--paper) 20%, transparent); border-radius: 999px; background: var(--ink); }
