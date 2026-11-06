@@ -219,6 +219,7 @@ export interface RegistrationSettings {
 
 export interface MembershipTierSettings {
   visible: boolean;
+  featured: boolean;
   name: string;
   description: string;
   monthly_price: number;
@@ -229,7 +230,10 @@ export interface MembershipTierSettings {
 export interface PaidMembershipSettings {
   heading: string;
   message: string;
+  footer_text: string;
   save_percent: number;
+  show_monthly_year_total: boolean;
+  show_annual_year_total: boolean;
   currency: string;
   close_label: string;
   tiers: MembershipTierSettings[];

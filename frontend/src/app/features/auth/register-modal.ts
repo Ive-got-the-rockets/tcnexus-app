@@ -110,6 +110,10 @@ export class RegisterModal {
     return this.annualBilling() ? annualPrice(monthly, this.settings().pricing.save_percent) : monthly;
   }
 
+  protected yearlyTotal(monthly: number): number {
+    return this.tierPrice(monthly) * 12;
+  }
+
   protected priceDigits(monthly: number): string[] {
     return Array.from(String(this.tierPrice(monthly)));
   }

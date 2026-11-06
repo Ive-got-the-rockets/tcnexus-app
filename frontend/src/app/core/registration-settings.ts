@@ -10,13 +10,13 @@ export const DEFAULT_CARD_ANIMATION_SETTINGS: CardAnimationSettings = {
 };
 
 const DEFAULT_TIERS: MembershipTierSettings[] = [
-  { visible: true, name: 'Starter', description: 'A focused path into the core library.', monthly_price: 15, button_label: 'Choose Starter', bullets: ['Core free library', 'Weekly market notes', 'Member profile'] },
-  { visible: true, name: 'Trader', description: 'The complete learning path for serious traders.', monthly_price: 29, button_label: 'Choose Trader', bullets: ['Everything in Starter', 'All registered lessons', 'Live market sessions'] },
-  { visible: true, name: 'Pro Desk', description: 'Premium access for advanced market work.', monthly_price: 79, button_label: 'Choose Pro Desk', bullets: ['Everything in Trader', 'Paid video library', 'Priority member support'] },
+  { visible: true, featured: false, name: 'Starter', description: 'A focused path into the core library.', monthly_price: 15, button_label: 'Choose Starter', bullets: ['Core free library', 'Weekly market notes', 'Member profile'] },
+  { visible: true, featured: true, name: 'Trader', description: 'The complete learning path for serious traders.', monthly_price: 29, button_label: 'Choose Trader', bullets: ['Everything in Starter', 'All registered lessons', 'Live market sessions'] },
+  { visible: true, featured: false, name: 'Pro Desk', description: 'Premium access for advanced market work.', monthly_price: 79, button_label: 'Choose Pro Desk', bullets: ['Everything in Trader', 'Paid video library', 'Priority member support'] },
 ];
 
 export const DEFAULT_PAID_MEMBERSHIP_SETTINGS: PaidMembershipSettings = {
-  heading: 'Unlock the full library', message: 'Choose the access level that fits the way you trade.', save_percent: 20, currency: '$', close_label: '×', tiers: DEFAULT_TIERS,
+  heading: 'Unlock the full library', message: 'Choose the access level that fits the way you trade.', footer_text: 'Stay curious. Keep going. Cancel anytime · Secure checkout · No hidden fees', save_percent: 20, show_monthly_year_total: true, show_annual_year_total: true, currency: '$', close_label: '×', tiers: DEFAULT_TIERS,
 };
 
 export const DEFAULT_REGISTRATION_SETTINGS: RegistrationSettings = {
@@ -72,6 +72,7 @@ export function normalizeCardAnimationSettings(value: Partial<CardAnimationSetti
 
 export function normalizePaidMembershipSettings(value: Partial<PaidMembershipSettings> | null | undefined): PaidMembershipSettings {
   const source = value ?? {};
+  const legacyShowYearTotal = (source as Partial<PaidMembershipSettings> & { show_annual_total?: boolean }).show_annual_total !== false;
   const savePercent = Math.min(100, Math.max(0, Number(source.save_percent ?? DEFAULT_PAID_MEMBERSHIP_SETTINGS.save_percent) || 0));
   const inputTiers = Array.isArray(source.tiers) ? source.tiers : [];
   const sourceTiers = inputTiers.length ? inputTiers : DEFAULT_TIERS;
@@ -81,6 +82,7 @@ export function normalizePaidMembershipSettings(value: Partial<PaidMembershipSet
     const bullets = Array.isArray(tier.bullets) ? tier.bullets.map((bullet) => String(bullet).trim()).filter(Boolean) : [];
     return {
       visible: tier.visible !== false,
+      featured: tier.featured ?? fallback.featured,
       name: String(tier.name ?? fallback.name).trim() || fallback.name,
       description: String(tier.description ?? fallback.description).trim() || fallback.description,
       monthly_price: Math.max(0, Math.round(Number(tier.monthly_price ?? fallback.monthly_price) || 0)),
@@ -91,7 +93,10 @@ export function normalizePaidMembershipSettings(value: Partial<PaidMembershipSet
   return {
     heading: String(source.heading ?? DEFAULT_PAID_MEMBERSHIP_SETTINGS.heading).trim() || DEFAULT_PAID_MEMBERSHIP_SETTINGS.heading,
     message: String(source.message ?? DEFAULT_PAID_MEMBERSHIP_SETTINGS.message).trim() || DEFAULT_PAID_MEMBERSHIP_SETTINGS.message,
+    footer_text: String(source.footer_text ?? DEFAULT_PAID_MEMBERSHIP_SETTINGS.footer_text).trim(),
     save_percent: savePercent,
+    show_monthly_year_total: source.show_monthly_year_total ?? legacyShowYearTotal,
+    show_annual_year_total: source.show_annual_year_total ?? legacyShowYearTotal,
     currency: String(source.currency ?? DEFAULT_PAID_MEMBERSHIP_SETTINGS.currency).trim() || '$',
     close_label: String(source.close_label ?? DEFAULT_PAID_MEMBERSHIP_SETTINGS.close_label),
     tiers,
