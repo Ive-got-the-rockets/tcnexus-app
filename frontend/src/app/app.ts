@@ -89,6 +89,7 @@ export class App implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     window.addEventListener('scroll', this.onScroll, { passive: true });
+    this.routeToMobileLayoutOnSmallScreens();
     const params = new URLSearchParams(window.location.search);
     // Keep the actual registration popup available for local design work on reload.
     if (isDevMode() && params.get('popup-preview') === 'register') {
@@ -102,6 +103,18 @@ export class App implements OnInit, OnDestroy {
     }
     if (this.visitor.isRegistered()) {
       this.accessService.validateSession().subscribe();
+    }
+  }
+
+  private routeToMobileLayoutOnSmallScreens(): void {
+    const path = window.location.pathname.replace(/\/+$/, '') || '/';
+    const mobileWidth = 600;
+    const explicitDesktopRoute = path === '/layout-style-3' || path === '/layout-style-4';
+    const mobileRoute = path === '/mobile-layout-1' || path.startsWith('/mobile-layout-1/');
+    const chromeFreeRoute = path.startsWith('/tc-lens') || path.startsWith('/courses/');
+
+    if (window.matchMedia(`(max-width: ${mobileWidth - 1}px)`).matches && !explicitDesktopRoute && !mobileRoute && !chromeFreeRoute) {
+      void this.router.navigateByUrl('/mobile-layout-1', { replaceUrl: true });
     }
   }
 
