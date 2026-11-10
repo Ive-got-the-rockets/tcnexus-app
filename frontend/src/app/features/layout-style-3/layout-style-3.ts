@@ -1,5 +1,5 @@
 import { CourseOverview } from '../../core/course-overview';
-import { AfterViewInit, Component, ElementRef, HostListener, Injector, OnDestroy, afterNextRender, computed, inject, signal, viewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, HostListener, Injector, OnDestroy, afterNextRender, computed, inject, input, signal, viewChild } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
@@ -32,6 +32,13 @@ interface ReturnOverlayState {
   styleUrl: './layout-style-3.scss'
 })
 export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
+  readonly featuredImageOverrides = input<Readonly<Record<string, string>>>({});
+  readonly featuredTitleImageOverrides = input<Readonly<Record<string, string>>>({});
+  readonly preferMobileMedia = input(false);
+  readonly hideFeaturedTitleImage = input(false);
+  readonly hideFeaturedTitle = input(false);
+  readonly mobileDetailRoute = input(false);
+  readonly stackFeaturedLevelBadges = input(false);
   private readonly coursesService = inject(CoursesService);
   private readonly catalogScroll = inject(CatalogScrollService);
   private readonly route = inject(ActivatedRoute);
@@ -54,6 +61,9 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
   private trailerCloseTimer?: ReturnType<typeof setTimeout>;
   private readonly scrollSettledTimers: Partial<Record<CarouselKind, ReturnType<typeof setTimeout>>> = {};
   private featuredWheelLockUntil = 0;
+  private featuredTouchStartX: number | null = null;
+  protected readonly featuredSwipeOffset = signal(0);
+  protected readonly featuredSwipeDragging = signal(false);
   private readonly onScroll = () => {
     this.markCarouselScrolling('trading');
     this.measureEdges();
@@ -89,10 +99,20 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
     return available.filter((item, index, all) => all.findIndex(candidate => candidate.id === item.id) === index);
   });
   protected readonly featuredIndex = signal(0);
+  protected readonly featuredSlideMotion = signal<'next' | 'previous' | null>(null);
   protected readonly featuredPaginationItems = computed(() => {
     const items = this.featuredItems();
     const activeIndex = this.featuredIndex();
     const visibleCount = Math.min(5, items.length);
+
+    if (this.stackFeaturedLevelBadges()) {
+      return Array.from({ length: visibleCount }, (_, index) => ({
+        item: items[index],
+        index,
+        distance: index - activeIndex,
+      })).filter(entry => entry.item);
+    }
+
     const centerOffset = Math.floor(visibleCount / 2);
 
     return Array.from({ length: visibleCount }, (_, offset) => {
@@ -101,6 +121,12 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
       return { item: items[index], index, distance };
     });
   });
+
+  protected featuredAdjacent(direction: -1 | 1): Course | null {
+    const items = this.featuredItems();
+    if (items.length < 2) return null;
+    return items[(this.featuredIndex() + direction + items.length) % items.length] ?? null;
+  }
   protected readonly descriptionExpanded = signal(false);
   protected readonly descriptionMotion = signal<'closed' | 'opening' | 'open' | 'closing'>('closed');
   protected readonly descriptionOpen = computed(() => this.descriptionMotion() !== 'closed');
@@ -261,6 +287,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
     if (!item || item.id === this.featured()?.id) return;
 
     this.featuredIndex.set(index);
+    this.featuredSlideMotion.set(direction > 0 ? 'next' : 'previous');
     this.featured.set(item);
     this.featuredDetail.set(null);
     this.charactersExpanded.set(false);
@@ -273,6 +300,9 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
         if (this.featured()?.id === detail.id) this.featuredDetail.set(detail);
       }
     });
+    window.setTimeout(() => {
+      this.featuredSlideMotion.set(null);
+    }, 360);
   }
 
   protected onFeaturedPaginationWheel(event: WheelEvent): void {
@@ -283,6 +313,45 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
     if (now < this.featuredWheelLockUntil) return;
     this.featuredWheelLockUntil = now + 320;
     this.selectFeatured(event.deltaY > 0 ? 1 : -1);
+  }
+
+  protected onFeaturedTouchStart(event: TouchEvent): void {
+    this.featuredTouchStartX = event.touches[0]?.clientX ?? null;
+    this.featuredSwipeOffset.set(0);
+    this.featuredSwipeDragging.set(true);
+  }
+
+  protected onFeaturedTouchMove(event: TouchEvent): void {
+    const startX = this.featuredTouchStartX;
+    const currentX = event.touches[0]?.clientX;
+    if (startX === null || currentX === undefined) return;
+
+    const deltaX = currentX - startX;
+    const maxOffset = Math.max(window.innerWidth, 1);
+    this.featuredSwipeOffset.set(Math.max(-maxOffset, Math.min(maxOffset, deltaX)));
+    if (Math.abs(deltaX) > 8) event.preventDefault();
+  }
+
+  protected onFeaturedTouchEnd(event: TouchEvent): void {
+    const startX = this.featuredTouchStartX;
+    this.featuredTouchStartX = null;
+    const endX = event.changedTouches[0]?.clientX;
+    if (startX === null || endX === undefined) {
+      this.featuredSwipeDragging.set(false);
+      this.featuredSwipeOffset.set(0);
+      return;
+    }
+
+    const deltaX = endX - startX;
+    const slideWidth = Math.max((event.currentTarget as HTMLElement | null)?.clientWidth ?? window.innerWidth, 1);
+    const direction = deltaX <= -(slideWidth / 2) ? 1 : deltaX >= slideWidth / 2 ? -1 : 0;
+    this.featuredSwipeOffset.set(direction > 0 ? -slideWidth : direction < 0 ? slideWidth : 0);
+    this.featuredSwipeDragging.set(false);
+    if (!direction) return;
+    window.setTimeout(() => {
+      this.selectFeatured(direction);
+      this.featuredSwipeOffset.set(0);
+    }, 360);
   }
 
   protected courseLanguages(course: Course): Array<{ slug: string; label: string }> {
@@ -914,7 +983,9 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
       );
     }
     this.leaving.set(true);
-    this.pageExitTimer = setTimeout(() => this.router.navigate(['/courses', course.id]), PAGE_EXIT_DURATION);
+    this.pageExitTimer = setTimeout(() => this.router.navigate(this.mobileDetailRoute()
+      ? ['/mobile-layout-1/courses', course.id]
+      : ['/courses', course.id]), PAGE_EXIT_DURATION);
   }
 
   private restoreTradingCarouselPosition(): void {
@@ -1039,11 +1110,20 @@ export class LayoutStyle3Page implements AfterViewInit, OnDestroy {
   }
 
   protected featuredImageUrl(course: Course): string {
-    return course.landing_background
+    if (this.preferMobileMedia()) return course.mobile_landing_background ?? '';
+    return this.featuredImageOverrides()[course.title]
+      ?? course.landing_background
       ?? (course.title === 'The Primer' ? STYLE3_FEATURED_IMAGE_URL : null)
       ?? course.image
       ?? course.thumbnail
       ?? STYLE3_FEATURED_IMAGE_URL;
+  }
+
+  protected featuredTitleImageUrl(course: Course): string | null {
+    if (this.hideFeaturedTitleImage()) return null;
+    return this.featuredTitleImageOverrides()[course.title]
+      ?? course.title_image
+      ?? null;
   }
 
   protected personPhotoUrl(person: Person): string {

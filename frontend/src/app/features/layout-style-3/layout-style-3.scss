@@ -2827,7 +2827,7 @@
   outline: 0 !important;
   background: rgba(51, 55, 61, 0.4);
   color: var(--paper);
-  transition: background 0.2s ease, color 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease, transform 160ms ease;
 }
 
 .style-page button:not(.style-carousel__page):not(.style-carousel__arrow):not(.style-featured-pagination__item):not(.style-featured__start):hover,
@@ -2836,6 +2836,17 @@
   outline: 0 !important;
   background: #fff;
   color: #33373D;
+}
+
+.style-page .style-card__play:hover,
+.style-page .style-card__play:focus-visible,
+.style-page .style-featured__start:hover,
+.style-page .style-featured__start:focus-visible {
+  transform: translateY(-2px);
+}
+
+.style-page .style-featured__start {
+  transition: transform 160ms ease;
 }
 
 /* Keep the instructor disclosure transparent until it is interacted with;

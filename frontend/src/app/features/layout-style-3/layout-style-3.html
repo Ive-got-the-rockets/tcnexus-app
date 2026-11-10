@@ -20,6 +20,8 @@
   [class.style-page--leaving]="leaving()"
   [class.style-page--returning]="returning()"
   [class.style-page--return-revealed]="returnRevealed()"
+  [class.style-page--featured-next]="featuredSlideMotion() === 'next'"
+  [class.style-page--featured-previous]="featuredSlideMotion() === 'previous'"
 >
   @if (featuredPaginationItems().length > 1) {
     <nav class="style-featured-pagination" aria-label="Featured content" (wheel)="onFeaturedPaginationWheel($event)">
@@ -42,8 +44,14 @@
   }
 
   @if (featured(); as course) {
-    <div class="style-featured__background">
+    <div class="style-featured__background" [class.style-featured__background--dragging]="featuredSwipeDragging()" [style.--featured-drag-offset.px]="featuredSwipeOffset()" (touchstart)="onFeaturedTouchStart($event)" (touchmove)="onFeaturedTouchMove($event)" (touchend)="onFeaturedTouchEnd($event)">
       <img [src]="featuredImageUrl(course)" alt="" (error)="onFeaturedImageError($event)" />
+      @if (featuredAdjacent(-1); as previous) {
+        <img class="style-featured__swipe-image style-featured__swipe-image--previous" [src]="featuredImageUrl(previous)" alt="" aria-hidden="true" />
+      }
+      @if (featuredAdjacent(1); as next) {
+        <img class="style-featured__swipe-image style-featured__swipe-image--next" [src]="featuredImageUrl(next)" alt="" aria-hidden="true" />
+      }
       <button
         type="button"
         class="style-featured__background-link"
@@ -52,23 +60,40 @@
       ></button>
     </div>
     <section class="style-featured" aria-labelledby="style-featured-title">
+      @if (!hideFeaturedTitle()) {
       <div class="style-featured__heading">
-        @if (course.title_image) {
-          <img id="style-featured-title" class="style-featured__title-image" [src]="course.title_image" [alt]="course.title" />
+        @if (featuredTitleImageUrl(course); as titleImage) {
+          <img id="style-featured-title" class="style-featured__title-image" [src]="titleImage" [alt]="course.title" />
         } @else {
           <h1 id="style-featured-title" class="style-featured__title">{{ course.title }}</h1>
         }
       </div>
+      }
       <div class="style-featured__meta">
-        <div class="style-featured__meta-primary">
-          <span class="style-featured__meta-badge">{{ courseTypeLabel(course) }}</span>
-          <span class="style-featured__meta-dot" aria-hidden="true"></span>
-          <span class="style-featured__meta-badge">{{ course.lesson_count }} {{ isShow(course) ? 'episodes' : 'lessons' }}</span>
-          @for (level of courseLevelBadges(course); track level) {
+        @if (stackFeaturedLevelBadges()) {
+          <div class="style-featured__meta-primary">
+            <span class="style-featured__meta-badge">{{ courseTypeLabel(course) }}</span>
             <span class="style-featured__meta-dot" aria-hidden="true"></span>
-            <span class="style-featured__level-badge">{{ level }}</span>
+            <span class="style-featured__meta-badge">{{ course.lesson_count }} {{ isShow(course) ? 'episodes' : 'lessons' }}</span>
+          </div>
+          @if (courseLevelBadges(course).length) {
+            <div class="style-featured__meta-levels">
+              @for (level of courseLevelBadges(course); track level) {
+                <span class="style-featured__level-badge">{{ level }}</span>
+              }
+            </div>
           }
-        </div>
+        } @else {
+          <div class="style-featured__meta-primary">
+            <span class="style-featured__meta-badge">{{ courseTypeLabel(course) }}</span>
+            <span class="style-featured__meta-dot" aria-hidden="true"></span>
+            <span class="style-featured__meta-badge">{{ course.lesson_count }} {{ isShow(course) ? 'episodes' : 'lessons' }}</span>
+            @for (level of courseLevelBadges(course); track level) {
+              <span class="style-featured__meta-dot" aria-hidden="true"></span>
+              <span class="style-featured__level-badge">{{ level }}</span>
+            }
+          </div>
+        }
       </div>
       <div class="style-featured__details style-featured__details--expanded">
         <p class="style-featured__description" [class.style-featured__description--opening]="descriptionMotion() === 'opening'" [class.style-featured__description--closing]="descriptionMotion() === 'closing'">
@@ -319,7 +344,7 @@
               (keydown.enter)="openCourse(course, $event)"
               (keydown.space)="openCourse(course, $event); $event.preventDefault()"
             >
-              <div class="style-card__art" title="View Course">
+              <div class="style-card__art">
                 <img [src]="thumbnailUrl(course, index)" [alt]="course.title" loading="lazy" (error)="onImageError($event)" />
               </div>
               <div class="style-card__details">
@@ -415,7 +440,7 @@
               (keydown.enter)="openCourse(course, $event)"
               (keydown.space)="openCourse(course, $event); $event.preventDefault()"
             >
-              <div class="style-card__art" title="View Course">
+              <div class="style-card__art">
                 <img [src]="thumbnailUrl(course, index)" [alt]="course.title" loading="lazy" (error)="onImageError($event)" />
               </div>
               <div class="style-card__details">
@@ -531,7 +556,7 @@
         <iframe
           class="style-trailer-modal__video"
           [src]="embedUrl"
-          title="{{ trailerCourse()?.title ?? 'TC Nexus' }} trailer"
+          [attr.aria-label]="(trailerCourse()?.title ?? 'TC Nexus') + ' trailer'"
           allow="autoplay; fullscreen; picture-in-picture"
           allowfullscreen
         ></iframe>
@@ -706,7 +731,6 @@
                 type="button"
                 class="lesson-row__restart"
                 aria-label="Restart from the beginning"
-                title="Restart from the beginning"
                 (click)="restartLesson(lesson, $event)"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">

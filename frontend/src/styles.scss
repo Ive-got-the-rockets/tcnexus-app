@@ -78,6 +78,15 @@ button {
   font-weight: 500 !important;
 }
 
+/* Keep hover descriptions hidden across every page and layout. */
+.style-card__tooltip,
+.style-featured__tooltip,
+.preview__btn[data-tooltip]::after,
+.plyr__tooltip,
+[role='tooltip'] {
+  display: none !important;
+}
+
 /* Plyr injects its controls as plain DOM, outside Angular's template — its
    view encapsulation can't reach in to restyle them, so everything that
    needs to reach past the .player-wrap boundary lives here instead of in
@@ -178,8 +187,8 @@ button {
 
 .player-wrap .tcn-corner-controls [data-plyr='mute'] svg,
 .player-wrap .tcn-corner-btn--close svg {
-  width: 28px;
-  height: 28px;
+  width: 35px;
+  height: 35px;
 }
 
 /* These two are outline icons (the rewind/forward/fullscreen art above is
@@ -198,19 +207,19 @@ button {
 }
 
 .player-wrap .tcn-corner-controls [data-plyr='fullscreen'] svg.icon--not-pressed {
-  width: 15.59px;
-  height: 15.79px;
+  width: 19.4875px;
+  height: 19.7375px;
 }
 
 .player-wrap .tcn-corner-controls [data-plyr='fullscreen'] svg.icon--pressed {
-  width: 17.14px;
-  height: 17.14px;
+  width: 21.425px;
+  height: 21.425px;
 }
 
 /* Settings is a plain button unless a menu is open, in which case Plyr's own JS toggles this on its wrapper. */
 .player-wrap .tcn-corner-controls [data-plyr='settings'] svg {
-  width: 28px;
-  height: 28px;
+  width: 35px;
+  height: 35px;
 }
 
 /* Plyr's default "active" treatment for [aria-expanded=true] is a 90deg
@@ -235,6 +244,100 @@ button {
 
 .player-wrap .tcn-corner-controls [data-plyr='settings'][aria-expanded='true'] .tcn-dot--3 {
   transform: translateX(4px);
+}
+
+/* Keep fullscreen/close anchored while the volume and settings move left.
+   Fixed-size slider + transforms avoid resizing the range during a drag. */
+.player-wrap .tcn-corner-controls .tcn-volume-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 0 0 35px;
+  width: 35px;
+  min-width: 35px;
+  max-width: none;
+  margin: 0;
+  pointer-events: auto;
+  transition: transform 400ms cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+.player-wrap .tcn-corner-controls .plyr__menu {
+  transition: transform 400ms cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+.player-wrap .tcn-volume-control:has(input[data-plyr='volume'])::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 147px;
+  pointer-events: none;
+}
+
+.player-wrap .tcn-volume-control [data-plyr='mute'] {
+  position: relative;
+  z-index: 1;
+}
+
+.player-wrap .tcn-volume-control .tcn-volume-mask {
+  position: absolute;
+  z-index: 1;
+  left: 39px;
+  top: 0;
+  width: 112px;
+  height: 100%;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+  transition: visibility 0s 400ms;
+}
+
+.player-wrap .tcn-volume-control input[data-plyr='volume'] {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  width: 96px;
+  min-width: 0;
+  margin: 0;
+  pointer-events: none;
+  transform: translate(-112px, -50%);
+  transition: transform 400ms cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+.player-wrap .tcn-corner-controls:has(.tcn-volume-control:is(:focus-within, .is-expanded)):has(input[data-plyr='volume']) {
+  .plyr__menu, .tcn-volume-control { transform: translateX(-112px); }
+  .tcn-volume-control::before { pointer-events: auto; }
+  .tcn-volume-mask {
+    visibility: visible;
+    pointer-events: auto;
+    transition-delay: 0s;
+  }
+  input[data-plyr='volume'] {
+    pointer-events: auto;
+    transform: translate(0, -50%);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .player-wrap .tcn-corner-controls:has(.tcn-volume-control:hover):has(input[data-plyr='volume']) {
+    .plyr__menu, .tcn-volume-control { transform: translateX(-112px); }
+    .tcn-volume-control::before { pointer-events: auto; }
+    .tcn-volume-mask {
+      visibility: visible;
+      pointer-events: auto;
+      transition-delay: 0s;
+    }
+    input[data-plyr='volume'] {
+      pointer-events: auto;
+      transform: translate(0, -50%);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .player-wrap .tcn-corner-controls .plyr__menu,
+  .player-wrap .tcn-corner-controls .tcn-volume-control,
+  .player-wrap .tcn-volume-control .tcn-volume-mask,
+  .player-wrap .tcn-volume-control input[data-plyr='volume'] { transition: none; }
 }
 
 /* Plyr opens the settings popup upward (bottom: 100%) by default, which
@@ -503,7 +606,7 @@ button {
    transition runs during every resize event, the repeated animations make
    the player appear to drift toward the center instead of staying pinned to
    the top-left edge. */
-.player-wrap.tcn-xray-open {
+.player-wrap.tcn-xray-open:not(.tcn-xray-animating) {
   transition: none;
 }
 
@@ -617,7 +720,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 42px;
+  height: 28px;
   padding: 0 10px 0 14px;
   background: rgba(20, 23, 21, 0.96);
   border-bottom: 1px solid rgba(244, 241, 233, 0.12);
@@ -667,7 +770,8 @@ button {
   opacity: 1;
 }
 
-.tcn-xray-panel-action svg {
+.tcn-xray-panel-action svg,
+.tcn-xray-panel-close svg {
   width: 18px;
   height: 18px;
   fill: none;
@@ -678,7 +782,7 @@ button {
 }
 
 .tcn-xray-panel--detached .tcn-xray-frame {
-  height: calc(100% - 42px);
+  height: calc(100% - 28px);
 }
 
 .tcn-xray-frame {
@@ -805,3 +909,7 @@ button {
     transition: none;
   }
 }
+@view-transition {
+  navigation: auto;
+}
+

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, isDevMode, signal } from '@angular/core';
 import { ActivatedRoute, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 
@@ -24,6 +24,7 @@ export class App implements OnInit, OnDestroy {
   protected readonly headerHidden = signal(false);
   /** The lesson player opts out of the site chrome entirely via route data. */
   protected readonly chromeHidden = signal(false);
+  protected readonly coverLayout = signal(false);
 
   private lastScrollY = 0;
 
@@ -51,6 +52,7 @@ export class App implements OnInit, OnDestroy {
         deepest = deepest.firstChild;
       }
       this.chromeHidden.set(!!deepest.snapshot.data['hideChrome']);
+      this.coverLayout.set(this.router.url.split(/[?#]/)[0] === '/layout-style-4');
     });
   }
 
@@ -88,6 +90,10 @@ export class App implements OnInit, OnDestroy {
   ngOnInit(): void {
     window.addEventListener('scroll', this.onScroll, { passive: true });
     const params = new URLSearchParams(window.location.search);
+    // Keep the actual registration popup available for local design work on reload.
+    if (isDevMode() && params.get('popup-preview') === 'register') {
+      this.authModal.open('register');
+    }
     if (params.get('tcnexus_reset') === '1') {
       this.visitor.resetTestSession();
       params.delete('tcnexus_reset');

@@ -1,26 +1,40 @@
-<main class="tc-lens-layout" aria-label="TC Lens Layout 01">
+<main class="tc-lens-layout" [class.tc-lens-layout--exiting]="exiting()" aria-label="TC Lens Layout 01">
   <header class="tc-lens-frame tc-lens-layout__account" data-region="account">
     <strong>TC Nexus</strong>
-    <span>Local layout preview · account details</span>
+    <span>{{ visitor.getEmail() || (visitor.isRegistered() ? 'Signed in to Nexus' : 'Sign in to Nexus, then sign in inside the TradeCheetah pane.') }}</span>
+    @if (visitor.isRegistered()) { <button type="button" (click)="logout()">Sign out</button> }
+    @else { <button type="button" (click)="openLogin()">Sign in to Nexus</button> }
+    <button type="button" class="tc-lens-workspace-exit" (click)="exitWorkspace()" aria-label="Exit TC Lens workspace and continue the lesson">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5.8A1.8 1.8 0 0 0 4 5.8v12.4A1.8 1.8 0 0 0 5.8 20H10M14 8l4 4-4 4M8 12h10"/></svg>
+      <span>Exit</span>
+    </button>
   </header>
 
-  <section class="tc-lens-frame tc-lens-layout__video" data-region="video" aria-label="Mastering the Greeks lesson video">
+  <section class="tc-lens-frame tc-lens-layout__video" data-region="video" [attr.aria-label]="lessonTitle()">
     <iframe
-      title="Mastering the Greeks lesson 1"
-      src="https://player.vimeo.com/video/1068479580?dnt=1&amp;playsinline=1&amp;title=0&amp;byline=0&amp;portrait=0"
+      #videoFrame
+      [title]="lessonTitle()"
+      [src]="videoUrl"
       allow="autoplay; fullscreen; picture-in-picture"
       allowfullscreen
     ></iframe>
   </section>
 
   <section class="tc-lens-frame tc-lens-layout__llm" data-region="llm" aria-labelledby="tc-lens-llm-title">
-    <div class="tc-lens-placeholder">
-      <span>LLM</span>
-      <h2 id="tc-lens-llm-title">Lesson assistant frame</h2>
-    </div>
+    <h2 id="tc-lens-llm-title" class="tc-lens-sr-only">Lesson tutor</h2>
+    <div #contextHost hidden></div>
+    @if (contextReady()) {
+      <tc-tutor [attr.video-id]="lessonId" [attr.chapter]="chapter()" app-frame="#tc-workspace-app" lesson="#tc-lesson"></tc-tutor>
+    }
+    @if (tutorError()) { <p role="alert">The tutor could not load. <button type="button" (click)="loadTutor()">Retry</button></p> }
   </section>
 
-  <section class="tc-lens-frame tc-lens-layout__app" data-region="app" aria-label="TC Lens app frame">
-    <iframe title="TC Lens app" [src]="tcLensUrl" allow="clipboard-read; clipboard-write" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+  <section class="tc-lens-frame tc-lens-layout__app" [class.tc-lens-layout__app--ready]="appReady()" data-region="app" aria-label="TC Lens app frame">
+    @if (status()) { <p class="tc-lens-status" role="status">{{ status() }}</p> }
+    <div class="tc-lens-pane-loading" role="status" aria-live="polite">
+      <span class="tc-lens-pane-loading__spinner" aria-hidden="true"></span>
+      <strong>Loading TradeCheetah…</strong>
+    </div>
+    <iframe #appFrame id="tc-workspace-app" title="TC Lens app" [src]="tcLensUrl" (load)="appLoaded()" allow="clipboard-read; clipboard-write" referrerpolicy="strict-origin-when-cross-origin"></iframe>
   </section>
 </main>

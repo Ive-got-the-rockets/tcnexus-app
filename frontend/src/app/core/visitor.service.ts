@@ -7,6 +7,23 @@ const EMAIL_KEY = 'tcnexus_email';
 @Injectable({ providedIn: 'root' })
 export class VisitorService {
   private readonly registered = signal<boolean>(!!localStorage.getItem(TOKEN_KEY));
+  private readonly learnerId = signal<string | null>(null);
+  private readonly onStorage = (event: StorageEvent): void => {
+    if (event.key !== TOKEN_KEY && event.key !== null) return;
+    this.registered.set(!!localStorage.getItem(TOKEN_KEY));
+    this.email.set(localStorage.getItem(EMAIL_KEY));
+    this.setLearnerId(null);
+    window.dispatchEvent(new Event('tcnexus-token-changed'));
+  };
+
+  constructor() { window.addEventListener('storage', this.onStorage); }
+  ngOnDestroy(): void { window.removeEventListener('storage', this.onStorage); }
+  getLearnerId(): string | null { return this.learnerId(); }
+  /** Only set from the authenticated API response, never from persisted email or DOM. */
+  setLearnerId(id: number | null | undefined): void {
+    this.learnerId.set(typeof id === 'number' && Number.isSafeInteger(id) && id > 0 ? String(id) : null);
+    window.dispatchEvent(new Event('tcnexus-identity-change'));
+  }
   /** No display name to work with (registration is email-only) — the header icon uses this letter instead of an avatar. */
   private readonly email = signal<string | null>(localStorage.getItem(EMAIL_KEY));
 
@@ -28,6 +45,7 @@ export class VisitorService {
   }
 
   setToken(token: string): void {
+    if (this.getToken() !== token) this.setLearnerId(null);
     localStorage.setItem(TOKEN_KEY, token);
     this.registered.set(true);
   }
@@ -39,6 +57,7 @@ export class VisitorService {
 
   /** Drops the account token but keeps the anonymous visitor id (free-view tracking). */
   logout(): void {
+    this.setLearnerId(null);
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(EMAIL_KEY);
     this.registered.set(false);

@@ -1,3 +1,27 @@
+/* Cover preview follows the reference's right-aligned navigation. */
+@media (min-width: 1000px) {
+  .site-header.site-header--cover-layout {
+    display: flex;
+    gap: clamp(32px, 5vw, 80px);
+
+    > .wordmark {
+      margin-right: auto;
+      flex-shrink: 0;
+    }
+
+    .site-header__nav {
+      position: static;
+      gap: clamp(24px, 2.5vw, 40px);
+    }
+
+    .site-header__actions {
+      position: static;
+      gap: clamp(24px, 3vw, 48px);
+      flex-shrink: 0;
+    }
+  }
+}
+
 /* Diego Header Style 01: transparent, editorial header chrome. */
 .site-header {
   position: fixed;

@@ -21,6 +21,7 @@
   position: relative;
   height: 100%;
   aspect-ratio: 16 / 9;
+  view-transition-name: tc-nexus-video;
   background: #000;
   overflow: hidden;
 
@@ -220,5 +221,59 @@
 
   &:hover {
     background: var(--signal-dim);
+  }
+}
+
+:host ::ng-deep .tcn-xray-loading {
+  position: absolute;
+  inset: 48px 0 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: #0b100e;
+  color: var(--paper);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 220ms ease, visibility 0s linear 220ms;
+  pointer-events: none;
+}
+
+:host ::ng-deep .tcn-xray-is-loading .tcn-xray-loading {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+:host ::ng-deep .tcn-xray-loading strong {
+  font: 600 13px/1.2 var(--font-ui);
+}
+
+:host ::ng-deep .tcn-xray-loading small {
+  color: var(--paper-dim);
+  font: 11px/1.4 var(--font-ui);
+}
+
+:host ::ng-deep .tcn-xray-loading__spinner {
+  width: 30px;
+  height: 30px;
+  margin-bottom: 5px;
+  border: 2px solid color-mix(in srgb, var(--paper) 22%, transparent);
+  border-top-color: var(--signal);
+  border-radius: 50%;
+  animation: tc-lens-loading-spin 800ms linear infinite;
+}
+
+@keyframes tc-lens-loading-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host ::ng-deep .tcn-xray-loading,
+  :host ::ng-deep .tcn-xray-loading__spinner {
+    transition: none;
+    animation: none;
   }
 }

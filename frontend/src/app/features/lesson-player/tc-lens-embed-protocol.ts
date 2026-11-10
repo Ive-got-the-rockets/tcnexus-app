@@ -4,7 +4,7 @@ export interface TcLensEmbedMessage {
   videoId: string;
   chapter: string;
   message: string;
-  workflow: 'ask';
+  workflow: 'ask' | 'operate';
 }
 export function buildEmbedPrompt(videoId: number | string, chapter: string, event: TcLensTimelineEvent): TcLensEmbedMessage | null {
   const text = event.message?.trim();
@@ -14,5 +14,5 @@ export function buildEmbedPrompt(videoId: number | string, chapter: string, even
     : [text || event.data.assumptions || 'Explain this trade and its risks.',
        `Trade context:\n${JSON.stringify(event.data, null, 2)}`].join('\n\n');
   if (!message.trim()) return null;
-  return { type: 'tc-lens-time-update', videoId: String(videoId), chapter, message, workflow: 'ask' };
+  return { type: 'tc-lens-time-update', videoId: String(videoId), chapter, message, workflow: event.messageType === 'trade' ? 'operate' : 'ask' };
 }
