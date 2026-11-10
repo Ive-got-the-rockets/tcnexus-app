@@ -8,7 +8,7 @@
         aria-label="Open navigation menu"
         aria-controls="mobile-layout-1-menu"
         [attr.aria-expanded]="menuOpen()"
-        (click)="toggleMenu()"
+        (click)="toggleMenu($event)"
       >
         <span></span><span></span><span></span>
       </button>
@@ -16,7 +16,7 @@
       <a
         class="mobile-layout-1__wordmark"
         data-mobile-control="wordmark"
-        routerLink="/mobile-layout-1"
+        routerLink="/"
         (click)="closeMenu()"
       >TC <span>Nexus</span></a>
     </div>
@@ -52,7 +52,7 @@
 
   @if (menuOpen()) {
     <nav id="mobile-layout-1-menu" class="mobile-layout-1__menu" aria-label="Mobile navigation">
-      <a routerLink="/mobile-layout-1" (click)="closeMenu()">Home</a>
+      <a routerLink="/" (click)="closeMenu()">Home</a>
       <a routerLink="/trading-courses" (click)="closeMenu()">Trading Courses</a>
       <a routerLink="/platform-courses" (click)="closeMenu()">Platform Courses</a>
       <a routerLink="/shows" (click)="closeMenu()">Shows</a>
@@ -69,6 +69,7 @@
       [hideFeaturedTitle]="true"
       [mobileDetailRoute]="true"
       [stackFeaturedLevelBadges]="true"
+      [landingModeFilter]="landingMode"
     />
   </main>
 </div>

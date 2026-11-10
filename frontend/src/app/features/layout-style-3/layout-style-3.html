@@ -25,7 +25,11 @@
 >
   @if (featuredPaginationItems().length > 1) {
     <nav class="style-featured-pagination" aria-label="Featured content" (wheel)="onFeaturedPaginationWheel($event)">
-      <div class="style-featured-pagination__track">
+      <div
+        class="style-featured-pagination__track"
+        [class.style-featured-pagination__track--next]="featuredSlideMotion() === 'next'"
+        [class.style-featured-pagination__track--previous]="featuredSlideMotion() === 'previous'"
+      >
       @for (entry of featuredPaginationItems(); track entry.item.id) {
         <button
           type="button"
@@ -34,6 +38,7 @@
           [class.style-featured-pagination__item--near]="entry.distance === -1 || entry.distance === 1"
           [class.style-featured-pagination__item--far]="entry.distance === -2 || entry.distance === 2"
           [style.--featured-distance]="entry.distance"
+          [style.--featured-offset.px]="featuredPaginationOffset(entry.distance)"
           [attr.aria-label]="'Featured content: ' + entry.item.title"
           [attr.aria-current]="featuredIndex() === entry.index ? 'true' : null"
         (click)="selectFeatured(entry.distance)"
@@ -44,13 +49,19 @@
   }
 
   @if (featured(); as course) {
-    <div class="style-featured__background" [class.style-featured__background--dragging]="featuredSwipeDragging()" [style.--featured-drag-offset.px]="featuredSwipeOffset()" (touchstart)="onFeaturedTouchStart($event)" (touchmove)="onFeaturedTouchMove($event)" (touchend)="onFeaturedTouchEnd($event)">
-      <img [src]="featuredImageUrl(course)" alt="" (error)="onFeaturedImageError($event)" />
-      @if (featuredAdjacent(-1); as previous) {
-        <img class="style-featured__swipe-image style-featured__swipe-image--previous" [src]="featuredImageUrl(previous)" alt="" aria-hidden="true" />
-      }
-      @if (featuredAdjacent(1); as next) {
-        <img class="style-featured__swipe-image style-featured__swipe-image--next" [src]="featuredImageUrl(next)" alt="" aria-hidden="true" />
+    <div class="style-featured__background" [class.style-featured__background--dragging]="featuredSwipeDragging()" [style.--featured-drag-offset.px]="featuredSwipeOffset()" (touchstart)="onFeaturedTouchStart($event)" (touchmove)="onFeaturedTouchMove($event)" (touchend)="onFeaturedTouchEnd($event)" (touchcancel)="onFeaturedTouchCancel()">
+      @if (preferMobileMedia()) {
+        <div class="style-featured__swipe-track">
+          @if (featuredAdjacent(-1); as previous) {
+            <img [src]="featuredImageUrl(previous)" alt="" aria-hidden="true" />
+          }
+          <img [src]="featuredImageUrl(course)" alt="" (error)="onFeaturedImageError($event)" />
+          @if (featuredAdjacent(1); as next) {
+            <img [src]="featuredImageUrl(next)" alt="" aria-hidden="true" />
+          }
+        </div>
+      } @else {
+        <img [src]="featuredImageUrl(course)" alt="" (error)="onFeaturedImageError($event)" />
       }
       <button
         type="button"

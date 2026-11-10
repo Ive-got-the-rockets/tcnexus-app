@@ -1,5 +1,5 @@
-import { Component, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, inject, signal } from '@angular/core';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { LayoutStyle3Page } from '../layout-style-3/layout-style-3';
 
@@ -10,7 +10,9 @@ import { LayoutStyle3Page } from '../layout-style-3/layout-style-3';
   styleUrl: './mobile-layout-1.scss'
 })
 export class MobileLayout1Page {
+  private readonly route = inject(ActivatedRoute);
   protected readonly menuOpen = signal(false);
+  protected readonly landingMode = this.route.snapshot.data['landingMode'] ?? 'home';
   protected readonly mobileFeaturedImageOverrides: Readonly<Record<string, string>> = {
     'From Market 0 to top gun': '/mobile-layout-1/from-market-0-to-top-gun-mobile-hero-langing.jpg'
   };
@@ -18,7 +20,9 @@ export class MobileLayout1Page {
     'From Market 0 to top gun': '/mobile-layout-1/from-market-0-to-top-gun-mobile-tittle.png'
   };
 
-  protected toggleMenu(): void {
+  protected toggleMenu(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
     this.menuOpen.update((open) => !open);
   }
 

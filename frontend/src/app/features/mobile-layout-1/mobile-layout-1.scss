@@ -87,6 +87,8 @@
 }
 
 .mobile-layout-1__menu-trigger {
+  position: relative;
+  z-index: 1;
   flex-direction: column;
   gap: 4px;
 
@@ -158,12 +160,27 @@
   padding-bottom: 32px;
 }
 
+/* Category pages only: keep their single carousel close to the hero. The
+   landing page keeps its original spacing between its stacked carousels. */
+.mobile-layout-1__content ::ng-deep .style-page--trading-only,
+.mobile-layout-1__content ::ng-deep .style-page--platform-only,
+.mobile-layout-1__content ::ng-deep .style-page--shows-only {
+  --carousel-headroom: 41px;
+}
+
+.mobile-layout-1__content ::ng-deep .style-page--trading-only .style-carousel,
+.mobile-layout-1__content ::ng-deep .style-page--platform-only .style-carousel,
+.mobile-layout-1__content ::ng-deep .style-page--shows-only .style-carousel {
+  margin-top: 0 !important;
+}
+
 .mobile-layout-1__content ::ng-deep .style-featured-pagination {
   top: calc((100vw * 9 / 16) + 8px);
   right: auto;
   left: 50%;
-  width: auto;
-  height: 16px;
+  width: 100px;
+  height: 9px;
+  overflow: visible;
   transform: translateX(-50%);
 }
 
@@ -171,78 +188,110 @@
   position: relative;
   top: auto;
   right: auto;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 4px;
-  width: auto;
-  height: 16px;
-  transform: none !important;
+  display: block;
+  width: 100%;
+  height: 9px;
+  transform: none;
 }
 
 .mobile-layout-1__content ::ng-deep .style-featured-pagination__item {
-  position: relative;
-  top: auto;
-  left: auto;
-  flex: 0 0 6px;
-  width: 6px;
-  min-width: 6px;
-  height: 6px;
-  transform: none !important;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0;
+  background: transparent !important;
+  transform: translate(calc(-50% + var(--featured-offset, 0px)), -50%) !important;
+  transition: transform 520ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: transform;
 }
 
 .mobile-layout-1__content ::ng-deep .style-featured-pagination__item::before {
-  top: 0;
-  left: 0;
-  width: 6px;
-  height: 6px;
-  background: #8b8b8b;
+  top: 50%;
+  left: 50%;
+  width: 4.5px;
+  height: 4.5px;
+  background: #929292;
   border-radius: 50%;
-  opacity: 1;
-  transform: none;
-  transition: opacity 180ms ease, transform 180ms ease;
+  opacity: .35;
+  transform: translate(-50%, -50%);
+  transition: width 520ms cubic-bezier(0.22, 0.61, 0.36, 1), height 520ms cubic-bezier(0.22, 0.61, 0.36, 1), background 260ms ease, border-radius 520ms ease, opacity 260ms ease;
+}
+
+.mobile-layout-1__content ::ng-deep .style-featured-pagination__item--near::before {
+  width: 9px;
+  height: 9px;
+  opacity: .9;
+}
+
+.mobile-layout-1__content ::ng-deep .style-featured-pagination__item--far::before {
+  width: 7.2px;
+  height: 7.2px;
+  opacity: .6;
 }
 
 .mobile-layout-1__content ::ng-deep .style-featured-pagination__item--active {
-  flex-basis: 12px;
-  width: 12px;
-  min-width: 12px;
-  height: 12px;
-  margin: -3px 0;
+  z-index: 1;
 }
 
 .mobile-layout-1__content ::ng-deep .style-featured-pagination__item--active::before {
-  top: 0;
-  left: 0;
-  width: 12px;
-  height: 12px;
-  background: #fff !important;
-  border-radius: 0;
-  clip-path: polygon(25% 3%, 75% 3%, 98% 50%, 75% 97%, 25% 97%, 2% 50%);
-  transform: none !important;
-  animation: mobile-pagination-activate 360ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  width: 16.8px;
+  height: 9px;
+  background: #f4f1e9 !important;
+  border-radius: 999px;
+  opacity: 1;
+  transform: translate(-50%, -50%) !important;
 }
 
 .mobile-layout-1__content ::ng-deep .style-featured-pagination__item--active::after {
   position: absolute;
-  inset: 2.5px;
-  z-index: 1;
-  display: block;
-  background: #0c0d0d;
-  clip-path: polygon(25% 3%, 75% 3%, 98% 50%, 75% 97%, 25% 97%, 2% 50%);
-  content: '';
+  display: none;
 }
 
-@keyframes mobile-pagination-activate {
-  from {
-    opacity: 0.35;
-    transform: scale(0.55) rotate(-10deg) !important;
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) rotate(0deg) !important;
-  }
+/* Hide the replacement pill while the incoming disk travels into its place. */
+.mobile-layout-1__content ::ng-deep .style-page--featured-next .style-featured-pagination__item--active::before,
+.mobile-layout-1__content ::ng-deep .style-page--featured-previous .style-featured-pagination__item--active::before {
+  opacity: 0;
 }
+
+.mobile-layout-1__content ::ng-deep .style-featured-pagination::after {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #f4f1e9;
+  content: '';
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mobile-layout-1__content ::ng-deep .style-page--featured-next .style-featured-pagination::after {
+  opacity: 1;
+  animation: mobile-pagination-melt-from-right 520ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.mobile-layout-1__content ::ng-deep .style-page--featured-previous .style-featured-pagination::after {
+  opacity: 1;
+  animation: mobile-pagination-melt-from-left 520ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@keyframes mobile-pagination-melt-from-right {
+  0% { width: 9px; height: 9px; border-radius: 50%; transform: translate(calc(-50% + 18px), -50%); }
+  56% { width: 19.8px; height: 8.1px; border-radius: 48%; transform: translate(-50%, -50%) scale(1.03, .96); }
+  100% { width: 16.8px; height: 9px; border-radius: 999px; transform: translate(-50%, -50%); }
+}
+
+@keyframes mobile-pagination-melt-from-left {
+  0% { width: 9px; height: 9px; border-radius: 50%; transform: translate(calc(-50% - 18px), -50%); }
+  56% { width: 19.8px; height: 8.1px; border-radius: 48%; transform: translate(-50%, -50%) scale(1.03, .96); }
+  100% { width: 16.8px; height: 9px; border-radius: 999px; transform: translate(-50%, -50%); }
+}
+
 
 .mobile-layout-1__content ::ng-deep .style-featured__actions > button,
 .mobile-layout-1__content ::ng-deep .style-featured__actions > .style-featured__language,
@@ -271,6 +320,7 @@
 .mobile-layout-1__content ::ng-deep .style-carousel__track {
   gap: var(--mobile-carousel-gap) !important;
   overflow-x: auto;
+  overscroll-behavior-inline: contain;
 }
 
 .mobile-layout-1__content ::ng-deep .style-carousel__arrow {
@@ -312,11 +362,21 @@
    artwork is 16:9, so its frame must use the same ratio to fill edge to edge. */
 .mobile-layout-1__content ::ng-deep .style-featured__background {
   box-sizing: border-box;
+  /* The desktop hero is display-only. On mobile it must receive the swipe
+     gesture so the filmstrip can move with the user's finger. */
+  pointer-events: auto;
   touch-action: pan-y;
   width: 100vw;
   max-width: none;
   height: auto !important;
   aspect-ratio: 16 / 9 !important;
+}
+
+/* The mobile hero is supplied as finished artwork. Keep it completely clean:
+   no desktop readability gradients or edge shading over the image. */
+.mobile-layout-1__content ::ng-deep .style-featured__background::after,
+.mobile-layout-1__content ::ng-deep .style-page::before {
+  display: none;
 }
 
 @keyframes mobile-featured-slide-in-next {
@@ -329,68 +389,43 @@
   to { opacity: 1; transform: translateX(0); }
 }
 
-.mobile-layout-1__content ::ng-deep .style-page--featured-next .style-featured__background img,
 .mobile-layout-1__content ::ng-deep .style-page--featured-next .style-featured__title-image {
   animation: mobile-featured-slide-in-next 360ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 
-.mobile-layout-1__content ::ng-deep .style-page--featured-previous .style-featured__background img,
 .mobile-layout-1__content ::ng-deep .style-page--featured-previous .style-featured__title-image {
   animation: mobile-featured-slide-in-previous 360ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
-}
-
-.mobile-layout-1__content ::ng-deep .style-featured__background img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain !important;
-  object-position: center top;
-}
-
-/* Keep the active frame in the same positioned filmstrip layer as its
-   neighbours. Without this, the active image participates in normal flow
-   while the adjacent frames are absolute, producing the clipped split seen
-   during a swipe. */
-.mobile-layout-1__content ::ng-deep .style-featured__background > img:first-child {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-}
-
-.mobile-layout-1__content ::ng-deep .style-featured__background img {
-  transform: translateX(var(--featured-drag-offset, 0px));
-  transition: transform 360ms cubic-bezier(0.22, 0.61, 0.36, 1);
-  will-change: transform;
 }
 
 .mobile-layout-1__content ::ng-deep .style-featured__background {
   touch-action: pan-y;
 }
 
-.mobile-layout-1__content ::ng-deep .style-featured__background > .style-featured__swipe-image {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  display: block;
-  width: 100%;
+.mobile-layout-1__content ::ng-deep .style-featured__background-link {
+  touch-action: pan-y;
+}
+
+.mobile-layout-1__content ::ng-deep .style-featured__swipe-track {
+  display: flex;
+  width: 300%;
   height: 100%;
-  object-fit: contain;
-  pointer-events: none;
+  transform: translate3d(calc(-33.333333% + var(--featured-drag-offset, 0px)), 0, 0);
+  transition: transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
-.mobile-layout-1__content ::ng-deep .style-featured__background > .style-featured__swipe-image--previous {
-  transform: translateX(calc(-100% + var(--featured-drag-offset, 0px)));
+.mobile-layout-1__content ::ng-deep .style-featured__swipe-track img {
+  flex: 0 0 33.333333%;
+  display: block;
+  height: 100%;
+  object-fit: contain !important;
+  object-position: center top;
+  transition: none !important;
+  backface-visibility: hidden;
 }
 
-.mobile-layout-1__content ::ng-deep .style-featured__background > .style-featured__swipe-image--next {
-  transform: translateX(calc(100% + var(--featured-drag-offset, 0px)));
-}
-
-.mobile-layout-1__content ::ng-deep .style-featured__background--dragging > .style-featured__swipe-image {
-  transition: none;
-}
-
-.mobile-layout-1__content ::ng-deep .style-featured__background--dragging img {
+.mobile-layout-1__content ::ng-deep .style-featured__background--dragging .style-featured__swipe-track {
   transition: none;
 }
 
@@ -402,10 +437,18 @@
   object-fit: contain;
 }
 
-@media (min-width: 600px) {
-  :host {
-    display: none;
-  }
+/* Cards on the mobile layout are direct links. Do not reveal the desktop
+   expanded-card panel after a touch is held down. */
+.mobile-layout-1__content ::ng-deep .style-card,
+.mobile-layout-1__content ::ng-deep .style-card:has(.style-card__art:hover, .style-card__details:hover) {
+  transform: none !important;
+  transition: none !important;
+  z-index: auto !important;
+}
+
+.mobile-layout-1__content ::ng-deep .style-card::after,
+.mobile-layout-1__content ::ng-deep .style-card__details {
+  display: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

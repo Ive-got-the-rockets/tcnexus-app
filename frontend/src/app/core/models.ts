@@ -13,6 +13,10 @@ export interface CourseLevelVersion {
   thumbnail: string | null;
   image: string | null;
   title_image?: string | null;
+  mobile_image?: string | null;
+  mobile_landing_background?: string | null;
+  mobile_thumbnail?: string | null;
+  mobile_title_image?: string | null;
   overview_link: string | null;
   trailer_link?: string | null;
   instructor?: Person[];
