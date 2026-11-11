@@ -2,7 +2,7 @@
 /**
  * Plugin Name: TC Nexus LMS
  * Description: Headless course/lesson backend for the TC Nexus streaming site — tiers, gating, and the REST API the Angular front-end consumes.
- * Version: 0.1.72
+ * Version: 0.1.75
  * Author: TC Nexus
  * Text Domain: tcnexus-lms
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TCNEXUS_LMS_VERSION', '0.1.72' );
+define( 'TCNEXUS_LMS_VERSION', '0.1.75' );
 define( 'TCNEXUS_LMS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'TCNEXUS_LMS_URL', plugin_dir_url( __FILE__ ) );
 define( 'TCNEXUS_LMS_TABLE_VIEWS', 'tcnexus_lesson_views' );
@@ -24,6 +24,7 @@ require_once TCNEXUS_LMS_DIR . 'includes/class-tcnexus-animations-settings.php';
 require_once TCNEXUS_LMS_DIR . 'includes/class-tcnexus-visitor-tracking.php';
 require_once TCNEXUS_LMS_DIR . 'includes/class-tcnexus-access-control.php';
 require_once TCNEXUS_LMS_DIR . 'includes/class-tcnexus-rest-api.php';
+require_once TCNEXUS_LMS_DIR . 'includes/class-tcnexus-tradecheetah-auth.php';
 require_once TCNEXUS_LMS_DIR . 'includes/class-tcnexus-admin-menu.php';
 require_once TCNEXUS_LMS_DIR . 'includes/class-tcnexus-course-builder.php';
 require_once TCNEXUS_LMS_DIR . 'includes/class-tcnexus-global-lessons.php';
@@ -41,6 +42,8 @@ add_action( 'init', array( 'TCNexus_Post_Types', 'register' ) );
 add_action( 'init', array( 'TCNexus_Course_Builder', 'maybe_migrate_course_levels' ), 20 );
 add_action( 'init', array( 'TCNexus_Course_Builder', 'maybe_migrate_show_seasons' ), 21 );
 add_action( 'rest_api_init', array( 'TCNexus_REST_API', 'register_routes' ) );
+add_action( 'rest_api_init', array( 'TCNexus_TradeCheetah_Auth', 'register_routes' ) );
+add_action( 'tcnexus_oidc_cleanup', array( 'TCNexus_TradeCheetah_Auth', 'cleanup' ) );
 add_action( 'admin_menu', array( 'TCNexus_Admin_Menu', 'register' ), 20 );
 add_action( 'admin_init', array( 'TCNexus_Admin_Menu', 'redirect_native_media_library' ) );
 add_action( 'admin_enqueue_scripts', array( 'TCNexus_Admin_Menu', 'enqueue_media_library_assets' ) );
@@ -55,6 +58,7 @@ add_action( 'admin_post_tcnexus_save_card_animation_settings', array( 'TCNexus_A
 add_action( 'admin_menu', array( 'TCNexus_Registration_Settings', 'register' ), 21 );
 add_action( 'admin_menu', array( 'TCNexus_Visitor_Tracking', 'register' ), 22 );
 add_action( 'admin_post_tcnexus_save_registration_settings', array( 'TCNexus_Registration_Settings', 'handle_save' ) );
+add_action( 'admin_post_tcnexus_popup_editor_frame', array( 'TCNexus_Popup_Editor', 'render_frame' ) );
 add_action( 'admin_post_tcnexus_set_tier', array( 'TCNexus_Admin_Menu', 'handle_set_tier' ) );
 add_action( 'admin_post_tcnexus_set_free_limit', array( 'TCNexus_Admin_Menu', 'handle_set_free_limit' ) );
 add_action( 'admin_post_tcnexus_clear_visitor_tracker', array( 'TCNexus_Visitor_Tracking', 'handle_clear' ) );
@@ -72,6 +76,7 @@ add_action( 'admin_enqueue_scripts', array( 'TCNexus_Global_Lessons', 'enqueue_a
 add_action( 'wp_ajax_tcnexus_save_global_lesson', array( 'TCNexus_Global_Lessons', 'ajax_save_lesson' ) );
 add_action( 'wp_ajax_tcnexus_set_global_lesson_tier', array( 'TCNexus_Global_Lessons', 'ajax_set_lesson_tier' ) );
 add_action( 'wp_ajax_tcnexus_delete_global_lesson', array( 'TCNexus_Global_Lessons', 'ajax_delete_lesson' ) );
+add_action( 'wp_ajax_tcnexus_delete_tc_lens_event', array( 'TCNexus_Course_Builder', 'ajax_delete_tc_lens_event' ) );
 add_action( 'admin_menu', array( 'TCNexus_Instructor_Builder', 'register' ), 20 );
 add_action( 'admin_post_tcnexus_save_instructor', array( 'TCNexus_Instructor_Builder', 'handle_save' ) );
 add_action( 'admin_post_tcnexus_delete_instructor', array( 'TCNexus_Instructor_Builder', 'handle_delete_instructor' ) );

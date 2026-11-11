@@ -307,6 +307,7 @@ class TCNexus_REST_API {
 
 		$result = TCNexus_Access_Control::evaluate_access( $lesson_id, $visitor_id, $user_id );
 		$result['viewer_tier'] = TCNexus_Membership::get_user_tier( $user_id );
+		$result['user_id'] = $user_id ? (int) $user_id : null;
 
 		if ( $result['granted'] ) {
 			$result['vimeo_id'] = get_post_meta( $lesson_id, '_tcnexus_vimeo_id', true );
@@ -331,6 +332,7 @@ class TCNexus_REST_API {
 		$user_id = self::get_user_id( $request );
 		return new WP_REST_Response( array(
 			'viewer_tier' => TCNexus_Membership::get_user_tier( $user_id ),
+			'user_id' => $user_id ? (int) $user_id : null,
 		), 200 );
 	}
 
@@ -346,6 +348,7 @@ class TCNexus_REST_API {
 		return new WP_REST_Response( array(
 			'success' => true,
 			'token'   => $result['token'],
+			'user_id' => (int) $result['user_id'],
 		), 200 );
 	}
 
@@ -364,6 +367,7 @@ class TCNexus_REST_API {
 		return new WP_REST_Response( array(
 			'success' => true,
 			'token'   => $result['token'],
+			'user_id' => (int) $result['user_id'],
 		), 201 );
 	}
 

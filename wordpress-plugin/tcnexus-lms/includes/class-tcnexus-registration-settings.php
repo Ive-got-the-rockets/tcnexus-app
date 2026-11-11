@@ -3,6 +3,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+require_once __DIR__ . '/class-tcnexus-popup-editor.php';
+
 class TCNexus_Registration_Settings {
 	const OPTION_NAME = 'tcnexus_registration_settings';
 	const PAID_MEMBERSHIP_OPTION_NAME = 'tcnexus_paid_membership_settings';
@@ -24,18 +26,6 @@ class TCNexus_Registration_Settings {
 				'heading'      => 'Register to continue watching.',
 				'message'      => 'Create a free profile with your email to keep watching. We’ll send your login details by email.',
 				'button_label' => 'Create Profile',
-				'media'        => array( 'type' => 'none', 'url' => '', 'alt' => '', 'attachment_id' => 0 ),
-			),
-			'final_free'   => array(
-				'heading'      => 'This will be your last free lesson.',
-				'message'      => 'Register your email to keep watching free lessons.',
-				'button_label' => 'Create Profile',
-				'media'        => array( 'type' => 'none', 'url' => '', 'alt' => '', 'attachment_id' => 0 ),
-			),
-			'paid_member'  => array(
-				'heading'      => 'Become a paid member',
-				'message'      => 'Become a paid member to access locked content and more.',
-				'button_label' => 'Become a Paid Member',
 				'media'        => array( 'type' => 'none', 'url' => '', 'alt' => '', 'attachment_id' => 0 ),
 			),
 		);
@@ -99,7 +89,7 @@ class TCNexus_Registration_Settings {
 		$settings = $defaults;
 
 		$legacy_media = isset( $input['media'] ) && is_array( $input['media'] ) ? $input['media'] : array();
-		foreach ( array( 'registration', 'final_free', 'paid_member' ) as $section ) {
+		foreach ( array( 'registration' ) as $section ) {
 			$section_input = isset( $input[ $section ] ) && is_array( $input[ $section ] ) ? $input[ $section ] : array();
 			if ( ! empty( $section_input ) ) {
 				foreach ( array( 'heading', 'message', 'button_label' ) as $field ) {
@@ -115,6 +105,7 @@ class TCNexus_Registration_Settings {
 			$settings[ $section ]['media'] = self::normalize_media( $media_input );
 		}
 
+		$settings['editor'] = TCNexus_Popup_Editor::normalize( isset( $input['editor'] ) ? $input['editor'] : array() );
 		return $settings;
 	}
 
@@ -152,18 +143,16 @@ class TCNexus_Registration_Settings {
 				<div>
 					<p class="tcn-membership-eyebrow">Membership</p>
 					<h1>Popup Details</h1>
-				<p class="tcn-membership-subtitle">Manage the copy and media for each access popup. All popups use the same 16:9 media frame.</p>
+				<p class="tcn-membership-subtitle">Edit the two-stage registration experience and preview every change. Pricing settings remain below.</p>
 				</div>
 			</div>
 			<?php if ( isset( $_GET['saved'] ) ) : ?>
 				<div class="notice notice-success is-dismissible"><p>Registration settings saved.</p></div>
 			<?php endif; ?>
+			<?php TCNexus_Popup_Editor::render( $settings['editor'] ); ?>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="tcnexus_save_registration_settings" />
 				<?php wp_nonce_field( 'tcnexus_save_registration_settings' ); ?>
-				<?php self::render_popup_section( 'registration', 'Registration Popup', $settings['registration'] ); ?>
-				<?php self::render_popup_section( 'final_free', 'Final Free Lesson Popup', $settings['final_free'] ); ?>
-				<?php self::render_popup_section( 'paid_member', 'Become a Paid Member Popup', $settings['paid_member'] ); ?>
 				<?php self::render_pricing_section( self::get_paid_membership_settings() ); ?>
 				<div class="tcn-popup-details__actions"><button type="submit" class="tcn-btn-ghost">Save Popup Details</button></div>
 			</form>
@@ -174,7 +163,7 @@ class TCNexus_Registration_Settings {
 	private static function render_pricing_section( $pricing ) {
 		?>
 		<section class="tcn-popup-card tcn-pricing-card">
-			<div class="tcn-popup-card__header"><h2>Paid Membership Popup</h2><span>Grok Grid pricing</span></div>
+			<div class="tcn-popup-card__header"><h2>Membership pricing</h2><span>Grok Grid pricing</span></div>
 			<div class="tcn-pricing-global">
 				<p class="tcn-popup-field"><label for="tcnexus-pricing-heading">Main header</label><input id="tcnexus-pricing-heading" name="paid_membership[heading]" value="<?php echo esc_attr( $pricing['heading'] ); ?>" /></p>
 				<p class="tcn-popup-field"><label for="tcnexus-pricing-message">Sub text</label><textarea rows="3" id="tcnexus-pricing-message" name="paid_membership[message]"><?php echo esc_textarea( $pricing['message'] ); ?></textarea></p>
@@ -227,7 +216,15 @@ class TCNexus_Registration_Settings {
 			wp_die( 'Invalid request.' );
 		}
 		$input = isset( $_POST ) ? wp_unslash( $_POST ) : array();
-		update_option( self::OPTION_NAME, self::normalize( $input ) );
+		$existing = self::get_settings();
+		if ( isset( $input['popup_editor'] ) ) {
+			$editor = json_decode( $input['popup_editor'], true );
+			if ( ! is_array( $editor ) ) { wp_die( 'Invalid popup settings.' ); }
+			$existing['editor'] = TCNexus_Popup_Editor::normalize( $editor );
+			update_option( self::OPTION_NAME, self::normalize( $existing ) );
+		} else {
+			update_option( self::OPTION_NAME, self::normalize( array_replace( $existing, $input ) ) );
+		}
 		if ( isset( $input['paid_membership'] ) && is_array( $input['paid_membership'] ) ) {
 			update_option( self::PAID_MEMBERSHIP_OPTION_NAME, self::normalize_paid_membership( $input['paid_membership'] ) );
 		}
