@@ -1,0 +1,111 @@
+@if (course(); as c) {
+  <main class="mobile-detail">
+    <header class="mobile-detail__header">
+      <div class="mobile-detail__leading">
+        <button type="button" class="mobile-detail__action menu-trigger" aria-label="Open navigation menu" [attr.aria-expanded]="menuOpen()" (click)="$event.preventDefault(); $event.stopPropagation(); menuOpen.set(!menuOpen())"><span></span><span></span><span></span></button>
+        <a routerLink="/"><span>TC <b>Nexus</b></span></a>
+      </div>
+      <div class="mobile-detail__actions">
+        <button type="button" class="mobile-detail__action" aria-label="Cart">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="8.3" width="14" height="12" rx="2.2"></rect><path d="M9 8.3a3 3 0 0 1 6 0"></path></svg>
+        </button>
+        <a class="mobile-detail__action" routerLink="/profile" aria-label="Profile">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path class="mobile-detail__profile-frame" d="M12 2.2 20.5 7v10L12 21.8 3.5 17V7z"></path><circle cx="12" cy="9.6" r="2.8"></circle><path d="M7 17.6c0-2.8 2.4-4.4 5-4.4s5 1.6 5 4.4"></path></svg>
+        </a>
+      </div>
+    </header>
+
+    @if (menuOpen()) {
+      <nav class="mobile-detail__menu" aria-label="Mobile navigation">
+        <a routerLink="/" (click)="menuOpen.set(false)">Home</a>
+        <a routerLink="/trading-courses" (click)="menuOpen.set(false)">Trading Courses</a>
+        <a routerLink="/platform-courses" (click)="menuOpen.set(false)">Platform Courses</a>
+        <a routerLink="/shows" (click)="menuOpen.set(false)">Shows</a>
+      </nav>
+    }
+
+    <div class="hero" [style.background-image]="'url(' + hero(c) + ')'" role="img" [attr.aria-label]="c.title"></div>
+
+    <section>
+      <button type="button" class="play" (click)="play()">
+        <svg class="play-icon" viewBox="0 0 12 12" aria-hidden="true"><path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" /></svg>
+        Play {{ c.course_types.includes('Shows') ? 'Show' : 'Course' }}
+      </button>
+
+      <div class="actions" aria-label="Course actions">
+        @if (c.trailer_link) {
+          <button type="button" class="trailer-button" aria-label="Watch Trailer" title="Watch Trailer" (click)="trailer()">
+            <svg class="trailer-icon" viewBox="31 37 82 70" preserveAspectRatio="none" aria-hidden="true"><path d="M101 106.63H43c-6.62 0-12-5.38-12-12V49.37c0-6.62 5.38-12 12-12h58c6.62 0 12 5.38 12 12v45.26c0 6.62-5.38 12-12 12ZM43 43.37c-3.31 0-6 2.69-6 6v45.26c0 3.31 2.69 6 6 6h58c3.31 0 6-2.69 6-6V49.37c0-3.31-2.69-6-6-6H43Z"/><path d="m63.5 57.05 22.08 12.95c1.53.9 1.53 3.11 0 4.01L63.5 86.96c-1.55.91-3.5-.21-3.5-2V59.05c0-1.79 1.95-2.91 3.5-2Z"/><g><rect x="43.59" y="50" width="8.81" height="6" rx=".83"/><rect x="43.59" y="69" width="8.81" height="6" rx=".83"/><rect x="43.59" y="88" width="8.81" height="6" rx=".83"/><rect x="91.59" y="50" width="8.81" height="6" rx=".83"/><rect x="91.59" y="69" width="8.81" height="6" rx=".83"/><rect x="91.59" y="88" width="8.81" height="6" rx=".83"/></g></svg>
+          </button>
+        }
+        @if (c.overview_link) {
+          <button type="button" class="overview-button" aria-label="Course Overview" title="Course Overview" (click)="overview()">Course<br />Overview</button>
+        }
+        <button type="button" class="language-button" [attr.aria-expanded]="languageOpen()" (click)="languageOpen.set(!languageOpen())">English <span aria-hidden="true">☰</span></button>
+        <button type="button" class="level-button" [attr.aria-expanded]="levelButtonOpen()" (click)="levelButtonOpen.set(!levelButtonOpen())">Level <span aria-hidden="true">☰</span></button>
+      </div>
+
+      @if (levelButtonOpen()) {
+        <div class="popup-menu" role="listbox" aria-label="Available levels">
+          @for (level of levels(); track level.slug) {
+            <button type="button" role="option" [attr.aria-selected]="selectedLevel() === level.slug" (click)="chooseLevel(level.slug)">{{ level.label }}</button>
+          }
+        </div>
+      }
+
+      @if (languageOpen()) {
+        <div class="popup-menu" role="listbox" aria-label="Language"><button type="button">English</button><button type="button">Spanish</button><button type="button">Korean</button></div>
+      }
+
+      <div class="badges">
+        <span class="badge badge--type">{{ c.course_types[0] }}</span>
+        <span class="badge">{{ lessons().length }} {{ c.course_types.includes('Shows') ? 'Episodes' : 'Lessons' }}</span>
+        @for (level of levels(); track level.slug) {
+          <button type="button" class="badge badge--level" [class.badge--active]="selectedLevel() === level.slug" [attr.aria-pressed]="selectedLevel() === level.slug" (click)="chooseLevel(level.slug)">{{ level.label }}</button>
+        }
+      </div>
+
+      <p class="description">{{ description(c.content) }}</p>
+
+      <div class="list-head">
+        <button type="button" class="level-selector" [attr.aria-expanded]="levelOpen()" (click)="levelOpen.set(!levelOpen())">
+          {{ selectedLevelLabel() }} <span aria-hidden="true">▾</span>
+        </button>
+      </div>
+
+      @if (levelOpen()) {
+        <div class="popup-menu popup-menu--levels" role="listbox" aria-label="Available levels">
+          @for (level of levels(); track level.slug) {
+            <button type="button" role="option" [attr.aria-selected]="selectedLevel() === level.slug" (click)="chooseLevel(level.slug)">{{ level.label }}</button>
+          }
+        </div>
+      }
+
+      <ol>
+        @for (lesson of lessons(); track lesson.id) {
+          <li (click)="router.navigate(['/courses', c.id, 'lessons', lesson.id])">
+            @if (lessonThumbnail(lesson, c); as thumbnail) {
+              <img class="lesson-thumbnail" [src]="thumbnail" alt="" />
+            }
+            <div><strong>{{ lesson.order }}. {{ lesson.title }}</strong><small>{{ lesson.excerpt }}</small></div>
+          </li>
+        }
+      </ol>
+    </section>
+  </main>
+}
+
+@if (trailerOpen()) {
+  <div class="trailer-backdrop" role="presentation" (click)="closeTrailer()">
+    <section class="trailer-modal" role="dialog" aria-modal="true" aria-label="Trailer" (click)="$event.stopPropagation()">
+      <button type="button" class="trailer-close" aria-label="Close trailer" (click)="closeTrailer()">×</button>
+      @if (trailerVideo(); as videoUrl) {
+        <video [src]="videoUrl" autoplay controls playsinline></video>
+      } @else if (trailerEmbed(); as embedUrl) {
+        <iframe [src]="embedUrl" title="Trailer" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+      }
+    </section>
+  </div>
+}
+
+<app-course-overview [bottomSheet]="true" />

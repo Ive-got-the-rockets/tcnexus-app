@@ -150,20 +150,20 @@
                 (keydown.enter)="openCourse(show, $event)"
                 (keydown.space)="openCourse(show, $event); $event.preventDefault()"
               >
-                <div class="style-card__art" title="View Show">
+                <div class="style-card__art">
                   <img [src]="thumbnailUrl(show, index)" [alt]="show.title" loading="lazy" (error)="onImageError($event)" />
                 </div>
                 <div class="style-card__details">
                   <div class="style-card__actions">
-                    <button type="button" class="style-card__play" aria-label="Start Watching" title="Start Watching" (click)="playCourse(show, $event)">
+                    <button type="button" class="style-card__play" aria-label="Start Watching" (click)="playCourse(show, $event)">
                       <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true"><path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" /></svg>
                     </button>
                     @if (show.trailer_link) {
-                      <button type="button" class="style-card__trailer" aria-label="Watch trailer" title="Watch trailer" (click)="openTrailer(show, $event)">
+                      <button type="button" class="style-card__trailer" aria-label="Watch trailer" (click)="openTrailer(show, $event)">
                         <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true"><path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" /></svg>
                       </button>
                     }
-                    <button type="button" class="style-card__list" aria-label="View Show" title="View Show" (click)="openCoursePreview(show, $event)">
+                    <button type="button" class="style-card__list" aria-label="View Show" (click)="openCoursePreview(show, $event)">
                       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="1.5" /><circle cx="6" cy="12" r="1.5" /><circle cx="6" cy="18" r="1.5" /><path d="M11 6h8M11 12h8M11 18h8" /></svg>
                     </button>
                   </div>
@@ -211,24 +211,24 @@
               (keydown.enter)="openCourse(course, $event)"
               (keydown.space)="openCourse(course, $event); $event.preventDefault()"
             >
-              <div class="style-card__art" title="View Course">
+              <div class="style-card__art">
                 <img [src]="thumbnailUrl(course, index)" [alt]="course.title" loading="lazy" (error)="onImageError($event)" />
               </div>
               <div class="style-card__details">
                 <div class="style-card__actions">
-                  <button type="button" class="style-card__play" aria-label="Start Watching" title="Start Watching" (click)="playCourse(course, $event)">
+                  <button type="button" class="style-card__play" aria-label="Start Watching" (click)="playCourse(course, $event)">
                     <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true">
                       <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
                     </svg>
                   </button>
                   @if (course.trailer_link) {
-                    <button type="button" class="style-card__trailer" aria-label="Watch trailer" title="Watch trailer" (click)="openTrailer(course, $event)">
+                    <button type="button" class="style-card__trailer" aria-label="Watch trailer" (click)="openTrailer(course, $event)">
                       <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true">
                         <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
                       </svg>
                     </button>
                   }
-                  <button type="button" class="style-card__list" aria-label="View Course" title="View Course" (click)="openCoursePreview(course, $event)">
+                  <button type="button" class="style-card__list" aria-label="View Course" (click)="openCoursePreview(course, $event)">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <circle cx="6" cy="6" r="1.5" />
                       <circle cx="6" cy="12" r="1.5" />
@@ -281,24 +281,24 @@
               (mouseenter)="onCardEnter($event, 'platform')"
               (mouseleave)="onCardLeave()"
             >
-              <div class="style-card__art" title="View Course">
+              <div class="style-card__art">
                 <img [src]="thumbnailUrl(course, index)" [alt]="course.title" loading="lazy" (error)="onImageError($event)" />
               </div>
               <div class="style-card__details">
                 <div class="style-card__actions">
-                  <button type="button" class="style-card__play" aria-label="Start Watching" title="Start Watching" (click)="playCourse(course, $event)">
+                  <button type="button" class="style-card__play" aria-label="Start Watching" (click)="playCourse(course, $event)">
                     <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true">
                       <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
                     </svg>
                   </button>
                   @if (course.trailer_link) {
-                    <button type="button" class="style-card__trailer" aria-label="Watch trailer" title="Watch trailer" (click)="openTrailer(course, $event)">
+                    <button type="button" class="style-card__trailer" aria-label="Watch trailer" (click)="openTrailer(course, $event)">
                       <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true">
                         <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
                       </svg>
                     </button>
                   }
-                  <button type="button" class="style-card__list" aria-label="View Course" title="View Course" (click)="openCoursePreview(course, $event)">
+                  <button type="button" class="style-card__list" aria-label="View Course" (click)="openCoursePreview(course, $event)">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <circle cx="6" cy="6" r="1.5" />
                       <circle cx="6" cy="12" r="1.5" />
@@ -360,7 +360,7 @@
         <iframe
           class="style-trailer-modal__video"
           [src]="embedUrl"
-          title="{{ trailerCourse()?.title ?? 'TC Nexus' }} trailer"
+          [attr.aria-label]="(trailerCourse()?.title ?? 'TC Nexus') + ' trailer'"
           allow="autoplay; fullscreen; picture-in-picture"
           allowfullscreen
         ></iframe>

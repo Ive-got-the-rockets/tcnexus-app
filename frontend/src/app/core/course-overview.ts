@@ -1,9 +1,9 @@
 import { courseOverviewUrl } from './course-overview-url';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { Component, ElementRef, OnDestroy, inject, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, OnDestroy, inject, input, signal, viewChild } from '@angular/core';
 @Component({
  selector: 'app-course-overview',
- template: `<dialog #dialog aria-label="Course overview" (click)="backdrop($event)" (close)="closed()">
+ template: `<dialog #dialog aria-label="Course overview" [class.overview--bottom-sheet]="bottomSheet()" (click)="backdrop($event)" (close)="closed()">
  <div class="overview-controls">
    <a [href]="sourceUrl()" target="_blank" rel="noopener noreferrer" aria-label="Open overview in a new tab" title="Open overview in a new tab"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6M21 3l-9 9M15 3h6v6" /></svg></a>
    <button type="button" autofocus aria-label="Close course overview" title="Close course overview" (click)="close()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button>
@@ -18,6 +18,7 @@ import { Component, ElementRef, OnDestroy, inject, signal, viewChild } from '@an
  styles: `
  dialog {width:min(1400px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 32px);padding:0;border:1px solid #ffffff30;border-radius:12px;background:#141414;color:#fff;box-sizing:border-box;overflow:hidden}
  dialog::backdrop {background:#000b}
+ dialog.overview--bottom-sheet {width:min(600px,100vw);max-height:min(82dvh,760px);margin:auto auto 0;border-radius:12px 12px 0 0;animation:overview-sheet-enter .26s cubic-bezier(.22,.61,.36,1) both}
  .overview-controls {position:absolute;top:8px;right:18px;z-index:1;display:flex;align-items:center;gap:6px;padding:4px;border-radius:6px;background:transparent}
  button,a {display:grid;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:0;border-radius:var(--button-radius,4.8px);background:transparent;color:var(--paper,#f4f1e9);cursor:pointer;transition:background .2s ease,color .2s ease}
  button:hover,a:hover,button:focus-visible,a:focus-visible {background:#fff;color:#33373d}
@@ -34,11 +35,13 @@ import { Component, ElementRef, OnDestroy, inject, signal, viewChild } from '@an
  @keyframes overview-cue-fade {to{opacity:0;visibility:hidden}}
  @keyframes overview-wheel-drop {0%,15%{transform:translateY(0);opacity:0}25%{opacity:1}65%,100%{transform:translateY(12px);opacity:0}}
  @keyframes overview-chevron-down {0%,10%{transform:translateY(0) rotate(45deg);opacity:.2}45%{opacity:1}75%,100%{transform:translateY(6px) rotate(45deg);opacity:0}}
+ @keyframes overview-sheet-enter {from{transform:translateY(100%)}to{transform:translateY(0)}}
  @media(prefers-reduced-motion:reduce){.overview-scroll-wheel,.overview-scroll-chevron{animation:none;opacity:1}}
  @media(max-width:600px){iframe{height:65dvh}}
  `
 })
 export class CourseOverview implements OnDestroy {
+ readonly bottomSheet = input(false);
  private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
  protected readonly loaded = signal(false);
  private readonly sanitizer = inject(DomSanitizer);

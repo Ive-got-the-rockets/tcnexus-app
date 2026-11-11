@@ -1,7 +1,9 @@
 import { Location } from '@angular/common';
 import { Component, ElementRef, Injector, OnDestroy, afterNextRender, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { courseForLesson } from './course-lesson-selection';
 import Plyr from 'plyr';
+import { workspaceEntryUrl } from './local-layout-one';
 
 import { AccessService } from '../../core/access.service';
 import { AuthModalService } from '../../core/auth-modal.service';
@@ -12,11 +14,13 @@ import { VisitorService } from '../../core/visitor.service';
 import { WatchProgressService } from '../../core/watch-progress.service';
 import { buildTcLensUrl } from './tc-lens-url';
 import { TcLensHostBridge } from './tc-lens-host-bridge';
+import { TcLensConnection } from './tc-lens-connection';
+import { TcLensAutoOpen } from './tc-lens-auto-open';
 import { launchXrayPopup } from './xray-popup';
+import { enhanceVolumeControl } from './volume-control';
 import { hasExceededDragThreshold, resizeFloatingWindow, type ResizeDirection } from './xray-window-geometry';
 
 type PageStatus = 'loading' | 'error' | 'blocked' | 'ready';
-type PromptPhase = 'initial' | 'final_free';
 
 /**
  * Should match whatever's baked into the scrub-forward/backward icon art
@@ -230,6 +234,12 @@ export class LessonPlayerPage implements OnDestroy {
   protected readonly course = signal<CourseDetail | null>(null);
   protected readonly lesson = signal<Lesson | null>(null);
   protected readonly nextLesson = signal<Lesson | null>(null);
+  protected readonly remainingLessons = computed(() => {
+    const course = this.course();
+    const lesson = this.lesson();
+    if (!course || !lesson) return [];
+    return course.lessons.filter(item => item.order > lesson.order);
+  });
   /** Set only when status() === 'blocked' — drives which message/action shows. */
   protected readonly accessResult = signal<AccessCheckResult | null>(null);
 
@@ -241,17 +251,16 @@ export class LessonPlayerPage implements OnDestroy {
   private xrayBottomBar: HTMLElement | null = null;
   private xrayResizeObserver: ResizeObserver | null = null;
   private xrayDragCleanup: (() => void) | null = null;
+  private volumeControlCleanup: (() => void) | null = null;
+  private xrayPopup: Window | null = null;
   private tcLensBridge: TcLensHostBridge | null = null;
+  private tcLensConnection: TcLensConnection | null = null;
+  private tcLensPopupConnection: TcLensConnection | null = null;
   private tcLensBridgeLessonId: number | null = null;
   private tcLensSessionActive = false;
+  private readonly tcLensAutoOpen = new TcLensAutoOpen();
   private tcLensSeekPending = false;
   private tcLensStatus: HTMLElement | null = null;
-  private readonly onTcLensMessage = (event: MessageEvent): void => {
-    if (event.origin !== XRAY_PANEL_ORIGIN || event.source !== this.xrayFrame?.contentWindow || !event.data || typeof event.data !== 'object') return;
-    if (event.data.type === 'tc-lens-ack') {
-      this.tcLensBridge?.handleIncoming(event.data);
-    }
-  };
   private readonly onResize = (): void => {
     if (this.xrayOpen()) {
       this.placeXray();
@@ -284,9 +293,9 @@ export class LessonPlayerPage implements OnDestroy {
   private upNextDismissed = false;
   private countdownFrame: number | null = null;
   private timelinePreviousTime = -1;
-  private readonly promptPhase = signal<PromptPhase | null>(null);
   private readonly pendingStart = signal<{ lesson: Lesson; restart: boolean } | null>(null);
   private readonly pendingChoice = signal<{ course: CourseDetail; lesson: Lesson; restart: boolean } | null>(null);
+  private requestedResumeTime: number | null = null;
 
   constructor() {
     // Subscribed (not just read once from the snapshot): navigating from one
@@ -299,44 +308,28 @@ export class LessonPlayerPage implements OnDestroy {
       // ?restart=1 (set by the course-detail page's restart-from-beginning
       // button) skips resuming from saved progress for this one navigation.
       const restart = this.route.snapshot.queryParamMap.get('restart') === '1';
+      const resume = Number(this.route.snapshot.queryParamMap.get('resume'));
+      this.requestedResumeTime = Number.isFinite(resume) && resume >= 0 ? resume : null;
       this.loadLesson(courseId, lessonId, restart);
     });
 
     effect(() => {
-      if (!this.authModal.isOpen() && this.promptPhase()) {
-        const phase = this.promptPhase();
-        if (phase === 'initial' && !this.visitor.isRegistered()) {
-          this.promptPhase.set('final_free');
-          this.authModal.open('final_free');
-          return;
-        }
+      if (!this.authModal.isOpen() && this.pendingStart()) {
         const pending = this.pendingStart();
-        this.promptPhase.set(null);
+        // The registration popup contains its own offer stage. Dismissing it
+        // resumes this allowed lesson without opening the legacy warning.
         if (pending) this.startDeferredLesson(pending.lesson, pending.restart);
-      } else if (!this.authModal.isOpen() && this.pendingChoice()) {
-        // Keep the existing page mounted while the choice popup is dismissed.
-        // Once registration changes the modal back to its normal mode, retry
-        // the lesson that originally triggered the choice.
-        if (this.authModal.mode() === 'choice') {
-          const pending = this.pendingChoice();
-          this.pendingChoice.set(null);
-          if (this.visitor.isRegistered()) {
-            // Registration may close the choice modal before its mode change
-            // is observed by this effect. Keep the lesson route mounted and
-            // retry access here instead of navigating back to course details.
-            if (pending) this.checkAccessAndProceed(pending.course, pending.lesson, pending.restart);
-          } else if (!this.player && pending) {
-            this.location.back();
-          }
-          return;
-        }
+		} else if (!this.authModal.isOpen() && this.pendingChoice()) {
+			// The registration popup now replaces the retired register-or-upgrade
+			// choice. Only retry this blocked lesson after registration succeeds;
+			// closing the popup leaves the visitor on the normal blocked screen.
         const pending = this.pendingChoice();
         this.pendingChoice.set(null);
-        if (pending) this.checkAccessAndProceed(pending.course, pending.lesson, pending.restart);
+			if (pending && this.visitor.isRegistered()) this.checkAccessAndProceed(pending.course, pending.lesson, pending.restart);
       } else if (!this.authModal.isOpen() && this.status() === 'blocked') {
-        // A dismissed choice modal should leave the viewer on the blocked state
-        // instead of immediately reopening the same modal in a loop.
-        if (this.authModal.mode() === 'choice') return;
+			// A dismissed registration popup should leave the viewer on the blocked
+			// state instead of immediately reopening it in a loop.
+			if (this.authModal.mode() === 'register' && !this.visitor.isRegistered()) return;
         const course = this.course();
         const lesson = this.lesson();
         if (course && lesson) this.checkAccessAndProceed(course, lesson, false);
@@ -344,17 +337,20 @@ export class LessonPlayerPage implements OnDestroy {
     });
 
     window.addEventListener('resize', this.onResize, { passive: true });
-    window.addEventListener('message', this.onTcLensMessage);
   }
 
   ngOnDestroy(): void {
+    this.volumeControlCleanup?.();
+    this.xrayPopup?.close();
+    this.xrayPopup = null;
     this.cancelCountdown();
     window.removeEventListener('resize', this.onResize);
     this.xrayResizeObserver?.disconnect();
     this.xrayDragCleanup?.();
     if (this.tcLensSessionActive) this.tcLensBridge?.close(this.player?.currentTime ?? 0);
-    window.removeEventListener('message', this.onTcLensMessage);
     this.tcLensBridge?.dispose();
+    this.tcLensConnection?.dispose();
+    this.tcLensPopupConnection?.dispose();
     this.player?.destroy();
   }
 
@@ -366,9 +362,14 @@ export class LessonPlayerPage implements OnDestroy {
     this.tcLensSessionActive = false;
     this.tcLensSeekPending = false;
     this.timelinePreviousTime = -1;
+    this.tcLensAutoOpen.reset();
   }
 
   private loadLesson(courseId: number, lessonId: number, restart: boolean): void {
+    this.tcLensPopupConnection?.dispose();
+    this.tcLensPopupConnection = null;
+    this.xrayPopup?.close();
+    this.xrayPopup = null;
     const isFirstLoad = this.player === null;
     if (isFirstLoad) {
       this.status.set('loading');
@@ -377,6 +378,7 @@ export class LessonPlayerPage implements OnDestroy {
 
     this.coursesService.getCourse(courseId).subscribe({
       next: (course) => {
+        course = courseForLesson(course, lessonId, this.route.snapshot.queryParamMap.get('level'));
         const lesson = course.lessons.find((l) => l.id === lessonId) ?? null;
         if (!lesson) {
           this.status.set('error');
@@ -406,7 +408,7 @@ export class LessonPlayerPage implements OnDestroy {
           if (isAnonymousFreeLimitReached(access, this.visitor.isRegistered())) {
             this.pendingChoice.set({ course, lesson, restart });
             if (!this.player) this.status.set('blocked');
-            this.authModal.open('choice');
+			this.authModal.open('register');
             return;
           }
           this.course.set(course);
@@ -422,7 +424,6 @@ export class LessonPlayerPage implements OnDestroy {
 
         if (isFinalFreeLesson(access, this.visitor.isRegistered())) {
           this.pendingStart.set({ lesson, restart });
-          this.promptPhase.set('initial');
           this.status.set('loading');
           this.authModal.open('register');
           return;
@@ -459,13 +460,13 @@ export class LessonPlayerPage implements OnDestroy {
     if (!embedElRef || !lesson.video_url) return;
 
     this.player = new Plyr(embedElRef.nativeElement, {
-      controls: ['rewind', 'play', 'fast-forward', 'progress', 'current-time', 'duration', 'mute', 'settings', 'fullscreen'],
+      controls: ['rewind', 'play', 'fast-forward', 'progress', 'current-time', 'duration', 'mute', 'volume', 'settings', 'fullscreen'],
       // 'loop' is deliberately omitted — Plyr 3.8.4 has its loop-menu builder
       // commented out in the library source itself, so it can never render
       // anything regardless of what's listed here.
       settings: ['speed'],
       seekTime: SEEK_TIME,
-      tooltips: { controls: false, seek: true },
+      tooltips: { controls: false, seek: false },
       fullscreen: { enabled: true, fallback: true },
       keyboard: { focused: true, global: true },
       storage: { enabled: false },
@@ -513,13 +514,17 @@ export class LessonPlayerPage implements OnDestroy {
       this.applyCustomIcons();
       this.restructureControls();
       this.buildXrayPanel();
+      this.tcLensAutoOpen.reset(this.player?.currentTime ?? 0);
       this.addClickToggleOverlay();
+      this.notifyWorkspace('ready');
     });
     this.player.on('timeupdate', () => this.handleTimeUpdate());
     this.player.on('seeking', () => {
       this.tcLensSeekPending = true;
     });
     this.player.on('seeked', () => {
+      this.notifyWorkspace('seek');
+      this.tcLensAutoOpen.seek(this.player?.currentTime ?? 0);
       if (this.tcLensSessionActive && this.tcLensBridge) {
         const currentTime = this.player?.currentTime ?? 0;
         this.tcLensBridge.seek(currentTime);
@@ -531,8 +536,14 @@ export class LessonPlayerPage implements OnDestroy {
     // Native fullscreen re-parents rendering to .plyr itself, so the fill
     // rect (and which element it applies to) has to be recomputed on every
     // transition in or out of it — see placeXray().
-    this.player.on('enterfullscreen', () => this.scheduleXrayPlacement());
-    this.player.on('exitfullscreen', () => this.scheduleXrayPlacement());
+    this.player.on('enterfullscreen', () => {
+      this.lockMobileLandscape();
+      this.scheduleXrayPlacement();
+    });
+    this.player.on('exitfullscreen', () => {
+      this.unlockMobileOrientation();
+      this.scheduleXrayPlacement();
+    });
 
     // No initial setSource() call here — the div's data-plyr-embed-id/-hash
     // attributes (bound to embedId()/embedHash() in the template) already
@@ -540,6 +551,18 @@ export class LessonPlayerPage implements OnDestroy {
     // No play() call here — see applyResumeTime's comment for why it has to
     // happen there instead of immediately after construction.
     this.player.once('timeupdate', () => this.applyResumeTime(lesson, restart));
+  }
+
+  private lockMobileLandscape(): void {
+    if (window.matchMedia('(max-width: 900px)').matches && screen.orientation?.lock) {
+      void screen.orientation.lock('landscape').catch(() => undefined);
+    }
+  }
+
+  private unlockMobileOrientation(): void {
+    if (window.matchMedia('(max-width: 900px)').matches && screen.orientation?.unlock) {
+      screen.orientation.unlock();
+    }
   }
 
   /** Only used for lesson-to-lesson swaps on an already-initialized player — see parseVimeoRef's comment. */
@@ -616,9 +639,12 @@ export class LessonPlayerPage implements OnDestroy {
 
     played.catch(() => {}).then(() => {
       if (restart || !this.player) return;
+      const resume = this.requestedResumeTime;
+      this.requestedResumeTime = null;
       const saved = this.watchProgress.timeFor(lesson.id);
-      if (saved > 5) {
-        this.player.currentTime = saved;
+      const target = resume ?? saved;
+      if (target > 0 && (resume !== null || saved > 5)) {
+        this.player.currentTime = target;
       }
     });
   }
@@ -658,7 +684,10 @@ export class LessonPlayerPage implements OnDestroy {
 
     const corner = document.createElement('div');
     corner.className = 'tcn-corner-controls';
-    [settingsEl, controlsRoot.querySelector('[data-plyr="mute"]'), controlsRoot.querySelector('[data-plyr="fullscreen"]'), this.createCloseButton()].forEach(
+    const volume = controlsRoot.querySelector<HTMLElement>('.plyr__volume');
+    this.volumeControlCleanup?.();
+    this.volumeControlCleanup = volume ? enhanceVolumeControl(volume) : null;
+    [settingsEl, volume ?? controlsRoot.querySelector('[data-plyr="mute"]'), controlsRoot.querySelector('[data-plyr="fullscreen"]'), this.createCloseButton()].forEach(
       (el) => el && corner.appendChild(el)
     );
 
@@ -670,6 +699,7 @@ export class LessonPlayerPage implements OnDestroy {
 
     const progress = document.createElement('div');
     progress.className = 'tcn-progress';
+    progress.style.setProperty('--tcn-progress-position', '0%');
     const progressEl = controlsRoot.querySelector('.plyr__progress');
     if (progressEl) progress.appendChild(progressEl);
 
@@ -689,6 +719,11 @@ export class LessonPlayerPage implements OnDestroy {
     link.addEventListener('click', (event) => {
       event.preventDefault();
       const course = this.course();
+      const lesson = this.lesson();
+      if (this.usesWorkspacePane() && lesson) {
+        window.parent.postMessage({ type: 'tc-nexus-close-workspace', videoId: String(lesson.id) }, window.location.origin);
+        return;
+      }
       if (course) this.router.navigate(['/courses', course.id]);
     });
     return link;
@@ -699,13 +734,18 @@ export class LessonPlayerPage implements OnDestroy {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'tcn-ctrl-xray';
+    if (this.usesWorkspacePane()) button.style.display = 'none';
     button.innerHTML = '<span class="tcn-ctrl-xray__trade">TRADE</span><span class="tcn-ctrl-xray__cheetah">CHEETAH</span>';
-    button.setAttribute('aria-pressed', 'false');
-    button.addEventListener('click', () => {
-      this.setXrayOpen(!this.xrayOpen());
-      button.setAttribute('aria-pressed', String(this.xrayOpen()));
-    });
+    button.setAttribute('aria-label', 'Open TC Lens workspace');
+    button.addEventListener('click', () => this.openWorkspace());
     return button;
+  }
+
+  private openWorkspace(): void {
+    const course = this.course();
+    const lesson = this.lesson();
+    if (!course || !lesson) return;
+    window.location.assign(workspaceEntryUrl(course.id, lesson.id, this.player?.currentTime ?? 0, this.route.snapshot.queryParams));
   }
 
   /**
@@ -716,6 +756,7 @@ export class LessonPlayerPage implements OnDestroy {
    * fullscreen takes over.
    */
   private buildXrayPanel(): void {
+    if (this.usesWorkspacePane()) return;
     const root = this.playerWrap()?.nativeElement;
     const plyrEl = root?.querySelector('.plyr');
     if (!root || !plyrEl) return;
@@ -734,24 +775,33 @@ export class LessonPlayerPage implements OnDestroy {
     actions.className = 'tcn-xray-panel-actions';
 
     actions.appendChild(this.createXrayPopupButton());
-    const detachButton = this.createXrayDetachButton();
-    actions.appendChild(detachButton);
     header.append(title, actions);
 
     const closeButton = document.createElement('button');
     closeButton.type = 'button';
     closeButton.className = 'tcn-xray-panel-close';
-    closeButton.setAttribute('aria-label', 'Close details');
+    closeButton.setAttribute('aria-label', 'Close TC Lens');
+    closeButton.title = 'Close TC Lens';
     closeButton.innerHTML =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"/></svg>';
-    closeButton.addEventListener('click', () => this.setXrayOpen(false));
+    closeButton.addEventListener('click', (event) => {
+      event.stopPropagation();
+      this.setXrayOpen(false);
+    });
 
     const frame = document.createElement('iframe');
     frame.className = 'tcn-xray-frame';
     frame.setAttribute('frameborder', '0');
     frame.addEventListener('load', () => {
-      this.tcLensBridge?.markReady();
+      root.classList.remove('tcn-xray-is-loading');
+      this.tcLensConnection?.loaded();
     });
+
+    const loading = document.createElement('div');
+    loading.className = 'tcn-xray-loading';
+    loading.setAttribute('role', 'status');
+    loading.setAttribute('aria-live', 'polite');
+    loading.innerHTML = '<span class="tcn-xray-loading__spinner" aria-hidden="true"></span><strong>Loading TC Lens…</strong><small>The player animation runs while the iframe connects.</small>';
 
     const lensStatus = document.createElement('div');
     lensStatus.setAttribute('role', 'status');
@@ -761,7 +811,7 @@ export class LessonPlayerPage implements OnDestroy {
     this.tcLensStatus = lensStatus;
 
     actions.appendChild(closeButton);
-    panel.append(header, frame, lensStatus);
+    panel.append(header, frame, loading, lensStatus);
     this.addXrayResizeHandles(panel);
     const bottomBar = document.createElement('div');
     bottomBar.className = 'tcn-xray-bottombar';
@@ -770,6 +820,8 @@ export class LessonPlayerPage implements OnDestroy {
 
     this.xrayPanel = panel;
     this.xrayFrame = frame;
+    this.tcLensConnection?.dispose();
+    this.tcLensConnection = new TcLensConnection(() => this.xrayFrame, () => this.visitor.getLearnerId(), () => this.tcLensBridge);
     this.xrayBottomBar = bottomBar;
 
     this.xrayResizeObserver = new ResizeObserver(() => {
@@ -871,21 +923,40 @@ export class LessonPlayerPage implements OnDestroy {
     button.setAttribute('aria-label', 'Open TC app in a separate window');
     button.title = 'Open TC app in a separate window';
     button.innerHTML =
-      '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="12" y="5" width="14" height="11" rx="1"></rect><rect x="6" y="12" width="14" height="12" rx="1"></rect></svg>';
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6M21 3l-9 9M15 3h6v6"></path></svg>';
     button.addEventListener('click', () => this.openXrayPopup());
     return button;
   }
 
   private openXrayPopup(): void {
+    if (this.xrayPopup && !this.xrayPopup.closed) {
+      this.xrayPopup.focus();
+      this.setXrayOpen(false);
+      return;
+    }
     // This call must stay synchronous inside the button's click handler so
     // browsers recognize it as a user gesture and don't block the popup.
     const lesson = this.lesson();
     const url = lesson ? buildTcLensUrl(XRAY_PANEL_URL, lesson.id) : XRAY_PANEL_URL;
-    const popup = launchXrayPopup(url, window.open.bind(window));
+    const popup = launchXrayPopup(url, window.open.bind(window), () => {
+      this.xrayPopup = null;
+      this.tcLensPopupConnection?.dispose();
+      this.tcLensPopupConnection = null;
+      this.setXrayOpen(true);
+      this.xrayPanel?.querySelector<HTMLButtonElement>('.tcn-xray-panel-action--popup')?.focus();
+    });
     if (!popup) {
-      this.detachXray();
+      if (this.tcLensStatus) {
+        this.tcLensStatus.textContent = 'Allow popups for this site, then try opening TC Lens again.';
+        this.tcLensStatus.hidden = false;
+      }
       return;
     }
+    if (this.tcLensStatus) this.tcLensStatus.hidden = true;
+    this.xrayPopup = popup;
+    this.tcLensPopupConnection?.dispose();
+    this.tcLensPopupConnection = new TcLensConnection(() => popup.document.querySelector('iframe'), () => this.visitor.getLearnerId(), () => null, popup);
+    popup.document.querySelector('iframe')?.addEventListener('load', () => this.tcLensPopupConnection?.loaded());
 
     // Hide the docked panel and restore the player's previous windowed or
     // theater layout; the existing iframe remains mounted for later use.
@@ -1060,19 +1131,25 @@ export class LessonPlayerPage implements OnDestroy {
     });
   }
 
-  protected setXrayOpen(open: boolean): void {
+  protected setXrayOpen(open: boolean, crossedFrom?: number): void {
+    const animateOpen = open && !this.xrayOpen() && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (animateOpen) this.prepareXrayOpenAnimation();
+
     if (!open && this.xrayDetached()) this.dockXray();
     if (!open && this.tcLensSessionActive) {
       this.tcLensBridge?.close(this.player?.currentTime ?? 0);
       this.tcLensSessionActive = false;
     }
     this.xrayOpen.set(open);
+    this.player?.elements.container?.querySelector('.tcn-ctrl-xray')?.setAttribute('aria-pressed', String(open));
     this.playerWrap()?.nativeElement.classList.toggle('tcn-xray-open', open);
+    this.playerWrap()?.nativeElement.classList.toggle('tcn-xray-is-loading', open);
 
     const lesson = this.lesson();
     if (open && this.xrayFrame && lesson) {
       const url = buildTcLensUrl(XRAY_PANEL_URL, lesson.id);
       if (this.xrayFrame.getAttribute('src') !== url) {
+        this.tcLensConnection?.loading();
         this.tcLensBridge?.markNotReady();
         this.xrayFrame.setAttribute('src', url);
       }
@@ -1090,12 +1167,39 @@ export class LessonPlayerPage implements OnDestroy {
         );
         this.tcLensBridgeLessonId = lesson.id;
       }
-      this.tcLensBridge.open(this.player?.currentTime ?? 0);
+      this.tcLensConnection?.sync();
+      this.tcLensBridge.open(this.player?.currentTime ?? 0, crossedFrom);
       this.tcLensSessionActive = true;
       this.timelinePreviousTime = this.player?.currentTime ?? 0;
     }
 
-    this.placeXray();
+    if (animateOpen) {
+      requestAnimationFrame(() => this.placeXray());
+    } else {
+      this.placeXray();
+    }
+  }
+
+  /**
+   * Freeze the player's current on-screen rectangle before switching it to
+   * the fixed TC Lens layout. This gives CSS two numeric rectangles to
+   * interpolate between instead of an un-animatable `auto` -> pixel jump.
+   */
+  private prepareXrayOpenAnimation(): void {
+    const wrap = this.playerWrap()?.nativeElement;
+    if (!wrap) return;
+
+    const rect = wrap.getBoundingClientRect();
+    wrap.style.position = 'fixed';
+    wrap.style.left = `${rect.left}px`;
+    wrap.style.top = `${rect.top}px`;
+    wrap.style.width = `${rect.width}px`;
+    wrap.style.height = `${rect.height}px`;
+    wrap.classList.add('tcn-xray-animating');
+
+    const finish = (): void => wrap.classList.remove('tcn-xray-animating');
+    wrap.addEventListener('transitionend', finish, { once: true });
+    window.setTimeout(finish, 500);
   }
 
   /**
@@ -1284,9 +1388,31 @@ export class LessonPlayerPage implements OnDestroy {
     });
   }
 
+  private usesWorkspacePane(): boolean {
+    return window.parent !== window && this.route.snapshot.queryParamMap.get('tcLensHost') === 'workspace';
+  }
+
+  private notifyWorkspace(state: 'ready' | 'time' | 'seek'): void {
+    const lesson = this.lesson();
+    if (!this.usesWorkspacePane() || !lesson) return;
+    window.parent.postMessage({ type: 'tc-nexus-playback', videoId: String(lesson.id), state, currentTime: this.player?.currentTime ?? 0 }, window.location.origin);
+  }
+
   private handleTimeUpdate(): void {
     if (!this.player) return;
     const { currentTime, duration } = this.player;
+    const progress = this.playerWrap()?.nativeElement.querySelector<HTMLElement>('.tcn-progress');
+    const percent = duration > 0 ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 0;
+    progress?.style.setProperty('--tcn-progress-position', `${percent}%`);
+    if (!this.tcLensSeekPending) this.notifyWorkspace('time');
+
+    if (this.xrayFrame && !this.tcLensSeekPending) {
+      const crossedFrom = this.tcLensAutoOpen.advance(this.lesson()?.tc_lens_timeline ?? [], currentTime);
+      const popupOpen = this.xrayPopup !== null && !this.xrayPopup.closed;
+      if (crossedFrom !== null && !this.xrayOpen() && !popupOpen && !this.usesWorkspacePane()) {
+        this.openWorkspace();
+      }
+    }
 
     if (this.tcLensSessionActive && this.tcLensBridge) {
       if (this.tcLensSeekPending) {
@@ -1367,11 +1493,21 @@ export class LessonPlayerPage implements OnDestroy {
     this.goToNext();
   }
 
+  protected playLesson(lesson: Lesson): void {
+    const course = this.course();
+    if (!course) return;
+    this.router.navigate(['/courses', course.id, 'lessons', lesson.id], {
+      queryParams: { ...this.route.snapshot.queryParams, restart: undefined },
+    });
+  }
+
   private goToNext(): void {
     const next = this.nextLesson();
     const course = this.course();
     if (!next || !course) return;
-    this.router.navigate(['/courses', course.id, 'lessons', next.id]);
+    this.router.navigate(['/courses', course.id, 'lessons', next.id], {
+      queryParams: { ...this.route.snapshot.queryParams, restart: undefined },
+    });
   }
 
   protected lessonThumbnailUrl(lesson: Lesson): string {

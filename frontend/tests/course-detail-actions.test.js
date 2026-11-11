@@ -18,5 +18,6 @@ test('single content pages expose conditional play, trailer, overview, and langu
 
 test('single-page optional actions are guarded by content configuration', () => {
   assert.match(template, /@if \(c\.trailer_link\)/);
-  assert.match(template, /@if \(c\.overview_link\)/);
+  assert.match(template, /@if \(activeVariant\(c\)\?\.overview_link \|\| c\.overview_link\)/);
+  assert.match(component, /show\(this\.activeVariant\(course\)\?\.overview_link \|\| course\.overview_link\)/);
 });

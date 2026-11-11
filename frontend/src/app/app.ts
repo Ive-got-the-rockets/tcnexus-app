@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, isDevMode, signal } from '@angular/core';
 import { ActivatedRoute, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 
@@ -24,6 +24,7 @@ export class App implements OnInit, OnDestroy {
   protected readonly headerHidden = signal(false);
   /** The lesson player opts out of the site chrome entirely via route data. */
   protected readonly chromeHidden = signal(false);
+  protected readonly coverLayout = signal(false);
 
   private lastScrollY = 0;
 
@@ -51,6 +52,7 @@ export class App implements OnInit, OnDestroy {
         deepest = deepest.firstChild;
       }
       this.chromeHidden.set(!!deepest.snapshot.data['hideChrome']);
+      this.coverLayout.set(this.router.url.split(/[?#]/)[0] === '/layout-style-4');
     });
   }
 
@@ -87,7 +89,12 @@ export class App implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     window.addEventListener('scroll', this.onScroll, { passive: true });
+    this.routeToMobileLayoutOnSmallScreens();
     const params = new URLSearchParams(window.location.search);
+    // Keep the actual registration popup available for local design work on reload.
+    if (isDevMode() && params.get('popup-preview') === 'register') {
+      this.authModal.open('register');
+    }
     if (params.get('tcnexus_reset') === '1') {
       this.visitor.resetTestSession();
       params.delete('tcnexus_reset');
@@ -96,6 +103,18 @@ export class App implements OnInit, OnDestroy {
     }
     if (this.visitor.isRegistered()) {
       this.accessService.validateSession().subscribe();
+    }
+  }
+
+  private routeToMobileLayoutOnSmallScreens(): void {
+    const path = window.location.pathname.replace(/\/+$/, '') || '/';
+    const mobileWidth = 600;
+    const explicitDesktopRoute = path === '/layout-style-3' || path === '/layout-style-4';
+    const mobileRoute = path === '/mobile-layout-1' || path.startsWith('/mobile-layout-1/');
+    const chromeFreeRoute = path.startsWith('/tc-lens') || path.startsWith('/courses/');
+
+    if (window.matchMedia(`(max-width: ${mobileWidth - 1}px)`).matches && !explicitDesktopRoute && !mobileRoute && !chromeFreeRoute) {
+      void this.router.navigateByUrl('/mobile-layout-1', { replaceUrl: true });
     }
   }
 

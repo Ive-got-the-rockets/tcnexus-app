@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { DestroyRef, Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, of, shareReplay, tap, throwError } from 'rxjs';
 
 import { environment } from '../../environments/environment';
@@ -16,6 +16,11 @@ export class AccessService {
     private http: HttpClient,
     private visitor: VisitorService
   ) {
+    const onTokenChanged = () => {
+      if (this.visitor.isRegistered()) this.validateSession().subscribe({ error: () => {} });
+    };
+    window.addEventListener('tcnexus-token-changed', onTokenChanged);
+    inject(DestroyRef).onDestroy(() => window.removeEventListener('tcnexus-token-changed', onTokenChanged));
     this.registrationSettings$ = this.http
       .get<RegistrationSettings>(`${this.baseUrl}/registration-settings`)
       .pipe(
@@ -27,17 +32,19 @@ export class AccessService {
   }
 
   checkAccess(lessonId: number): Observable<AccessCheckResult> {
+    const token = this.visitor.getToken();
     return this.http.post<AccessCheckResult>(`${this.baseUrl}/access/check`, { lesson_id: lessonId }).pipe(
       tap((access) => {
+        if (this.visitor.getToken() !== token) return;
         // A WordPress user may have been deleted while the browser still has
         // its old token. The API reports the actual viewer tier so this stale
         // local registration state is removed automatically.
         if (this.visitor.isRegistered() && (access.viewer_tier === 'anonymous' || access.reason === 'requires_registration')) {
           this.visitor.logout();
-        }
+        } else if ('user_id' in access) this.visitor.setLearnerId(access.user_id);
       }),
       catchError((error) => {
-        if (error.status === 401 || error.status === 403) {
+        if (this.visitor.getToken() === token && (error.status === 401 || error.status === 403)) {
           this.visitor.logout();
         }
         return throwError(() => error);
@@ -45,12 +52,15 @@ export class AccessService {
     );
   }
 
-  validateSession(): Observable<{ viewer_tier: 'anonymous' | 'registered' | 'paid' }> {
-    return this.http.get<{ viewer_tier: 'anonymous' | 'registered' | 'paid' }>(`${this.baseUrl}/session`).pipe(
+  validateSession(): Observable<{ viewer_tier: 'anonymous' | 'registered' | 'paid'; user_id?: number | null }> {
+    const token = this.visitor.getToken();
+    return this.http.get<{ viewer_tier: 'anonymous' | 'registered' | 'paid'; user_id?: number | null }>(`${this.baseUrl}/session`).pipe(
       tap((session) => {
+        if (this.visitor.getToken() !== token) return;
+        if (!session || !['anonymous', 'registered', 'paid'].includes(session.viewer_tier)) throw new Error('Invalid Nexus session response');
         if (this.visitor.isRegistered() && session.viewer_tier === 'anonymous') {
           this.visitor.logout();
-        }
+        } else this.visitor.setLearnerId(session.user_id);
       }),
       catchError((error) => {
         // A security layer may return an HTML verification page with HTTP
@@ -58,7 +68,7 @@ export class AccessService {
         // so checking only 401/403 leaves a deleted account's token active.
         // Session validation must fail closed for every response that cannot
         // be confirmed as a valid JSON session.
-        this.visitor.logout();
+        if (this.visitor.getToken() === token) this.visitor.logout();
         return throwError(() => error);
       }),
     );
@@ -70,6 +80,7 @@ export class AccessService {
         if (result.success) {
           this.visitor.setToken(result.token);
           this.visitor.setEmail(email);
+          this.visitor.setLearnerId(result.user_id);
         }
       })
     );
@@ -81,6 +92,7 @@ export class AccessService {
         if (result.success) {
           this.visitor.setToken(result.token);
           this.visitor.setEmail(email);
+          this.visitor.setLearnerId(result.user_id);
         }
       })
     );

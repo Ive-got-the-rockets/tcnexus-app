@@ -12,8 +12,7 @@
     </div>
   }
   @case ('blocked') {
-    @if (authModal.mode() !== 'choice') {
-      <div class="state state--error">
+		<div class="state state--error">
         @switch (accessResult()?.reason) {
           @case ('requires_payment') {
             <h2>This lesson requires a paid plan.</h2>
@@ -26,8 +25,7 @@
           }
         }
         <a routerLink="/" class="retry">Back to the library</a>
-      </div>
-    }
+		</div>
   }
   @case ('ready') {
     @if (course()) {
@@ -70,6 +68,22 @@
               </div>
             }
           </div>
+          <section class="mobile-player-lessons" aria-label="More lessons">
+            <h2>Next Lesson</h2>
+            <ol>
+              @for (item of remainingLessons(); track item.id) {
+                <li>
+                  <button type="button" (click)="playLesson(item)">
+                    <img [src]="lessonThumbnailUrl(item)" alt="" />
+                    <span>
+                      <strong>{{ item.order }}. {{ item.title }}</strong>
+                      <small>{{ item.excerpt }}</small>
+                    </span>
+                  </button>
+                </li>
+              }
+            </ol>
+          </section>
         </div>
       }
     }

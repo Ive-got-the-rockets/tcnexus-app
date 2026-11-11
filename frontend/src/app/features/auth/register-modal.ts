@@ -1,9 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, DestroyRef, ElementRef, inject, isDevMode, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, ElementRef, computed, inject, isDevMode, signal, viewChild } from '@angular/core';
+import { normalizePopupEditor, PopupEditorSettings } from '../../core/popup-editor-settings';
 
 import { AccessService } from '../../core/access.service';
 import { AuthModalService } from '../../core/auth-modal.service';
 import { VisitorService } from '../../core/visitor.service';
+import { TradeCheetahAuthService } from '../../core/tradecheetah-auth';
 import { annualPrice, DEFAULT_REGISTRATION_SETTINGS } from '../../core/registration-settings';
 import { RegistrationSettings } from '../../core/models';
 
@@ -23,9 +25,36 @@ export class RegisterModal {
   })();
   protected readonly authModal = inject(AuthModalService);
   protected readonly visitor = inject(VisitorService);
+  protected readonly tradeCheetahAuth = inject(TradeCheetahAuthService);
   private readonly accessService = inject(AccessService);
 
   protected readonly settings = signal<RegistrationSettings>(DEFAULT_REGISTRATION_SETTINGS);
+  protected readonly editor = computed(() => normalizePopupEditor(this.settings().editor));
+  protected copy(key: keyof PopupEditorSettings): string {
+    const data = this.editor();
+    return String(data[key]).replace(/\{(episodes|annual|monthly|membership|store)\}/g, (_, token: keyof PopupEditorSettings) => String(data[token]));
+  }
+  protected savingsParts(): { text: string; discount: boolean }[] {
+    return this.copy('savings').split(/(\d+%)/g).map(text => ({ text, discount: /^\d+%$/.test(text) }));
+  }
+  protected readonly popupStyles = computed(() => {
+    const data = this.editor();
+    return {
+      '--popup-image': `url(${JSON.stringify(data.image)})`,
+      '--popup-fit': data.fit,
+      '--popup-width': `${data.width}px`,
+      '--popup-overlay': String(data.firstOpacity / 100),
+      '--popup-offer-overlay': String(data.offerOpacity / 100),
+      '--popup-coverage': `${data.coverage}%`,
+      '--popup-text': data.textColor,
+      '--popup-cyan': data.cyan,
+      '--popup-shine': data.shine,
+      '--popup-shimmer': data.shimmer ? 'running' : 'paused',
+      '--popup-body-size': `${data.bodySize}px`,
+      '--popup-discount-size': `${data.discountSize}px`,
+      '--popup-footer-size': `${data.footerSize}px`,
+    };
+  });
 
   protected readonly status = signal<SubmitStatus>('idle');
   protected readonly membershipRevealed = signal(false);
@@ -59,6 +88,11 @@ export class RegisterModal {
     this.status.set('idle');
     this.errorMessage.set(null);
   }
+  protected async signInWithTradeCheetah(): Promise<void> {
+    this.errorMessage.set(null);
+    try { await this.tradeCheetahAuth.start(); }
+    catch { this.errorMessage.set('Unable to start TradeCheetah sign-in. Please try again.'); }
+  }
 
   protected openRegister(): void {
     this.status.set('idle');
@@ -74,6 +108,10 @@ export class RegisterModal {
 
   protected tierPrice(monthly: number): number {
     return this.annualBilling() ? annualPrice(monthly, this.settings().pricing.save_percent) : monthly;
+  }
+
+  protected yearlyTotal(monthly: number): number {
+    return this.tierPrice(monthly) * 12;
   }
 
   protected priceDigits(monthly: number): string[] {
@@ -107,9 +145,10 @@ export class RegisterModal {
     if (this.status() === 'submitting' || this.status() === 'success') return;
     // Simulate creation for the frontend prototype; no registration request is sent.
     this.status.set('submitting');
-    this.previewTimers.push(setTimeout(() => this.status.set('success'), 1200));
-    this.previewTimers.push(setTimeout(() => this.oneMoreThing.set(true), 2100));
-    this.previewTimers.push(setTimeout(() => this.membershipRevealed.set(true), 4400));
+    const { creatingMs, successMs, transitionMs } = this.editor();
+    this.previewTimers.push(setTimeout(() => this.status.set('success'), creatingMs));
+    this.previewTimers.push(setTimeout(() => this.oneMoreThing.set(true), creatingMs + successMs));
+    this.previewTimers.push(setTimeout(() => this.membershipRevealed.set(true), creatingMs + successMs + transitionMs));
   }
 
   private clearPreviewTimers(): void {

@@ -1,0 +1,456 @@
+@if (returnOverlay(); as overlay) {
+  <div
+    class="style-return-overlay"
+    [class.style-return-overlay--settled]="returnSettled()"
+    [style.top.px]="returnRect()?.top"
+    [style.left.px]="returnRect()?.left"
+    [style.width.px]="returnRect()?.width"
+    [style.height.px]="returnRect()?.height"
+    (transitionend)="onReturnTransitionEnd($event)"
+  >
+    <img [src]="overlay.thumbnailUrl" alt="" />
+  </div>
+}
+
+<main
+  class="style-page"
+  [class.style-page--cover-transitioning]="coverTransitioning()"
+  [attr.aria-busy]="coverTransitioning()"
+  [class.style-page--trading-only]="tradingOnly()"
+  [class.style-page--platform-only]="platformOnly()"
+  [class.style-page--shows-only]="showsOnly()"
+  [class.style-page--leaving]="leaving()"
+  [class.style-page--returning]="returning()"
+  [class.style-page--return-revealed]="returnRevealed()"
+>
+  @if (featured(); as course) {
+    <div class="style-featured__background">
+      <img [src]="featuredImageUrl(course)" alt="" (error)="onFeaturedImageError($event)" />
+      <button
+        type="button"
+        class="style-featured__background-link"
+        [attr.aria-label]="'Open featured ' + featuredLabel(course) + ': ' + course.title"
+        (click)="openCourse(course, $event)"
+      ></button>
+    </div>
+    <div class="cover-stage"><section class="style-featured" aria-labelledby="style-featured-title">
+      <div class="style-featured__heading">
+        @if (titleArtwork(course); as titleImage) {
+          <img id="style-featured-title" class="style-featured__title-image" [src]="titleImage" [alt]="course.title" />
+        } @else {
+          <h1 id="style-featured-title" class="style-featured__title">{{ course.title }}</h1>
+        }
+      </div>
+      <div class="style-featured__meta">
+        <div class="style-featured__meta-primary">
+          <span class="style-featured__meta-badge">{{ courseTypeLabel(course) }}</span>
+          <span class="style-featured__meta-dot" aria-hidden="true"></span>
+          <span class="style-featured__meta-badge">{{ course.lesson_count }} {{ isShow(course) ? 'episodes' : 'lessons' }}</span>
+          @for (level of courseLevelBadges(course); track level) {
+            <span class="style-featured__meta-dot" aria-hidden="true"></span>
+            <span class="style-featured__level-badge">{{ level }}</span>
+          }
+        </div>
+      </div>
+      <div class="style-featured__details style-featured__details--expanded">
+        <p class="style-featured__description" [class.style-featured__description--opening]="descriptionMotion() === 'opening'" [class.style-featured__description--closing]="descriptionMotion() === 'closing'">
+          @if (descriptionOpen()) {
+            {{ descriptionText(course.excerpt) }}
+            <button type="button" class="style-featured__read-more style-featured__meta-badge" (click)="toggleDescription()">Less</button>
+          } @else {
+            {{ shortDescription(course.excerpt) }}
+            @if (descriptionNeedsMore(course.excerpt)) {
+              <button type="button" class="style-featured__read-more style-featured__meta-badge" (click)="toggleDescription()">Read More</button>
+            }
+          }
+        </p>
+        @if (isShow(course)) {
+          <div class="style-featured__person style-featured__characters">
+            <button
+              type="button"
+              class="style-featured__person-label style-featured__person-label--toggle"
+              [attr.aria-expanded]="charactersExpanded()"
+              (click)="toggleCharacters()"
+            >Characters</button>
+            @if (charactersExpanded()) {
+              <div class="style-featured__person-row style-featured__character-row">
+                @for (character of featuredCharacters; track character.id) {
+                  <div class="style-featured__character">
+                    <img class="style-featured__person-avatar" [src]="personPhotoUrl(character)" [alt]="character.name" />
+                    <span>{{ character.name }}</span>
+                  </div>
+                }
+                @if (featuredCharacters.length > 3) {
+                  <button type="button" class="style-featured__character-more" aria-label="View all characters" (click)="openCharacters()">
+                    <span>View</span>
+                    <span>All</span>
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        }
+        @if (featuredDetail(); as detail) {
+          @if ((detail.instructor?.length ?? 0) || (detail.guest?.length ?? 0)) {
+            <div class="style-featured__people-row">
+              <div class="style-featured__person style-featured__person--group">
+                <button
+                  type="button"
+                  class="style-featured__person-label style-featured__person-label--toggle"
+                  [attr.aria-expanded]="instructorOpen()"
+                  (click)="toggleInstructor()"
+                >{{ instructorLabel(detail) }}</button>
+                @if (instructorOpen()) {
+                  @if (detail.instructor?.length) {
+                    <div class="style-featured__person-row">
+                      @for (instructor of detail.instructor ?? []; track instructor.id) {
+                        <div class="style-featured__person-item">
+                          <img class="style-featured__person-avatar" [src]="personPhotoUrl(instructor)" [alt]="instructor.name" />
+                          <span>{{ instructor.name }}</span>
+                        </div>
+                      }
+                    </div>
+                  }
+                  @if (detail.guest?.length) {
+                    @if (detail.instructor?.length) {
+                      <p class="style-featured__person-label style-featured__person-label--subsection">{{ guestLabel(detail.guest ?? []) }}</p>
+                    }
+                    <div class="style-featured__person-row">
+                      @for (guest of detail.guest ?? []; track guest.id) {
+                        <div class="style-featured__person-item">
+                          <img class="style-featured__person-avatar" [src]="personPhotoUrl(guest)" [alt]="guest.name" />
+                          <span>{{ guest.name }}</span>
+                        </div>
+                      }
+                    </div>
+                  }
+                }
+              </div>
+            </div>
+          }
+        }
+      </div>
+      <div class="style-featured__actions">
+        <button type="button" class="style-featured__start" [attr.aria-label]="featuredPlayTooltip(course)" (click)="startWatching(course)">
+          <span class="style-featured__tooltip" aria-hidden="true">{{ featuredPlayTooltip(course) }}</span>
+          <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true">
+            <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
+          </svg>
+          <span class="style-featured__start-label">Play</span>
+        </button>
+        @if (featured()?.trailer_link) {
+          <button type="button" class="style-featured__trailer" aria-label="Play Trailer" (click)="openTrailer()">
+            <span class="style-featured__tooltip" aria-hidden="true">Play Trailer</span>
+            <svg class="style-featured__trailer-icon" viewBox="31 37 82 70" preserveAspectRatio="none" aria-hidden="true"><defs><style>.trailer-logo-art{fill:currentColor}</style></defs><path class="trailer-logo-art" d="M101 106.63H43c-6.62 0-12-5.38-12-12V49.37c0-6.62 5.38-12 12-12h58c6.62 0 12 5.38 12 12v45.26c0 6.62-5.38 12-12 12ZM43 43.37c-3.31 0-6 2.69-6 6v45.26c0 3.31 2.69 6 6 6h58c3.31 0 6-2.69 6-6V49.37c0-3.31-2.69-6-6-6H43Z"/><path class="trailer-logo-art" d="M63.5 57.05l22.08 12.95c1.53.9 1.53 3.11 0 4.01L63.5 86.96c-1.55.91-3.5-.21-3.5-2V59.05c0-1.79 1.95-2.91 3.5-2Z"/><g class="trailer-logo-art"><rect x="43.59" y="50" width="8.81" height="6" rx=".83" ry=".83"/><rect x="43.59" y="69" width="8.81" height="6" rx=".83" ry=".83"/><rect x="43.59" y="88" width="8.81" height="6" rx=".83" ry=".83"/><rect x="91.59" y="50" width="8.81" height="6" rx=".83" ry=".83"/><rect x="91.59" y="69" width="8.81" height="6" rx=".83" ry=".83"/><rect x="91.59" y="88" width="8.81" height="6" rx=".83" ry=".83"/></g></svg>
+            <span>Trailer</span>
+          </button>
+        }
+        <button
+          type="button"
+          class="style-featured__overview"
+          [attr.aria-label]="featuredListTooltip(course)"
+          [attr.aria-expanded]="lessonsOpen()"
+          (click)="toggleLessons(course)"
+        ><span class="style-featured__tooltip" aria-hidden="true">{{ featuredListTooltip(course) }}</span>{{ isShow(course) ? 'Episode List' : 'Lessons List' }}</button>
+        @if (!isShow(course)) {
+          <button type="button" class="style-featured__overview" aria-label="Course Overview" (click)="openOverview(course)">
+            <span class="style-featured__tooltip" aria-hidden="true">Course Overview</span>
+            Course Overview
+          </button>
+        }
+        <div
+          class="style-featured__language"
+          [class.style-featured__language--open]="languageMenuOpen()"
+          (mouseleave)="closeLanguageMenu()"
+        >
+          <button
+            type="button"
+            class="style-featured__language-trigger"
+            [attr.aria-expanded]="languageMenuOpen()"
+            aria-haspopup="listbox"
+            aria-label="Choose your language"
+            (click)="toggleLanguageMenu()"
+          >
+            <span class="style-featured__tooltip" aria-hidden="true">Choose your language</span>
+            <span>{{ selectedLanguageLabel(course) }}</span>
+            <svg class="style-featured__language-icon" viewBox="0 0 18 18" aria-hidden="true">
+              <path d="M3 5h12M3 9h12M3 13h12" />
+            </svg>
+          </button>
+          @if (languageMenuOpen()) {
+            <div class="style-featured__language-menu" role="listbox" aria-label="Course language">
+              @for (language of courseLanguages(course); track language.slug) {
+                <button
+                  type="button"
+                  role="option"
+                  [attr.aria-selected]="selectedLanguage() === language.slug"
+                  (click)="chooseLanguage(language)"
+                >{{ language.label }}</button>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+    <section class="cover-slider" aria-label="Browse featured covers">
+      <div class="cover-slider__viewport"><div class="cover-slider__track">
+        @for (entry of coverItems(); track entry.item.id) {
+          <button type="button" class="cover-slider__card" [attr.data-cover-id]="entry.item.id" [disabled]="coverTransitioning()" [attr.aria-label]="'Feature ' + entry.item.title" (click)="chooseCover(entry.index)">
+            <img [src]="featuredImageUrl(entry.item)" alt="" />
+            <span class="cover-slider__title">
+              @if (titleArtwork(entry.item); as titleImage) {
+                <img class="cover-slider__title-layer" [src]="titleImage" alt="" />
+              } @else {
+                <span class="cover-slider__title-layer">{{ entry.item.title }}</span>
+              }
+            </span>
+          </button>
+        }
+      </div></div>
+      <nav class="cover-slider__controls" aria-label="Featured cover navigation">
+        <button type="button" aria-label="Previous featured item" [disabled]="coverTransitioning() || featuredItems().length < 2" (click)="selectFeatured(-1)">‹</button>
+        <button type="button" aria-label="Next featured item" [disabled]="coverTransitioning() || featuredItems().length < 2" (click)="selectFeatured(1)">›</button>
+        <span>{{ featuredIndex() + 1 }} / {{ featuredItems().length }}</span>
+      </nav>
+    </section></div>
+  }
+
+</main>
+
+@if (charactersOpen()) {
+  <div class="style-characters-modal-backdrop" role="presentation" (click)="closeCharacters()">
+    <section class="style-characters-modal" role="dialog" aria-modal="true" aria-labelledby="style-characters-title" (click)="$event.stopPropagation()">
+      <button type="button" class="style-characters-modal__close" aria-label="Close characters" (click)="closeCharacters()"><span aria-hidden="true">×</span></button>
+      <p class="style-page__eyebrow">The Primer</p>
+      <h2 id="style-characters-title">Characters</h2>
+      <div class="style-characters-modal__grid">
+        @for (character of featuredCharacters; track character.id) {
+          <div class="style-characters-modal__character">
+            <img [src]="personPhotoUrl(character)" [alt]="character.name" />
+            <span>{{ character.name }}</span>
+          </div>
+        }
+      </div>
+    </section>
+  </div>
+}
+
+@if (trailerOpen() || trailerClosing()) {
+  <div
+    class="style-trailer-backdrop"
+    [class.style-trailer-backdrop--open]="trailerOpen()"
+    [class.style-trailer-backdrop--closing]="trailerClosing()"
+    role="presentation"
+    (click)="closeTrailer()"
+  >
+    <section
+      class="style-trailer-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="style-trailer-title"
+      (click)="$event.stopPropagation()"
+    >
+      <button type="button" class="style-trailer-modal__close" aria-label="Close trailer" (click)="closeTrailer()">
+        <span aria-hidden="true">×</span>
+      </button>
+      @if (trailerVideoUrl(); as videoUrl) {
+        <video class="style-trailer-modal__video" [src]="videoUrl" autoplay controls playsinline></video>
+      } @else if (trailerEmbedUrl(); as embedUrl) {
+        <iframe
+          class="style-trailer-modal__video"
+          [src]="embedUrl"
+          [attr.aria-label]="(trailerCourse()?.title ?? 'TC Nexus') + ' trailer'"
+          allow="autoplay; fullscreen; picture-in-picture"
+          allowfullscreen
+        ></iframe>
+      }
+    </section>
+  </div>
+}
+
+<button
+  type="button"
+  class="episode-backdrop"
+  [class.episode-backdrop--open]="lessonsOpen()"
+  aria-label="Close lessons list"
+  (click)="closeLessons()"
+></button>
+
+@if (coursePreviewDetail(); as detail) {
+  <div
+    class="style-course-modal-backdrop"
+    [class.style-course-modal-backdrop--open]="coursePreviewOpen()"
+    [class.style-course-modal-backdrop--closing]="coursePreviewClosing()"
+    [attr.aria-hidden]="coursePreviewOpen() ? null : 'true'"
+    (click)="closeCoursePreview()"
+  >
+    <section
+      class="style-course-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="style-course-modal-title"
+      (click)="$event.stopPropagation()"
+    >
+      <button type="button" class="style-course-modal__close" aria-label="Close course preview" (click)="closeCoursePreview()"><span aria-hidden="true">×</span></button>
+      <div class="style-course-modal__hero">
+        <img [src]="coursePreviewImageUrl(detail)" [alt]="detail.title" (error)="onImageError($event)" />
+      </div>
+
+      <div class="style-course-modal__content">
+        <div class="style-course-modal__meta">
+          <span class="style-course-modal__meta-badge">{{ courseTypeLabelForDetail(detail) }}</span>
+          <span class="style-course-modal__meta-dot" aria-hidden="true">•</span>
+          <span class="style-course-modal__meta-badge">{{ coursePreviewLessons(detail).length }} {{ lessonListLabel(detail) }}</span>
+          @for (level of coursePreviewLevelOptions(detail); track level.slug) {
+            <span class="style-course-modal__meta-dot" aria-hidden="true">•</span>
+            <button
+              type="button"
+              class="style-course-modal__level-badge"
+              [attr.aria-pressed]="coursePreviewSelectedLevel(detail) === level.slug"
+              (click)="chooseCoursePreviewLevel(level.slug)"
+            >{{ level.label }}</button>
+          }
+        </div>
+        <h2 id="style-course-modal-title" class="style-course-modal__title">{{ detail.title }}</h2>
+        <div class="style-course-modal__description" [innerHTML]="detail.content"></div>
+
+        <div class="style-course-modal__people">
+          @if (detail.instructor?.length) {
+            <div class="style-course-modal__person">
+              <span class="style-course-modal__person-label">{{ detail.instructor?.length === 1 ? 'Instructor' : 'Instructors' }}</span>
+              <div class="style-course-modal__person-row">
+                @for (instructor of detail.instructor ?? []; track instructor.id) {
+                  <div class="style-featured__person-item">
+                    <img [src]="personPhotoUrl(instructor)" [alt]="instructor.name" />
+                    <span>{{ instructor.name }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+          @if (detail.guest?.length) {
+            <div class="style-course-modal__person">
+              <span class="style-course-modal__person-label">{{ detail.guest?.length === 1 ? 'Guest' : 'Guests' }}</span>
+              <div class="style-course-modal__person-row">
+                @for (guest of detail.guest ?? []; track guest.id) {
+                  <div class="style-featured__person-item">
+                    <img [src]="personPhotoUrl(guest)" [alt]="guest.name" />
+                    <span>{{ guest.name }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="style-course-modal__lessons-heading">
+          <div
+            class="style-course-modal__heading-picker"
+            [class.style-course-modal__heading-picker--open]="coursePreviewLevelMenuOpen()"
+            (mouseleave)="closeCoursePreviewLevelMenu()"
+          >
+            <h3>
+              @if (coursePreviewLevelOptions(detail).length > 1) {
+                <button
+                  type="button"
+                  class="style-course-modal__heading-trigger"
+                  [attr.aria-expanded]="coursePreviewLevelMenuOpen()"
+                  aria-haspopup="listbox"
+                  (click)="toggleCoursePreviewLevelMenu()"
+                >
+                  <span>{{ coursePreviewHeadingLabel(detail) }}</span>
+                  <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 2l6 4-6 4z" /></svg>
+                </button>
+              } @else {
+                {{ coursePreviewHeadingLabel(detail) }}
+              }
+            </h3>
+            @if (coursePreviewLevelMenuOpen() && coursePreviewLevelOptions(detail).length > 1) {
+              <div class="style-course-modal__level-menu" role="listbox" aria-label="Available course levels">
+                @for (level of coursePreviewLevelOptions(detail); track level.slug) {
+                  <button
+                    type="button"
+                    role="option"
+                    [attr.aria-selected]="coursePreviewSelectedLevel(detail) === level.slug"
+                    (click)="chooseCoursePreviewLevel(level.slug)"
+                  >{{ level.label }}</button>
+                }
+              </div>
+            }
+          </div>
+          <span>{{ coursePreviewLessons(detail).length }} {{ lessonListLabel(detail).toLowerCase() }}</span>
+        </div>
+        <ol class="style-course-modal__lesson-list">
+          @for (lesson of coursePreviewLessons(detail); track lesson.id) {
+            <li
+              class="style-course-modal__lesson"
+              [class.style-course-modal__lesson--locked]="lesson.locked"
+              (click)="openPreviewLesson(detail, lesson, $event)"
+            >
+              <span class="style-course-modal__lesson-order">{{ lesson.order }}</span>
+              <span class="style-course-modal__lesson-thumb">
+                <img [src]="lessonThumbnailUrl(lesson)" alt="" (error)="onImageError($event)" />
+              </span>
+              <span class="style-course-modal__lesson-info">
+                <span class="style-course-modal__lesson-title">{{ lesson.title }}</span>
+                <span class="style-course-modal__lesson-excerpt">{{ lesson.excerpt }}</span>
+              </span>
+            </li>
+          }
+        </ol>
+      </div>
+    </section>
+  </div>
+}
+
+<app-course-overview />
+
+<aside class="episode-panel" [class.episode-panel--open]="lessonsOpen()" [attr.aria-label]="lessonListLabel() + ' list'">
+  <div class="episode-panel__header" [class.episode-panel__header--revealed]="lessonsRevealed()">
+    <button type="button" class="episode-panel__close" [attr.aria-label]="'Close ' + lessonListLabel().toLowerCase() + ' list'" (click)="closeLessons()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M6 6l12 12M18 6 6 18"></path>
+      </svg>
+    </button>
+    <h2 class="episode-panel__title">{{ lessonListLabel() }}</h2>
+  </div>
+  @if (featuredDetail(); as detail) {
+    <ol class="lesson-list" [class.lesson-list--revealed]="lessonsRevealed()">
+      @for (lesson of detail.lessons; track lesson.id; let index = $index) {
+        <li class="lesson-row" [style.transition-delay]="(index * 35) + 'ms'" (click)="openLesson(lesson)">
+          <span class="lesson-row__order">{{ lesson.order }}</span>
+          <span class="lesson-row__thumb">
+            <img [src]="lessonThumbnailUrl(lesson)" alt="" />
+            <span class="lesson-row__actions" aria-hidden="true">
+              <span class="lesson-row__play">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M8 5.5v13l11-6.5z"></path></svg>
+              </span>
+            </span>
+          </span>
+          <div class="lesson-row__info">
+            <div class="lesson-row__title-row">
+              <span class="lesson-row__title">{{ lesson.title }}</span>
+              <button
+                type="button"
+                class="lesson-row__restart"
+                aria-label="Restart from the beginning"
+                (click)="restartLesson(lesson, $event)"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 12a9 9 0 1 0 3-6.7" />
+                  <path d="M3 4v5h5" />
+                  <path d="M10.3 9.6v4.8l-4-2.4z" fill="currentColor" stroke="none" />
+                </svg>
+              </button>
+            </div>
+            <p class="lesson-row__excerpt">{{ lesson.excerpt }}</p>
+          </div>
+        </li>
+      }
+    </ol>
+  } @else if (lessonsOpen()) {
+    <p class="style-lessons-panel__loading">Loading lessons…</p>
+  }
+</aside>
+
+

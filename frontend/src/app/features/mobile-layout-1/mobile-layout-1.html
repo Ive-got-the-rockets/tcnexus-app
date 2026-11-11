@@ -1,0 +1,75 @@
+<div class="mobile-layout-1" [class.mobile-layout-1--menu-open]="menuOpen()">
+  <header class="mobile-layout-1__header">
+    <div class="mobile-layout-1__leading">
+      <button
+        type="button"
+        class="mobile-layout-1__action mobile-layout-1__menu-trigger"
+        data-mobile-control="menu"
+        aria-label="Open navigation menu"
+        aria-controls="mobile-layout-1-menu"
+        [attr.aria-expanded]="menuOpen()"
+        (click)="toggleMenu($event)"
+      >
+        <span></span><span></span><span></span>
+      </button>
+
+      <a
+        class="mobile-layout-1__wordmark"
+        data-mobile-control="wordmark"
+        routerLink="/"
+        (click)="closeMenu()"
+      >TC <span>Nexus</span></a>
+    </div>
+
+    <div class="mobile-layout-1__actions">
+      <button
+        type="button"
+        class="mobile-layout-1__action"
+        data-mobile-control="cart"
+        aria-label="Cart"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="5" y="8.3" width="14" height="12" rx="2.2"></rect>
+          <path d="M9 8.3a3 3 0 0 1 6 0"></path>
+        </svg>
+      </button>
+
+      <a
+        class="mobile-layout-1__action"
+        data-mobile-control="profile"
+        routerLink="/profile"
+        aria-label="Profile"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path class="mobile-layout-1__profile-frame" d="M12 2.2 20.5 7v10L12 21.8 3.5 17V7z"></path>
+          <circle cx="12" cy="9.6" r="2.8"></circle>
+          <path d="M7 17.6c0-2.8 2.4-4.4 5-4.4s5 1.6 5 4.4"></path>
+        </svg>
+      </a>
+
+    </div>
+  </header>
+
+  @if (menuOpen()) {
+    <nav id="mobile-layout-1-menu" class="mobile-layout-1__menu" aria-label="Mobile navigation">
+      <a routerLink="/" (click)="closeMenu()">Home</a>
+      <a routerLink="/trading-courses" (click)="closeMenu()">Trading Courses</a>
+      <a routerLink="/platform-courses" (click)="closeMenu()">Platform Courses</a>
+      <a routerLink="/shows" (click)="closeMenu()">Shows</a>
+      <span>Store</span>
+    </nav>
+  }
+
+  <main class="mobile-layout-1__content">
+    <app-layout-style-3
+      [featuredImageOverrides]="mobileFeaturedImageOverrides"
+      [featuredTitleImageOverrides]="mobileFeaturedTitleImageOverrides"
+      [preferMobileMedia]="true"
+      [hideFeaturedTitleImage]="true"
+      [hideFeaturedTitle]="true"
+      [mobileDetailRoute]="true"
+      [stackFeaturedLevelBadges]="true"
+      [landingModeFilter]="landingMode"
+    />
+  </main>
+</div>

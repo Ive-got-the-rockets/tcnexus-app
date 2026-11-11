@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pagination Motion Lab</title>
+  <style>
+    :root { color-scheme: dark; font-family: Barlow, Arial, sans-serif; }
+    * { box-sizing: border-box; }
+    body { min-height: 100vh; margin: 0; display: grid; place-items: center; background: #0c0d0d; color: #f4f1e9; }
+    main { width: min(100%, 430px); padding: 28px 22px; }
+    h1 { margin: 0 0 10px; font-size: 18px; font-weight: 500; }
+    p { margin: 0 0 32px; color: #aaa; font-size: 14px; }
+    .stage { position: relative; display: grid; height: 180px; place-items: center; border: 1px solid #252825; border-radius: 8px; background: #121413; touch-action: pan-y; user-select: none; }
+    .pagination { position: relative; width: 270px; height: 28px; }
+    .dot { position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: transparent; cursor: pointer; transform: translate(calc(-50% + var(--x)), -50%); transition: transform 520ms cubic-bezier(.22,.61,.36,1); }
+    .dot::before { position: absolute; top: 50%; left: 50%; width: 7px; height: 7px; border-radius: 50%; background: #919191; content: ''; opacity: .35; transform: translate(-50%, -50%); transition: width 520ms cubic-bezier(.22,.61,.36,1), height 520ms cubic-bezier(.22,.61,.36,1), background 260ms ease, border-radius 520ms ease, opacity 260ms ease; }
+    .dot[data-distance="-2"]::before, .dot[data-distance="2"]::before { width: 11px; height: 11px; opacity: .6; }
+    .dot[data-distance="-1"]::before, .dot[data-distance="1"]::before { width: 17px; height: 17px; opacity: .9; }
+    .dot[data-active="true"] { z-index: 1; }
+    .dot[data-active="true"]::before { width: 28px; height: 17px; border-radius: 999px; background: #f4f1e9; opacity: 1; }
+    .stage.is-melting .dot[data-active="true"]::before { opacity: 0; }
+    .melt-orb { position: absolute; z-index: 3; top: 50%; left: 50%; width: 17px; height: 17px; border-radius: 50%; background: #f4f1e9; opacity: 0; pointer-events: none; }
+    .stage.is-melting .melt-orb { opacity: 1; }
+    .stage.is-melting.is-moving-next .melt-orb { animation: melt-from-right 520ms cubic-bezier(.22,.61,.36,1) both; }
+    .stage.is-melting.is-moving-previous .melt-orb { animation: melt-from-left 520ms cubic-bezier(.22,.61,.36,1) both; }
+    @keyframes melt-from-right {
+      0% { width: 17px; height: 17px; border-radius: 50%; transform: translate(calc(-50% + 30px), -50%); }
+      56% { width: 33px; height: 16px; border-radius: 48%; transform: translate(-50%, -50%) scale(1.03, .96); }
+      100% { width: 28px; height: 17px; border-radius: 999px; transform: translate(-50%, -50%); }
+    }
+    @keyframes melt-from-left {
+      0% { width: 17px; height: 17px; border-radius: 50%; transform: translate(calc(-50% - 30px), -50%); }
+      56% { width: 33px; height: 16px; border-radius: 48%; transform: translate(-50%, -50%) scale(1.03, .96); }
+      100% { width: 28px; height: 17px; border-radius: 999px; transform: translate(-50%, -50%); }
+    }
+    .controls { display: flex; justify-content: center; gap: 10px; margin-top: 22px; }
+    .controls button { min-width: 90px; min-height: 42px; border: 1px solid #343834; border-radius: 4px; background: #171918; color: #f4f1e9; cursor: pointer; }
+    .controls button:active { transform: scale(.98); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Featured pagination</h1>
+    <p>Swipe or use the arrows. The pill stays centered while dots move through it.</p>
+    <div class="stage" id="stage" aria-label="Pagination animation preview"></div>
+    <div class="controls"><button id="previous">Previous</button><button id="next">Next</button></div>
+  </main>
+  <script>
+    const stage = document.querySelector('#stage');
+    const total = 9;
+    let active = 0;
+    const slots = [-3, -2, -1, 0, 1, 2, 3];
+
+    function wrapped(index) { return (index + total) % total; }
+    function offsetFor(distance) {
+      if (distance > 0) return 30 + (distance - 1) * 26;
+      if (distance < 0) return -30 + (distance + 1) * 26;
+      return 0;
+    }
+    const dots = Array.from({ length: total }, (_, index) => {
+        const dot = document.createElement('button');
+        dot.className = 'dot';
+        stage.append(dot);
+        dot.onclick = () => move(index - active);
+        return dot;
+      });
+    const meltOrb = document.createElement('span');
+    meltOrb.className = 'melt-orb';
+    stage.append(meltOrb);
+    function render() {
+      dots.forEach((dot, index) => {
+        let distance = index - active;
+        if (distance > total / 2) distance -= total;
+        if (distance < -total / 2) distance += total;
+        const visible = Math.abs(distance) <= 3;
+        dot.style.setProperty('--x', `${offsetFor(distance)}px`);
+        dot.style.opacity = visible ? '1' : '0';
+        dot.style.pointerEvents = visible ? 'auto' : 'none';
+        dot.dataset.distance = distance;
+        dot.dataset.active = String(distance === 0);
+        dot.setAttribute('aria-label', `Slide ${index + 1}`);
+      });
+    }
+    let meltTimer;
+    function move(direction) {
+      if (!direction) return;
+      const motionClass = direction > 0 ? 'is-moving-next' : 'is-moving-previous';
+      stage.classList.remove('is-melting', 'is-moving-next', 'is-moving-previous');
+      void stage.offsetWidth;
+      stage.classList.add('is-melting', motionClass);
+      active = wrapped(active + Math.sign(direction));
+      render();
+      window.clearTimeout(meltTimer);
+      meltTimer = window.setTimeout(() => stage.classList.remove('is-melting', 'is-moving-next', 'is-moving-previous'), 540);
+    }
+    document.querySelector('#previous').addEventListener('click', () => move(-1));
+    document.querySelector('#next').addEventListener('click', () => move(1));
+    let startX = null;
+    stage.addEventListener('pointerdown', (event) => { startX = event.clientX; stage.setPointerCapture(event.pointerId); });
+    stage.addEventListener('pointerup', (event) => { if (startX !== null) { const delta = event.clientX - startX; if (Math.abs(delta) > 24) move(delta < 0 ? 1 : -1); } startX = null; });
+    stage.addEventListener('pointercancel', () => { startX = null; });
+    render();
+  </script>
+</body>
+</html>

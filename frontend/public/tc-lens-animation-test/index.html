@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TC Lens loading animation test</title>
+  <style>
+    :root { color-scheme: dark; --lime: #c6ff3f; --orange: #ff8439; --surface: #111614; --line: #313b37; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: #070908; color: #f2f4ef; font: 14px/1.4 Inter, "Segoe UI", sans-serif; }
+    button { font: inherit; }
+    .page { width: min(1400px, calc(100% - 32px)); margin: 0 auto; padding: 24px 0 48px; }
+    .eyebrow { margin: 0 0 6px; color: var(--orange); font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(24px, 4vw, 38px); letter-spacing: -.04em; }
+    .intro { max-width: 760px; margin: 8px 0 20px; color: #9ea7a2; }
+    .test-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+    .test-actions button, .tradecheetah, .close { min-height: 42px; border: 1px solid var(--line); border-radius: 7px; background: #151b18; color: #eef2ed; cursor: pointer; }
+    .test-actions button { padding: 0 16px; }
+    .test-actions button:hover, .test-actions button:focus-visible, .close:hover, .close:focus-visible { border-color: var(--lime); outline: none; }
+    .source-status { margin-left: auto; align-self: center; color: #89928d; font-size: 12px; }
+    .experience { position: relative; min-height: min(76vh, 820px); overflow: hidden; border: 1px solid #28302d; border-radius: 14px; background: #030504; box-shadow: 0 24px 80px #0008; }
+    .video-shell { position: absolute; inset: 0; transition: right 650ms cubic-bezier(.22,.75,.18,1), bottom 650ms cubic-bezier(.22,.75,.18,1); }
+    .video { position: absolute; inset: 0; overflow: hidden; background: radial-gradient(circle at 45% 38%, #585b4a 0, #2a2e29 25%, #111412 57%, #060807 100%); }
+    .chart { position: absolute; inset: 13% 8% 22%; opacity: .74; background: linear-gradient(151deg, transparent 47%, #c6ff3f 48%, transparent 49%), linear-gradient(29deg, transparent 58%, #e8eee2 59%, transparent 60%); filter: drop-shadow(0 0 16px #c6ff3f40); }
+    .video-copy { position: absolute; left: 6%; top: 9%; }
+    .video-copy span { display: block; color: #a8b0ab; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
+    .video-copy strong { display: block; margin-top: 5px; font-size: clamp(21px, 3vw, 38px); letter-spacing: -.04em; }
+    .controls { position: absolute; left: 3%; right: 3%; bottom: 3%; display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 15px; border: 1px solid #343d39; border-radius: 9px; background: #080a09e8; }
+    .play { width: 30px; height: 30px; border: 0; border-radius: 50%; background: #f2f4ef; color: #090b0a; }
+    .timeline { flex: 1; height: 3px; background: #4a514e; }
+    .timeline::before { content: ""; display: block; width: 38%; height: 100%; background: var(--orange); }
+    .time { color: #aab1ad; font-size: 11px; }
+    .tradecheetah { display: flex; flex-direction: column; justify-content: center; min-width: 112px; padding: 0 12px; border-color: #4d5b55; font-size: 9px; font-weight: 800; letter-spacing: .1em; line-height: 1.05; }
+    .tradecheetah span:last-child { color: var(--lime); }
+    .tradecheetah[aria-expanded="true"] { border-color: var(--lime); box-shadow: 0 0 0 1px #c6ff3f30; }
+    .lens-panel { position: absolute; top: 0; right: 0; bottom: 18%; width: min(440px, 42vw); border-left: 1px solid var(--line); background: var(--surface); transform: translateX(102%); transition: transform 650ms cubic-bezier(.22,.75,.18,1); }
+    .lens-header { display: flex; align-items: center; justify-content: space-between; height: 48px; padding: 0 12px 0 15px; border-bottom: 1px solid var(--line); }
+    .lens-title { color: var(--lime); font-size: 11px; font-weight: 800; letter-spacing: .15em; }
+    .close { width: 32px; min-height: 32px; background: transparent; font-size: 20px; line-height: 1; }
+    .frame-wrap { position: absolute; inset: 48px 0 0; background: #0b0f0d; }
+    iframe { width: 100%; height: 100%; border: 0; opacity: 1; transition: opacity 260ms ease; }
+    .loader { position: absolute; inset: 0; z-index: 2; display: grid; place-items: center; background: #0d1210; opacity: 0; visibility: hidden; transition: opacity 220ms ease, visibility 0s linear 220ms; }
+    .loader-inner { text-align: center; }
+    .spinner { width: 30px; height: 30px; margin: 0 auto 13px; border: 2px solid #3a463f; border-top-color: var(--lime); border-radius: 50%; animation: spin .8s linear infinite; }
+    .loader strong { display: block; font-size: 13px; }
+    .loader span { display: block; margin-top: 4px; color: #7f8a84; font-size: 11px; }
+    .workspace { position: absolute; left: 0; right: min(440px, 42vw); bottom: 0; height: 18%; display: grid; place-items: center; border-top: 1px solid var(--line); background: #101512; color: #77817c; transform: translateY(102%); transition: transform 650ms cubic-bezier(.22,.75,.18,1); }
+    .experience.is-lens-open .video-shell { right: min(440px, 42vw); bottom: 18%; }
+    .experience.is-lens-open .lens-panel, .experience.is-lens-open .workspace { transform: translate(0); }
+    .experience.is-lens-loading iframe { opacity: 0; }
+    .experience.is-lens-loading .loader { opacity: 1; visibility: visible; transition-delay: 0s; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 760px) {
+      .experience { min-height: 720px; }
+      .lens-panel { top: 48%; bottom: 0; width: 100%; transform: translateY(102%); }
+      .workspace { display: none; }
+      .experience.is-lens-open .video-shell { right: 0; bottom: 52%; }
+      .experience.is-lens-open .lens-panel { transform: translateY(0); }
+      .source-status { width: 100%; margin-left: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <p class="eyebrow">Isolated local prototype</p>
+    <h1>TC Lens loads after the motion begins</h1>
+    <p class="intro">Use either trigger. The layout animation starts immediately, then the iframe is requested after a visible delay. This page does not use or modify the production lesson player.</p>
+    <div class="test-actions">
+      <button id="backend-cue-trigger" type="button">Simulate backend video cue</button>
+      <button id="reset-trigger" type="button">Reset test</button>
+      <span id="source-status" class="source-status">Waiting for a trigger</span>
+    </div>
+    <section id="experience" class="experience" aria-label="TC Lens animation test">
+      <div class="video-shell">
+        <div class="video">
+          <div class="chart" aria-hidden="true"></div>
+          <div class="video-copy"><span>Lesson 06</span><strong>Reading volatility regimes</strong></div>
+          <div class="controls">
+            <button class="play" type="button" aria-label="Play">▶</button>
+            <div class="timeline" aria-hidden="true"></div>
+            <span class="time">12:42 / 31:08</span>
+            <button id="tradecheetah-trigger" class="tradecheetah" type="button" aria-controls="lens-panel" aria-expanded="false"><span>TRADE</span><span>CHEETAH</span></button>
+          </div>
+        </div>
+      </div>
+      <aside id="lens-panel" class="lens-panel" aria-label="TC Lens panel">
+        <div class="lens-header"><span class="lens-title">TC LENS</span><button id="close-trigger" class="close" type="button" aria-label="Close TC Lens">×</button></div>
+        <div class="frame-wrap">
+          <iframe id="lens-frame" title="TradeCheetah test iframe"></iframe>
+          <div class="loader" role="status" aria-live="polite"><div class="loader-inner"><div class="spinner" aria-hidden="true"></div><strong>Loading TC Lens…</strong><span>The entrance animation is already running</span></div></div>
+        </div>
+      </aside>
+      <div class="workspace">Reserved lesson workspace</div>
+    </section>
+  </main>
+  <script>
+    const FRAME_URL = './lens-frame.html';
+    const experience = document.querySelector('#experience');
+    const lensFrame = document.querySelector('#lens-frame');
+    const tradeTrigger = document.querySelector('#tradecheetah-trigger');
+    const backendTrigger = document.querySelector('#backend-cue-trigger');
+    const closeTrigger = document.querySelector('#close-trigger');
+    const resetTrigger = document.querySelector('#reset-trigger');
+    const sourceStatus = document.querySelector('#source-status');
+    let loadTimer = 0;
+
+    function openLens(source) {
+      window.clearTimeout(loadTimer);
+      lensFrame.removeAttribute('src');
+      experience.classList.add('is-lens-open', 'is-lens-loading');
+      tradeTrigger.setAttribute('aria-expanded', 'true');
+      sourceStatus.textContent = `${source} triggered TC Lens — panel moving before iframe request`;
+      loadTimer = window.setTimeout(() => {
+        requestAnimationFrame(() => lensFrame.src = FRAME_URL);
+        sourceStatus.textContent = `${source} triggered TC Lens — iframe now loading`;
+      }, 1400);
+    }
+
+    function closeLens() {
+      window.clearTimeout(loadTimer);
+      experience.classList.remove('is-lens-open', 'is-lens-loading');
+      tradeTrigger.setAttribute('aria-expanded', 'false');
+      lensFrame.removeAttribute('src');
+      sourceStatus.textContent = 'TC Lens closed — ready to test again';
+    }
+
+    lensFrame.addEventListener('load', () => {
+      if (!lensFrame.getAttribute('src')) return;
+      experience.classList.remove('is-lens-loading');
+      sourceStatus.textContent = 'TC Lens iframe loaded and revealed';
+    });
+    tradeTrigger.addEventListener('click', () => openLens('TradeCheetah button'));
+    backendTrigger.addEventListener('click', () => openLens('Backend video cue'));
+    closeTrigger.addEventListener('click', closeLens);
+    resetTrigger.addEventListener('click', closeLens);
+  </script>
+</body>
+</html>
+

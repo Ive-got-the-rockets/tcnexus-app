@@ -110,7 +110,7 @@
             }
             <div class="detail__actions">
               @if (activeLessons(c).length) {
-                <button type="button" class="detail__start" aria-label="Start watching" title="Start watching" (click)="startWatching()">
+                <button type="button" class="detail__start" aria-label="Start watching" (click)="startWatching()">
                   <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" /></svg>
                   <span>Start Watching</span>
                 </button>
@@ -236,7 +236,6 @@
                         type="button"
                         class="lesson-row__restart"
                         aria-label="Restart from the beginning"
-                        title="Restart from the beginning"
                         (click)="restartLesson(lesson, $event)"
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -286,7 +285,7 @@
       @if (trailerVideoUrl(); as videoUrl) {
         <video class="detail__trailer-video" [src]="videoUrl" autoplay controls playsinline></video>
       } @else if (trailerEmbedUrl(); as embedUrl) {
-        <iframe class="detail__trailer-video" [src]="embedUrl" title="Trailer" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+        <iframe class="detail__trailer-video" [src]="embedUrl" aria-label="Trailer" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
       }
     </section>
   </div>

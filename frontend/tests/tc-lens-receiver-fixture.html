@@ -7,15 +7,23 @@ pre { padding:16px; background:#050707; white-space:pre-wrap; }
 </style>
 <h1>TC Lens guide receiver fixture</h1>
 <p id="status">Waiting for a prompt...</p>
+<button type="button" id="sign-in">Simulate pane sign-in</button>
 <pre id="log"></pre>
 <script>
   const status = document.querySelector('#status');
   const log = document.querySelector('#log');
   let busy = false;
+  let authenticated = false;
   const hostOrigin = location.origin;
+  const reportAuth = () => parent.postMessage({ type: 'tc-lens-auth', state: authenticated ? 'authenticated' : 'anonymous' }, hostOrigin);
+  document.querySelector('#sign-in').onclick = () => { authenticated = true; reportAuth(); };
+  reportAuth();
   window.addEventListener('message', (event) => {
     if (event.source !== parent || event.origin !== hostOrigin) return;
     const message = event.data;
+    if (message?.type === 'tc-lens-signout') {
+      authenticated = false; reportAuth(); status.textContent = 'Signed out'; return;
+    }
     if (message?.type !== 'tc-lens-time-update' || typeof message.message !== 'string' ||
         !message.message.trim() || ![undefined, 'ask', 'operate'].includes(message.workflow)) return;
     const reply = (state, reason) => event.source.postMessage({
@@ -23,6 +31,7 @@ pre { padding:16px; background:#050707; white-space:pre-wrap; }
       ...(reason ? { reason } : {}),
     }, event.origin);
     log.textContent += JSON.stringify(message, null, 2) + '\n\n';
+    if (!authenticated) { reply('error', 'unauthenticated'); return; }
     if (busy) { reply('error', 'busy'); return; }
     busy = true;
     status.textContent = 'Running prompt for video ' + message.videoId;

@@ -32,6 +32,8 @@ const courses = [
     thumbnail: 'http://localhost:8082/wp-content/uploads/2026/08/cropped-mastering-the-greeks-main-1-300x169.jpg',
     image: 'http://localhost:8082/wp-content/uploads/2026/08/cropped-mastering-the-greeks-main-3.jpg',
     course_types: ['Options'],
+    configured_levels: ['beginner', 'intermediate', 'advanced'],
+    level_lesson_counts: { beginner: 3, intermediate: 1, advanced: 4 },
     lesson_count: 3,
     overview_link: 'https://gamma.app/docs/Copy-of-WELCOME-TO-t8qv4sb2qoely4c'
   },
@@ -314,6 +316,348 @@ const shows = [
   }
 ];
 
+const localTradingCourses = [
+  {
+    id: 7101,
+    title: 'The Trader’s Morning Routine',
+    excerpt: 'Build a calm pre-market process that turns overnight information into a focused plan.',
+    thumbnail: '/mock-content/trading-01-card.svg',
+    image: '/mock-content/trading-01-hero.svg',
+    course_types: ["Options","Beginner"],
+    lesson_count: 4,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7102,
+    title: 'Chart Structure Fundamentals',
+    excerpt: 'Read trend, range, and transition conditions before choosing a setup.',
+    thumbnail: '/mock-content/trading-02-card.svg',
+    image: '/mock-content/trading-02-hero.svg',
+    course_types: ["Price Action","Intermediate"],
+    lesson_count: 5,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7103,
+    title: 'Momentum Without the Noise',
+    excerpt: 'Separate healthy momentum from late-stage chasing with a price-first framework.',
+    thumbnail: '/mock-content/trading-03-card.svg',
+    image: '/mock-content/trading-03-hero.svg',
+    course_types: ["Macro","Beginner"],
+    lesson_count: 6,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7104,
+    title: 'The Options Trader’s Checklist',
+    excerpt: 'A practical checklist for liquidity, volatility, structure, and risk.',
+    thumbnail: '/mock-content/trading-04-card.svg',
+    image: '/mock-content/trading-04-hero.svg',
+    course_types: ["Options","Intermediate"],
+    lesson_count: 7,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7105,
+    title: 'Reading Volatility With Confidence',
+    excerpt: 'Understand implied volatility and realized movement in context.',
+    thumbnail: '/mock-content/trading-05-card.svg',
+    image: '/mock-content/trading-05-hero.svg',
+    course_types: ["Price Action","Beginner"],
+    lesson_count: 4,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7106,
+    title: 'Macro Signals for Everyday Traders',
+    excerpt: 'Turn rates, liquidity, and economic data into a usable market backdrop.',
+    thumbnail: '/mock-content/trading-06-card.svg',
+    image: '/mock-content/trading-06-hero.svg',
+    course_types: ["Macro","Intermediate"],
+    lesson_count: 5,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7107,
+    title: 'Trading Around Key Economic Events',
+    excerpt: 'Plan around scheduled volatility without forcing a trade.',
+    thumbnail: '/mock-content/trading-07-card.svg',
+    image: '/mock-content/trading-07-hero.svg',
+    course_types: ["Options","Beginner"],
+    lesson_count: 6,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7108,
+    title: 'A Better Risk Framework',
+    excerpt: 'Make position size, stops, and daily loss limits work together.',
+    thumbnail: '/mock-content/trading-08-card.svg',
+    image: '/mock-content/trading-08-hero.svg',
+    course_types: ["Price Action","Intermediate"],
+    lesson_count: 7,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7109,
+    title: 'Managing Trades in Real Time',
+    excerpt: 'Know when to hold, reduce, or exit as new information arrives.',
+    thumbnail: '/mock-content/trading-09-card.svg',
+    image: '/mock-content/trading-09-hero.svg',
+    course_types: ["Macro","Beginner"],
+    lesson_count: 4,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7110,
+    title: 'Building a Repeatable Trade Plan',
+    excerpt: 'Turn your best ideas into a process you can execute consistently.',
+    thumbnail: '/mock-content/trading-10-card.svg',
+    image: '/mock-content/trading-10-hero.svg',
+    course_types: ["Options","Intermediate"],
+    lesson_count: 5,
+    local_demo: true,
+    placeholder: true
+  }
+];
+
+const localPlatformCourses = [
+  {
+    id: 7201,
+    title: 'Inside the TC Nexus Workspace',
+    excerpt: 'Find your way around the workspace and build a clear daily starting point.',
+    thumbnail: '/mock-content/platform-01-card.svg',
+    image: '/mock-content/platform-01-hero.svg',
+    course_types: ["Platform","Beginner"],
+    lesson_count: 3,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7202,
+    title: 'Watchlists That Work',
+    excerpt: 'Configure watchlists that keep your attention on the right names.',
+    thumbnail: '/mock-content/platform-02-card.svg',
+    image: '/mock-content/platform-02-hero.svg',
+    course_types: ["Platform","Intermediate"],
+    lesson_count: 4,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7203,
+    title: 'Reading the Platform Pulse',
+    excerpt: 'Read the platform’s key signals without losing the bigger picture.',
+    thumbnail: '/mock-content/platform-03-card.svg',
+    image: '/mock-content/platform-03-hero.svg',
+    course_types: ["Platform","Beginner"],
+    lesson_count: 5,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7204,
+    title: 'Build Your Trading Dashboard',
+    excerpt: 'Assemble a dashboard that matches the way you actually trade.',
+    thumbnail: '/mock-content/platform-04-card.svg',
+    image: '/mock-content/platform-04-hero.svg',
+    course_types: ["Platform","Intermediate"],
+    lesson_count: 3,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7205,
+    title: 'Alerts, Layouts & Context',
+    excerpt: 'Connect alerts, layouts, and context into one repeatable workflow.',
+    thumbnail: '/mock-content/platform-05-card.svg',
+    image: '/mock-content/platform-05-hero.svg',
+    course_types: ["Platform","Beginner"],
+    lesson_count: 4,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7206,
+    title: 'The Clean Chart Setup',
+    excerpt: 'Create a clean chart setup that makes decisions easier.',
+    thumbnail: '/mock-content/platform-06-card.svg',
+    image: '/mock-content/platform-06-hero.svg',
+    course_types: ["Platform","Intermediate"],
+    lesson_count: 5,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7207,
+    title: 'Your Daily Workspace',
+    excerpt: 'Turn the platform into a focused workspace for every session.',
+    thumbnail: '/mock-content/platform-07-card.svg',
+    image: '/mock-content/platform-07-hero.svg',
+    course_types: ["Platform","Beginner"],
+    lesson_count: 3,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7208,
+    title: 'Signals in One View',
+    excerpt: 'Keep market signals visible without adding visual noise.',
+    thumbnail: '/mock-content/platform-08-card.svg',
+    image: '/mock-content/platform-08-hero.svg',
+    course_types: ["Platform","Intermediate"],
+    lesson_count: 4,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7209,
+    title: 'From Data to Decision',
+    excerpt: 'Move from raw data to a decision-ready trading view.',
+    thumbnail: '/mock-content/platform-09-card.svg',
+    image: '/mock-content/platform-09-hero.svg',
+    course_types: ["Platform","Beginner"],
+    lesson_count: 5,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7210,
+    title: 'Platform Power Moves',
+    excerpt: 'Unlock the small platform habits that compound over time.',
+    thumbnail: '/mock-content/platform-10-card.svg',
+    image: '/mock-content/platform-10-hero.svg',
+    course_types: ["Platform","Intermediate"],
+    lesson_count: 3,
+    local_demo: true,
+    placeholder: true
+  }
+];
+
+const localShows = [
+  {
+    id: 7301,
+    title: 'Market Sessions',
+    excerpt: 'Live market conversations, trade reviews, and practical lessons from the desk.',
+    thumbnail: '/mock-content/show-01-card.svg',
+    image: '/mock-content/show-01-hero.svg',
+    course_types: ["Shows"],
+    lesson_count: 5,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7302,
+    title: 'Inside the Trade',
+    excerpt: 'A closer look at the decisions, risk, and execution behind real ideas.',
+    thumbnail: '/mock-content/show-02-card.svg',
+    image: '/mock-content/show-02-hero.svg',
+    course_types: ["Shows"],
+    lesson_count: 6,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7303,
+    title: 'The Opening Bell',
+    excerpt: 'Context, catalysts, and levels worth watching before the session begins.',
+    thumbnail: '/mock-content/show-03-card.svg',
+    image: '/mock-content/show-03-hero.svg',
+    course_types: ["Shows"],
+    lesson_count: 7,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7304,
+    title: 'After the Close',
+    excerpt: 'A measured recap of what moved, what mattered, and what comes next.',
+    thumbnail: '/mock-content/show-04-card.svg',
+    image: '/mock-content/show-04-hero.svg',
+    course_types: ["Shows"],
+    lesson_count: 8,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7305,
+    title: 'The Tape Room',
+    excerpt: 'The people, process, and pressure behind a trading desk.',
+    thumbnail: '/mock-content/show-05-card.svg',
+    image: '/mock-content/show-05-hero.svg',
+    course_types: ["Shows"],
+    lesson_count: 9,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7306,
+    title: 'Signal to Noise',
+    excerpt: 'Separate the useful signal from the noise shaping the market.',
+    thumbnail: '/mock-content/show-06-card.svg',
+    image: '/mock-content/show-06-hero.svg',
+    course_types: ["Shows"],
+    lesson_count: 5,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7307,
+    title: 'Desk Notes',
+    excerpt: 'Short field notes from the charts, the tape, and the day’s decisions.',
+    thumbnail: '/mock-content/show-07-card.svg',
+    image: '/mock-content/show-07-hero.svg',
+    course_types: ["Shows"],
+    lesson_count: 6,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7308,
+    title: 'The Volatility Brief',
+    excerpt: 'A concise read on volatility, positioning, and the week ahead.',
+    thumbnail: '/mock-content/show-08-card.svg',
+    image: '/mock-content/show-08-hero.svg',
+    course_types: ["Shows"],
+    lesson_count: 7,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7309,
+    title: 'The Setup',
+    excerpt: 'Follow an idea from first observation to executable plan.',
+    thumbnail: '/mock-content/show-09-card.svg',
+    image: '/mock-content/show-09-hero.svg',
+    course_types: ["Shows"],
+    lesson_count: 8,
+    local_demo: true,
+    placeholder: true
+  },
+  {
+    id: 7310,
+    title: 'Closing Bell Stories',
+    excerpt: 'Stories and lessons from the final minutes of the session.',
+    thumbnail: '/mock-content/show-10-card.svg',
+    image: '/mock-content/show-10-hero.svg',
+    course_types: ["Shows"],
+    lesson_count: 9,
+    local_demo: true,
+    placeholder: true
+  }
+];
+
+courses.push(...localTradingCourses, ...localPlatformCourses);
+shows.push(...localShows);
+
 // The first demo records intentionally start without media so they can be
 // populated consistently for the carousel and course-detail placeholders.
 for (const course of [...courses, ...shows]) {
@@ -326,10 +670,15 @@ for (const course of [...courses, ...shows]) {
   // Mirror the structured level payload returned by the WordPress plugin.
   // The mock data predates the level tabs, so the existing level-like tags
   // are used to create the enabled level versions for local development.
+  // Preserve explicit level configuration when a course has variants that
+  // are not represented by its display/category tags.
   const levelNames = { Beginner: 'beginner', Intermediate: 'intermediate', Advanced: 'advanced' };
-  const configuredLevels = course.course_types
+  const inferredLevels = course.course_types
     .map((type) => levelNames[type])
     .filter(Boolean);
+  const configuredLevels = Array.isArray(course.configured_levels) && course.configured_levels.length
+    ? course.configured_levels
+    : inferredLevels;
   if (configuredLevels.length === 0) configuredLevels.push('beginner');
   course.configured_levels = [...new Set(configuredLevels)];
   course.levels = Object.fromEntries(course.configured_levels.map((slug) => [slug, {
@@ -339,13 +688,14 @@ for (const course of [...courses, ...shows]) {
     title: course.title,
     content: `<p>${course.excerpt}</p>`,
     course_types: course.course_types.filter((type) => !levelNames[type]),
-    lesson_count: course.lesson_count,
+    lesson_count: course.level_lesson_counts?.[slug] ?? course.lesson_count,
     thumbnail: course.thumbnail,
     image: course.image,
     overview_link: course.overview_link ?? null,
     trailer_link: course.trailer_link ?? null,
     instructor: { id: 1, name: 'Coco Blanco', photo: 'https://i.pravatar.cc/120?u=coco-blanco' },
-    guest: { id: 2, name: 'TC Nexus Guest', photo: 'https://i.pravatar.cc/120?u=tcnexus-guest' }
+    guest: { id: 2, name: 'TC Nexus Guest', photo: 'https://i.pravatar.cc/120?u=tcnexus-guest' },
+    lessons: buildLessons({ ...course, lesson_count: course.level_lesson_counts?.[slug] ?? course.lesson_count })
   }]));
 
   if (course.course_types.includes('Shows')) {
@@ -384,7 +734,7 @@ function buildLessons(course) {
       order: i,
       tier,
       course_id: course.id,
-      thumbnail: course.placeholder ? `https://picsum.photos/seed/tcnexus-placeholder-lesson-${course.id}-${i}/320/180` : null,
+      thumbnail: course.local_demo ? course.thumbnail : course.placeholder ? `https://picsum.photos/seed/tcnexus-placeholder-lesson-${course.id}-${i}/320/180` : null,
       locked: tier === 'paid',
       excerpt: `Part ${i} of ${course.title.toLowerCase()} — a focused, worked walkthrough building directly on the previous lesson.`,
       video_url: course.episode_video_url ?? (course.placeholder ? null : TEST_VIDEO_URL),
@@ -402,7 +752,7 @@ function buildCourseDetail(course) {
   }])) : undefined;
   const levels = Object.fromEntries(Object.entries(course.levels ?? {}).map(([slug, level]) => [slug, {
     ...level,
-    lessons
+    lessons: level.lessons ?? lessons
   }]));
   return {
     id: course.id,

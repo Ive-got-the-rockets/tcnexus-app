@@ -21,6 +21,7 @@
   position: relative;
   height: 100%;
   aspect-ratio: 16 / 9;
+  view-transition-name: tc-nexus-video;
   background: #000;
   overflow: hidden;
 
@@ -43,6 +44,87 @@
 
 .player-wrap--skeleton {
   background: linear-gradient(160deg, var(--ink-raised), var(--ink));
+}
+
+.mobile-player-lessons {
+  display: none;
+}
+
+/* Mobile video players use the same compact 16:9 stage as YouTube. The
+   desktop theater player fills the viewport, but on a phone the black area
+   below the video must not become part of the control coordinate space. */
+@media (max-width: 600px) and (orientation: portrait) {
+  .player-page {
+    height: auto;
+    min-height: 100dvh;
+    align-items: flex-start;
+    display: block;
+    overflow: visible;
+  }
+
+  .player-wrap {
+    width: 100vw;
+    height: auto;
+    aspect-ratio: 16 / 9;
+  }
+
+  .mobile-player-lessons {
+    display: block;
+    padding: 18px 20px 32px;
+    background: #0c0d0d;
+    color: var(--paper);
+  }
+
+  .mobile-player-lessons h2 {
+    margin: 0 0 12px;
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  .mobile-player-lessons ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .mobile-player-lessons li {
+    border-top: 1px solid #2b2e2b;
+  }
+
+  .mobile-player-lessons li:first-of-type {
+    border-top: 0;
+  }
+
+  .mobile-player-lessons button {
+    display: flex;
+    width: 100%;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 12px 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .mobile-player-lessons img {
+    width: 105px;
+    height: 60px;
+    flex: 0 0 105px;
+    border-radius: 3px;
+    object-fit: cover;
+  }
+
+  .mobile-player-lessons strong,
+  .mobile-player-lessons small {
+    display: block;
+  }
+
+  .mobile-player-lessons small {
+    margin-top: 3px;
+    color: #a7aaa1;
+  }
 }
 
 /* --- Up next card --- */
@@ -220,5 +302,59 @@
 
   &:hover {
     background: var(--signal-dim);
+  }
+}
+
+:host ::ng-deep .tcn-xray-loading {
+  position: absolute;
+  inset: 48px 0 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: #0b100e;
+  color: var(--paper);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 220ms ease, visibility 0s linear 220ms;
+  pointer-events: none;
+}
+
+:host ::ng-deep .tcn-xray-is-loading .tcn-xray-loading {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+:host ::ng-deep .tcn-xray-loading strong {
+  font: 600 13px/1.2 var(--font-ui);
+}
+
+:host ::ng-deep .tcn-xray-loading small {
+  color: var(--paper-dim);
+  font: 11px/1.4 var(--font-ui);
+}
+
+:host ::ng-deep .tcn-xray-loading__spinner {
+  width: 30px;
+  height: 30px;
+  margin-bottom: 5px;
+  border: 2px solid color-mix(in srgb, var(--paper) 22%, transparent);
+  border-top-color: var(--signal);
+  border-radius: 50%;
+  animation: tc-lens-loading-spin 800ms linear infinite;
+}
+
+@keyframes tc-lens-loading-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host ::ng-deep .tcn-xray-loading,
+  :host ::ng-deep .tcn-xray-loading__spinner {
+    transition: none;
+    animation: none;
   }
 }
