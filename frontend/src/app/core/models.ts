@@ -53,6 +53,11 @@ export interface Course {
   mobile_title_image?: string | null;
   /** Optional 600x160 title artwork used in featured and single-page hero areas. */
   title_image?: string | null;
+  /** Vimeo Live Event ID configured in the Live Show Builder. */
+  vimeo_live_event_id?: string | null;
+  live_start_date?: string | null;
+  live_start_time?: string | null;
+  live_status?: string | null;
   course_types: string[];
   lesson_count: number;
   overview_link: string | null;

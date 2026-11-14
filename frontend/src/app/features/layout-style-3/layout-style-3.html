@@ -17,6 +17,7 @@
   [class.style-page--trading-only]="tradingOnly()"
   [class.style-page--platform-only]="platformOnly()"
   [class.style-page--shows-only]="showsOnly()"
+  [class.style-page--live-only]="liveOnly()"
   [class.style-page--leaving]="leaving()"
   [class.style-page--returning]="returning()"
   [class.style-page--return-revealed]="returnRevealed()"
@@ -190,7 +191,7 @@
           <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true">
             <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
           </svg>
-          <span class="style-featured__start-label">Play</span>
+          <span class="style-featured__start-label">{{ isLiveShow(course) ? 'Watch Live' : 'Play' }}</span>
         </button>
         @if (featured()?.trailer_link) {
           <button type="button" class="style-featured__trailer" aria-label="Play Trailer" (click)="openTrailer()">
@@ -199,14 +200,16 @@
             <span>Trailer</span>
           </button>
         }
-        <button
-          type="button"
-          class="style-featured__overview"
-          [attr.aria-label]="featuredListTooltip(course)"
-          [attr.aria-expanded]="lessonsOpen()"
-          (click)="toggleLessons(course)"
-        ><span class="style-featured__tooltip" aria-hidden="true">{{ featuredListTooltip(course) }}</span>{{ isShow(course) ? 'Episode List' : 'Lessons List' }}</button>
-        @if (!isShow(course) && course.overview_link) {
+        @if (!isLiveShow(course)) {
+          <button
+            type="button"
+            class="style-featured__overview"
+            [attr.aria-label]="featuredListTooltip(course)"
+            [attr.aria-expanded]="lessonsOpen()"
+            (click)="toggleLessons(course)"
+          ><span class="style-featured__tooltip" aria-hidden="true">{{ featuredListTooltip(course) }}</span>{{ isShow(course) ? 'Episode List' : 'Lessons List' }}</button>
+        }
+        @if (!isLiveShow(course) && !isShow(course) && course.overview_link) {
           <button type="button" class="style-featured__overview" aria-label="Course Overview" (click)="openOverview(course)">
             <span class="style-featured__tooltip" aria-hidden="true">Course Overview</span>
             Course Overview
@@ -248,7 +251,52 @@
     </section>
   }
 
-  @if (carouselShows().length > 0) {
+  @if (liveShows().length > 0 && !showsOnly()) {
+    <section class="style-row style-row--live" data-live-row aria-labelledby="live-title">
+      <div class="style-carousel" #liveCarousel [class.style-carousel--at-start]="liveEdges().atStart" [class.style-carousel--at-end]="liveEdges().atEnd">
+        <h2 id="live-title" class="style-row__title">Live</h2>
+        @if (pageCount('live') > 1) {
+          <div class="style-carousel__pages" aria-label="Live pages">
+            @for (page of pageRange(pageCount('live')); track page) {
+              <button type="button" class="style-carousel__page" [class.style-carousel__page--active]="pageIndex.live() === page" [class.style-carousel__page--near]="carouselPageDistance(page, pageIndex.live()) === 1" [attr.aria-label]="'Go to Live page ' + (page + 1)" [attr.aria-current]="pageIndex.live() === page ? 'page' : null" (click)="goToPage('live', page)"></button>
+            }
+          </div>
+        }
+        @if (!liveEdges().atStart && !scrolling.live()) {
+          <button type="button" class="style-carousel__arrow style-carousel__arrow--prev" aria-label="Scroll Live left" (click)="scroll(-1, 'live')"><svg class="style-carousel__chevron" viewBox="0 0 24 48" aria-hidden="true"><path d="M22 2 2 24l20 22" /></svg></button>
+        }
+        <div class="style-carousel__viewport">
+          <div class="style-carousel__track" #liveTrack [appRowScroll]="'animation-style-2-live'" (edgesChange)="onCarouselEdgesChange('live', $event)" (scrollSettled)="onCarouselScrollSettled('live')">
+            @for (liveShow of liveShows(); track liveShow.id) {
+              <article class="style-card style-card--live" data-live-card role="link" tabindex="0" [attr.aria-label]="'Open live show ' + liveShow.title" (mouseenter)="onCardEnter($event, 'live')" (mouseleave)="onCardLeave()" (click)="openLiveShow(liveShow.id)" (keydown.enter)="openLiveShow(liveShow.id)" (keydown.space)="openLiveShow(liveShow.id); $event.preventDefault()">
+                <div class="style-card__art"><img [src]="liveShow.thumbnailUrl" [alt]="liveShow.title" loading="lazy" /></div>
+                <div class="style-card__details">
+                  <div class="style-card__actions">
+                    <button type="button" class="style-card__play" [attr.aria-label]="'Open ' + liveShow.title" (click)="openLiveShow(liveShow.id); $event.stopPropagation()">
+                      <span class="style-card__tooltip" aria-hidden="true">Open Live</span>
+                      <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true"><path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" /></svg>
+                      <span class="style-card__play-label">Watch Live</span>
+                    </button>
+                    <button type="button" class="style-card__list" aria-label="Live show information" (click)="$event.stopPropagation()">
+                      <span class="style-card__tooltip" aria-hidden="true">Show Info</span>
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="1.5" /><circle cx="6" cy="12" r="1.5" /><circle cx="6" cy="18" r="1.5" /><path d="M11 6h8M11 12h8M11 18h8" /></svg>
+                    </button>
+                  </div>
+                  <div class="style-card__title-row"><h3>{{ liveShow.title }}</h3></div>
+                  <div class="style-card__meta"><div class="style-card__meta-primary"><span class="style-card__meta-badge style-card__meta-badge--live">{{ liveShow.status }}</span><span class="style-card__meta-dot" aria-hidden="true"></span><span class="style-card__meta-badge">{{ liveShow.scheduleLabel }}</span></div></div>
+                </div>
+              </article>
+            }
+          </div>
+        </div>
+        @if (!liveEdges().atEnd) {
+          <button type="button" class="style-carousel__arrow style-carousel__arrow--next" aria-label="Scroll Live right" (click)="scroll(1, 'live')"><svg class="style-carousel__chevron" viewBox="0 0 24 48" aria-hidden="true"><path d="M2 2 22 24 2 46" /></svg></button>
+        }
+      </div>
+    </section>
+  }
+
+  @if (carouselShows().length > 0 && !liveOnly()) {
     <section class="style-row style-row--shows" aria-labelledby="shows-title">
       <div class="style-carousel" #showsCarousel [class.style-carousel--at-start]="showsEdges().atStart" [class.style-carousel--at-end]="showsEdges().atEnd">
         <h2 id="shows-title" class="style-row__title">Shows</h2>

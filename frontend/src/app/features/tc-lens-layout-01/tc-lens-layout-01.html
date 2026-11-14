@@ -1,7 +1,7 @@
 <main class="tc-lens-layout" [class.tc-lens-layout--exiting]="exiting()" aria-label="TC Lens Layout 01">
   <header class="tc-lens-frame tc-lens-layout__account" data-region="account">
     <strong>TC Nexus</strong>
-    <span>{{ visitor.getEmail() || (visitor.isRegistered() ? 'Signed in to Nexus' : 'Sign in to Nexus, then sign in inside the TradeCheetah pane.') }}</span>
+    <span>{{ liveLabel() || visitor.getEmail() || (visitor.isRegistered() ? 'Signed in to Nexus' : 'Sign in to Nexus, then sign in inside the TradeCheetah pane.') }}</span>
     @if (visitor.isRegistered()) { <button type="button" (click)="logout()">Sign out</button> }
     @else { <button type="button" (click)="openLogin()">Sign in to Nexus</button> }
     <button type="button" class="tc-lens-workspace-exit" (click)="exitWorkspace()" aria-label="Exit TC Lens workspace and continue the lesson">

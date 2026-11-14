@@ -12,10 +12,11 @@ import { RowScrollDirective, ScrollEdges } from '../catalog/row-scroll.directive
 import { trailerEmbedUrl } from './trailer-embed-url';
 import { nextFeaturedIndex } from './featured-pagination';
 import { environment } from '../../../environments/environment';
+import { LiveShow } from '../../core/live-shows';
 
 const EMPTY_EDGES: ScrollEdges = { atStart: true, atEnd: true };
-type CarouselKind = 'shows' | 'trading' | 'platform';
-type LandingMode = 'home' | 'trading' | 'platform' | 'shows';
+type CarouselKind = 'shows' | 'live' | 'trading' | 'platform';
+type LandingMode = 'home' | 'trading' | 'platform' | 'shows' | 'live';
 const PAGE_EXIT_DURATION = 280;
 const STYLE2_SCROLL_STORAGE_KEY = 'tcnexus-style2-trading-scroll';
 const STYLE2_FEATURED_KIND_STORAGE_KEY = 'tcnexus-style2-featured-kind';
@@ -54,6 +55,8 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   private readonly platformCarousel = viewChild<ElementRef<HTMLElement>>('platformCarousel');
   private readonly showsTrack = viewChild<ElementRef<HTMLElement>>('showsTrack');
   private readonly showsCarousel = viewChild<ElementRef<HTMLElement>>('showsCarousel');
+  private readonly liveTrack = viewChild<ElementRef<HTMLElement>>('liveTrack');
+  private readonly liveCarousel = viewChild<ElementRef<HTMLElement>>('liveCarousel');
   private readonly overviewDialog = viewChild(CourseOverview);
   private resizeObserver?: ResizeObserver;
   private pageExitTimer?: ReturnType<typeof setTimeout>;
@@ -81,6 +84,10 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
     this.markCarouselScrolling('shows');
     this.measureEdges('shows');
   };
+  private readonly onLiveScroll = () => {
+    this.markCarouselScrolling('live');
+    this.measureEdges('live');
+  };
 
   protected readonly courses = signal<Course[]>([]);
   protected readonly shows = signal<Course[]>([]);
@@ -88,6 +95,13 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   protected readonly tradingOnly = computed(() => this.landingMode() === 'trading');
   protected readonly platformOnly = computed(() => this.landingMode() === 'platform');
   protected readonly showsOnly = computed(() => this.landingMode() === 'shows');
+  protected readonly liveOnly = computed(() => this.landingMode() === 'live');
+  protected readonly liveShows = signal<LiveShow[]>([]);
+  protected readonly liveShowCourses = signal<Course[]>([]);
+
+  protected openLiveShow(id: string): void {
+    void this.router.navigate(['/live', id]);
+  }
   protected readonly tradingCourseItems = computed(() => this.courses().filter(course =>
     !this.isPlatformCourse(course) && !course.course_types.includes('Shows')));
   protected readonly platformCourseItems = computed(() => this.courses().filter(course =>
@@ -100,7 +114,9 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
         ? this.platformCourseItems()
         : this.showsOnly()
           ? this.shows()
-          : [...this.tradingCourseItems(), ...this.platformCourseItems(), ...this.shows()];
+          : this.liveOnly()
+            ? this.liveShowCourses()
+            : [...this.tradingCourseItems(), ...this.platformCourseItems(), ...this.shows(), ...this.liveShowCourses()];
     return this.filterFeaturedItems(available);
   });
   protected readonly featuredIndex = signal(0);
@@ -177,13 +193,16 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   protected readonly edges = signal<ScrollEdges>(EMPTY_EDGES);
   protected readonly platformEdges = signal<ScrollEdges>(EMPTY_EDGES);
   protected readonly showsEdges = signal<ScrollEdges>(EMPTY_EDGES);
+  protected readonly liveEdges = signal<ScrollEdges>(EMPTY_EDGES);
   protected readonly pageIndex = {
     shows: signal(0),
+    live: signal(0),
     trading: signal(0),
     platform: signal(0),
   };
   protected readonly scrolling = {
     shows: signal(false),
+    live: signal(false),
     trading: signal(false),
     platform: signal(false),
   };
@@ -227,12 +246,12 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   protected descriptionNeedsMore(value: string): boolean {
-    return this.descriptionText(value).split(' ').filter(Boolean).length > 20;
+    return this.descriptionText(value).split(' ').filter(Boolean).length > 28;
   }
 
   protected shortDescription(value: string): string {
     const words = this.descriptionText(value).split(' ').filter(Boolean);
-    return words.length > 20 ? `${words.slice(0, 20).join(' ')}…` : words.join(' ');
+    return words.length > 28 ? `${words.slice(0, 28).join(' ')}…` : words.join(' ');
   }
 
   protected instructorLabel(detail: CourseDetail): string {
@@ -250,7 +269,9 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   protected pageCount(kind: CarouselKind): number {
-    const length = kind === 'shows'
+    const length = kind === 'live'
+      ? this.liveShows().length
+      : kind === 'shows'
       ? this.carouselShows().length
       : kind === 'platform'
         ? this.carouselPlatformCourses().length
@@ -298,11 +319,13 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
     this.descriptionExpanded.set(false);
     this.descriptionMotion.set('closed');
     this.selectedLanguage.set(this.courseLanguages(item)[0]?.slug ?? 'en');
-    this.coursesService.getCourse(item.id).subscribe({
-      next: detail => {
-        if (this.featured()?.id === detail.id) this.featuredDetail.set(detail);
-      }
-    });
+    if (!this.isLiveShow(item)) {
+      this.coursesService.getCourse(item.id).subscribe({
+        next: detail => {
+          if (this.featured()?.id === detail.id) this.featuredDetail.set(detail);
+        }
+      });
+    }
     window.setTimeout(() => {
       this.featuredSlideMotion.set(null);
     }, 540);
@@ -418,7 +441,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   constructor() {
     const requestedLandingMode = this.landingModeFilter() ?? this.route.snapshot.data['landingMode'];
     this.landingMode.set(
-      requestedLandingMode === 'trading' || requestedLandingMode === 'platform' || requestedLandingMode === 'shows'
+      requestedLandingMode === 'trading' || requestedLandingMode === 'platform' || requestedLandingMode === 'shows' || requestedLandingMode === 'live'
         ? requestedLandingMode
         : 'home'
     );
@@ -432,8 +455,21 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
     forkJoin({
       courses: this.coursesService.getCourses(),
       shows: this.coursesService.getShows().pipe(catchError(() => of([] as Course[]))),
+      liveShows: this.coursesService.getLiveShows().pipe(catchError(() => of([] as Course[]))),
     }).subscribe({
-      next: ({ courses, shows }) => {
+      next: ({ courses, shows, liveShows }) => {
+        this.liveShowCourses.set(liveShows);
+        this.liveShows.set(liveShows.map(show => ({
+          id: String(show.id),
+          title: show.title,
+          status: 'LIVE SOON',
+          scheduleLabel: 'Live show',
+          description: show.excerpt || '',
+          host: 'TC Nexus',
+          guests: [],
+          thumbnailUrl: show.thumbnail || show.image || '/shows/the-primer-BG-ratio-8by3.jpg',
+          embedUrl: '/live-stream-layout',
+        })));
         const showItems = environment.production ? shows.slice(0, 12) : shows;
         this.shows.set(showItems);
         const allCourseCandidates = courses.filter(course => !course.course_types.includes('Shows'));
@@ -445,7 +481,9 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
             ? courses.filter(course => this.isPlatformCourse(course))
             : this.showsOnly()
               ? [...showCandidates]
-              : [...allCourseCandidates, ...showCandidates];
+              : this.liveOnly()
+                ? [...liveShows]
+                : [...allCourseCandidates, ...showCandidates, ...liveShows];
         const featuredItems = this.filterFeaturedItems(available);
         const queryFeaturedId = this.readQueryNumber('style2Featured');
         // A return transition or an explicit query parameter may pin the
@@ -459,10 +497,14 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
             ? courses.filter(course => this.isPlatformCourse(course))
             : this.showsOnly()
               ? showCandidates
+              : this.liveOnly()
+                ? liveShows
               : previousKind === 'show'
                 ? allCourseCandidates
                 : previousKind === 'course'
                   ? showCandidates
+                  : previousKind === 'live'
+                    ? [...allCourseCandidates, ...showCandidates]
                   : available);
         const featured = savedFeatured
           ?? alternatingCandidates[Math.floor(Math.random() * alternatingCandidates.length)]
@@ -471,7 +513,10 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
         this.featured.set(featured);
         const initialFeaturedIndex = featuredItems.findIndex(item => item.id === featured?.id);
         this.featuredIndex.set(Math.max(0, initialFeaturedIndex));
-        this.writeSessionValue(STYLE2_FEATURED_KIND_STORAGE_KEY, featured && showCandidates.some(show => show.id === featured.id) ? 'show' : 'course');
+        this.writeSessionValue(
+          STYLE2_FEATURED_KIND_STORAGE_KEY,
+          featured && this.isLiveShow(featured) ? 'live' : featured && showCandidates.some(show => show.id === featured.id) ? 'show' : 'course',
+        );
         this.selectedLanguage.set(this.courseLanguages(featured)[0]?.slug ?? 'en');
         this.courses.set(this.showsOnly() ? [] : environment.production ? courses.slice(0, 12) : courses);
         if (this.pendingReturn) {
@@ -483,7 +528,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
             this.startReturnAnimation(this.pendingReturn!.courseId);
           }, { injector: this.injector });
         }
-        if (featured && featured.id > 0) {
+        if (featured && featured.id > 0 && !this.isLiveShow(featured)) {
           this.coursesService.getCourse(featured.id).subscribe({
             next: detail => {
               if (this.featured()?.id === detail.id) this.featuredDetail.set(detail);
@@ -497,7 +542,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   ngOnChanges(changes: SimpleChanges): void {
     if (!changes['landingModeFilter']) return;
     const requested = this.landingModeFilter();
-    if (requested !== 'trading' && requested !== 'platform' && requested !== 'shows' && requested !== 'home') return;
+    if (requested !== 'trading' && requested !== 'platform' && requested !== 'shows' && requested !== 'live' && requested !== 'home') return;
     if (requested === this.landingMode()) return;
     this.landingMode.set(requested);
     this.syncFeaturedForLandingMode();
@@ -510,12 +555,14 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
         ? this.platformCourseItems()
         : this.showsOnly()
           ? this.shows()
-          : [...this.tradingCourseItems(), ...this.platformCourseItems(), ...this.shows()];
+          : this.liveOnly()
+            ? this.liveShowCourses()
+            : [...this.tradingCourseItems(), ...this.platformCourseItems(), ...this.shows(), ...this.liveShowCourses()];
     const featured = this.filterFeaturedItems(available)[0] ?? null;
     this.featured.set(featured);
     this.featuredIndex.set(0);
     this.featuredDetail.set(null);
-    if (featured) {
+    if (featured && !this.isLiveShow(featured)) {
       this.coursesService.getCourse(featured.id).subscribe(detail => {
         if (this.featured()?.id === detail.id) this.featuredDetail.set(detail);
       });
@@ -526,22 +573,28 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
     const track = this.track()?.nativeElement;
     const platformTrack = this.platformTrack()?.nativeElement;
     const showsTrack = this.showsTrack()?.nativeElement;
-    if (!track && !platformTrack && !showsTrack) return;
+    const liveTrack = this.liveTrack()?.nativeElement;
+    if (!track && !platformTrack && !showsTrack && !liveTrack) return;
     track?.addEventListener('scroll', this.onScroll, { passive: true });
     platformTrack?.addEventListener('scroll', this.onPlatformScroll, { passive: true });
     showsTrack?.addEventListener('scroll', this.onShowsScroll, { passive: true });
+    liveTrack?.addEventListener('scroll', this.onLiveScroll, { passive: true });
     this.resizeObserver = new ResizeObserver(() => {
       this.measureEdges('trading');
       this.measureEdges('platform');
       this.measureEdges('shows');
+      this.measureEdges('live');
     });
     if (track) this.resizeObserver.observe(track);
     if (platformTrack) this.resizeObserver.observe(platformTrack);
     if (showsTrack) this.resizeObserver.observe(showsTrack);
+    if (liveTrack) this.resizeObserver.observe(liveTrack);
     this.updateArtworkHeight('shows');
+    this.updateArtworkHeight('live');
     this.updateArtworkHeight('trading');
     this.updateArtworkHeight('platform');
     this.measureEdges('shows');
+    this.measureEdges('live');
     this.measureEdges();
     this.measureEdges('platform');
   }
@@ -550,9 +603,11 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
     const track = this.track()?.nativeElement;
     const platformTrack = this.platformTrack()?.nativeElement;
     const showsTrack = this.showsTrack()?.nativeElement;
+    const liveTrack = this.liveTrack()?.nativeElement;
     track?.removeEventListener('scroll', this.onScroll);
     platformTrack?.removeEventListener('scroll', this.onPlatformScroll);
     showsTrack?.removeEventListener('scroll', this.onShowsScroll);
+    liveTrack?.removeEventListener('scroll', this.onLiveScroll);
     this.resizeObserver?.disconnect();
     if (this.pageExitTimer !== undefined) {
       clearTimeout(this.pageExitTimer);
@@ -604,11 +659,11 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private carouselTrack(kind: CarouselKind): HTMLElement | undefined {
-    return (kind === 'shows' ? this.showsTrack() : kind === 'platform' ? this.platformTrack() : this.track())?.nativeElement;
+    return (kind === 'live' ? this.liveTrack() : kind === 'shows' ? this.showsTrack() : kind === 'platform' ? this.platformTrack() : this.track())?.nativeElement;
   }
 
   protected onCarouselEdgesChange(kind: CarouselKind, edges: ScrollEdges): void {
-    (kind === 'shows' ? this.showsEdges : kind === 'platform' ? this.platformEdges : this.edges).set(edges);
+    (kind === 'live' ? this.liveEdges : kind === 'shows' ? this.showsEdges : kind === 'platform' ? this.platformEdges : this.edges).set(edges);
     this.updateNavigationOverlay(kind);
     this.updateArtworkHeight(kind);
     if (this.carouselTrack(kind)?.scrollLeft && !edges.atStart) {
@@ -629,7 +684,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private balanceCarouselPartials(kind: CarouselKind): void {
-    const carousel = (kind === 'shows' ? this.showsCarousel() : kind === 'platform' ? this.platformCarousel() : this.carousel())?.nativeElement;
+    const carousel = (kind === 'live' ? this.liveCarousel() : kind === 'shows' ? this.showsCarousel() : kind === 'platform' ? this.platformCarousel() : this.carousel())?.nativeElement;
     const track = this.carouselTrack(kind);
     if (!carousel || !track) return;
 
@@ -682,12 +737,18 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   protected courseTypeLabel(course: Course): string {
+    if (this.isLiveShow(course)) return 'Live Show';
     if (this.isShow(course)) return 'Show';
     return this.isPlatformCourse(course) ? 'Platform Course' : 'Trading Course';
   }
 
   protected featuredLabel(course: Course): string {
+    if (this.isLiveShow(course)) return 'Live Show';
     return this.isShow(course) ? 'Shows' : 'Featured Course';
+  }
+
+  protected isLiveShow(course: Course): boolean {
+    return this.liveShowCourses().some(show => show.id === course.id);
   }
 
   protected isShow(course: Course): boolean {
@@ -695,6 +756,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   protected playActionLabel(course: Course): string {
+    if (this.isLiveShow(course)) return 'Watch Live';
     return this.isShow(course) ? 'Play Show' : 'Play Course';
   }
 
@@ -776,6 +838,10 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   protected startWatching(course: Course): void {
+    if (this.isLiveShow(course)) {
+      void this.router.navigate(['/live', String(course.id)]);
+      return;
+    }
     this.router.navigate(['/courses', course.id]);
   }
 
@@ -806,6 +872,10 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   protected openCourse(course: Course, event?: Event): void {
+    if (this.isLiveShow(course)) {
+      void this.router.navigate(['/live', String(course.id)]);
+      return;
+    }
     const source = event?.currentTarget instanceof HTMLElement
       ? event.currentTarget.closest('.style-card') as HTMLElement | null
       : null;
@@ -1238,7 +1308,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
 
   protected onCardEnter(event: MouseEvent, kind: CarouselKind = 'trading'): void {
     const card = event.currentTarget as HTMLElement;
-    const viewport = (kind === 'shows' ? this.showsTrack() : kind === 'platform' ? this.platformTrack() : this.track())?.nativeElement.getBoundingClientRect();
+    const viewport = (kind === 'live' ? this.liveTrack() : kind === 'shows' ? this.showsTrack() : kind === 'platform' ? this.platformTrack() : this.track())?.nativeElement.getBoundingClientRect();
     if (!viewport) return;
     card.classList.toggle('style-card--edge-left', card.getBoundingClientRect().left <= viewport.left + 64);
     card.classList.toggle('style-card--edge-right', card.getBoundingClientRect().right >= viewport.right - 64);
@@ -1251,14 +1321,14 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private measureEdges(kind: CarouselKind = 'trading'): void {
-    const track = (kind === 'shows' ? this.showsTrack() : kind === 'platform' ? this.platformTrack() : this.track())?.nativeElement;
+    const track = (kind === 'live' ? this.liveTrack() : kind === 'shows' ? this.showsTrack() : kind === 'platform' ? this.platformTrack() : this.track())?.nativeElement;
     if (!track) return;
     const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
     const edges = {
       atStart: track.scrollLeft <= 1,
       atEnd: maxScroll <= 1 || track.scrollLeft >= maxScroll - 1,
     };
-    (kind === 'shows' ? this.showsEdges : kind === 'platform' ? this.platformEdges : this.edges).set(edges);
+    (kind === 'live' ? this.liveEdges : kind === 'shows' ? this.showsEdges : kind === 'platform' ? this.platformEdges : this.edges).set(edges);
     const cards = Array.from(track.querySelectorAll<HTMLElement>('.style-card'));
     const cardsPerPage = this.cardsPerPage(track);
     const pageTargets = this.carouselPageTargets(track, cards, cardsPerPage);
@@ -1272,8 +1342,8 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private updateNavigationOverlay(kind: CarouselKind): void {
-    const carousel = (kind === 'shows' ? this.showsCarousel() : kind === 'platform' ? this.platformCarousel() : this.carousel())?.nativeElement;
-    const track = (kind === 'shows' ? this.showsTrack() : kind === 'platform' ? this.platformTrack() : this.track())?.nativeElement;
+    const carousel = (kind === 'live' ? this.liveCarousel() : kind === 'shows' ? this.showsCarousel() : kind === 'platform' ? this.platformCarousel() : this.carousel())?.nativeElement;
+    const track = (kind === 'live' ? this.liveTrack() : kind === 'shows' ? this.showsTrack() : kind === 'platform' ? this.platformTrack() : this.track())?.nativeElement;
     if (!carousel || !track) return;
 
     const trackRect = track.getBoundingClientRect();
@@ -1303,8 +1373,8 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private updateArtworkHeight(kind: CarouselKind = 'trading'): void {
-    const carousel = (kind === 'shows' ? this.showsCarousel() : kind === 'platform' ? this.platformCarousel() : this.carousel())?.nativeElement;
-    const track = (kind === 'shows' ? this.showsTrack() : kind === 'platform' ? this.platformTrack() : this.track())?.nativeElement;
+    const carousel = (kind === 'live' ? this.liveCarousel() : kind === 'shows' ? this.showsCarousel() : kind === 'platform' ? this.platformCarousel() : this.carousel())?.nativeElement;
+    const track = (kind === 'live' ? this.liveTrack() : kind === 'shows' ? this.showsTrack() : kind === 'platform' ? this.platformTrack() : this.track())?.nativeElement;
     const art = track?.querySelector<HTMLElement>('.style-card__art');
     if (carousel && art) {
       // Use layout height rather than the transformed visual bounds. The

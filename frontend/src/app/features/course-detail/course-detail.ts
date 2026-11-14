@@ -339,7 +339,7 @@ export class CourseDetailPage implements OnDestroy {
     if (!course) {
       return '';
     }
-    return this.activeVariant(course)?.image ?? course.image ?? course.thumbnail ?? `https://picsum.photos/seed/tcnexus-${course.id}/1600/900`;
+    return this.activeVariant(course)?.image ?? course.image ?? course.landing_background ?? course.thumbnail ?? `https://picsum.photos/seed/tcnexus-${course.id}/1600/900`;
   }
 
   private readonly overviewDialog = viewChild(CourseOverview);

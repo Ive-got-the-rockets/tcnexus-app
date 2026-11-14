@@ -14,7 +14,7 @@
   --line: rgba(242, 240, 232, 0.14);
   --carousel-headroom: 150px;
   --hero-content-top: 150px;
-  background: #0C0D0D;
+  background: #090a09;
 }
 
 @media (min-width: 600px) {
@@ -38,6 +38,7 @@
 .style-page {
   position: relative;
   min-height: calc(100vh - 140px);
+  background: #090a09;
   /* Keep the featured heading approximately 300px from the window top on a
      standard 1200px-tall display, while scaling naturally with the viewport. */
   padding: var(--hero-content-top) var(--page-gutter) 0;
@@ -160,7 +161,7 @@
       ),
       linear-gradient(
       to top,
-      rgb(12 13 13 / 100%) 0%,
+      #090a09 0%,
       rgb(12 13 13 / 78%) 18%,
       rgb(12 13 13 / 0%) 68%
     );
@@ -1041,7 +1042,28 @@
 .style-row--shows {
   z-index: 10;
   pointer-events: none;
+  /* Match the established 100px visual gap used by the rows below. The Live
+     track carries its expanded-card headroom, so Shows needs this overlap to
+     begin at the same rhythm rather than leaving a larger blank band. */
+  margin-top: -260px;
 }
+
+.style-row--live .style-card--live { border-color: rgba(199, 255, 92, .24); }
+.style-row--live .style-card--live:hover { border-color: var(--signal); }
+.style-card__meta-badge--live { color: var(--signal); }
+.style-row--live {
+  z-index: 12;
+  pointer-events: none;
+  padding-bottom: 60px;
+}
+.style-row--live .style-carousel__track {
+  padding-bottom: calc(var(--carousel-headroom) + 170px);
+  margin-bottom: -170px;
+  pointer-events: none;
+}
+.style-row--live .style-card { pointer-events: auto; }
+.style-page--live-only > .style-row--trading,
+.style-page--live-only > .style-row--platform { display: none; }
 
 .style-row--shows .style-carousel {
   z-index: 11;
@@ -2655,7 +2677,7 @@
 @media (min-width: 1200px) and (max-width: 1599px) {
   :host {
     --cards-per-page: 5;
-    background: #0C0D0D;
+    background: #090a09;
   }
 
   .style-carousel {
@@ -2668,7 +2690,7 @@
 
   :host {
     --hero-content-top: 150px;
-    background: #0C0D0D;
+    background: #090a09;
   }
 }
 

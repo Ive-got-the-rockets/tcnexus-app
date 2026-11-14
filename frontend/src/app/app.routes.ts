@@ -12,12 +12,17 @@ import { TcLensLayout01Page } from './features/tc-lens-layout-01/tc-lens-layout-
 import { TradeCheetahCallbackPage } from './features/auth/tradecheetah-callback';
 
 import { LayoutStyle4Page } from './features/layout-style-4/layout-style-4';
+import { LivePlayerPage } from './features/live-player/live-player';
+import { LiveStreamLayoutPage } from './features/live-stream-layout/live-stream-layout';
 
 export const routes: Routes = [
   { path: '', component: ResponsiveLandingPage },
   { path: 'trading-courses', component: ResponsiveLandingPage, data: { landingMode: 'trading' } },
   { path: 'platform-courses', component: ResponsiveLandingPage, data: { landingMode: 'platform' } },
   { path: 'shows', component: ResponsiveLandingPage, data: { landingMode: 'shows' } },
+  { path: 'live', component: ResponsiveLandingPage, data: { landingMode: 'live' } },
+  { path: 'live/:id', component: LivePlayerPage },
+  { path: 'live-stream-layout', component: LiveStreamLayoutPage, data: { hideChrome: true } },
   { path: 'layout-style-4', component: LayoutStyle4Page },
   { path: 'layout-style-3', component: LayoutStyle3Page },
   { path: 'mobile-layout-1', component: MobileLayout1Page, data: { hideChrome: true } },

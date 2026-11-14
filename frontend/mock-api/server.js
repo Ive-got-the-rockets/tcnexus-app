@@ -12,6 +12,11 @@ const PORT = process.env.MOCK_API_PORT || 8787;
 // for now so the player wiring can be exercised end-to-end.
 const TEST_VIDEO_URL = 'https://vimeo.com/1068479580';
 const PRIMER_VIDEO_URL = '/video/the-primer-episode-1.m4v';
+const STAGING_API_BASE = process.env.TCNEXUS_STAGING_API_BASE || 'https://api.tcnexus.tv/wp-json/tcnexus/v1';
+// The front-end preview still uses this small local API for the existing
+// course/show fixtures. Live Shows are authored in the local WordPress admin,
+// so keep that catalogue live instead of copying it into a fixture.
+const LOCAL_WORDPRESS_API_BASE = process.env.TCNEXUS_LOCAL_API_BASE || 'http://localhost:8082/wp-json/tcnexus/v1';
 
 const courses = [
   {
@@ -691,6 +696,7 @@ for (const course of [...courses, ...shows]) {
     lesson_count: course.level_lesson_counts?.[slug] ?? course.lesson_count,
     thumbnail: course.thumbnail,
     image: course.image,
+    landing_background: course.landing_background ?? null,
     overview_link: course.overview_link ?? null,
     trailer_link: course.trailer_link ?? null,
     instructor: { id: 1, name: 'Coco Blanco', photo: 'https://i.pravatar.cc/120?u=coco-blanco' },
@@ -933,7 +939,7 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  setTimeout(() => {
+  setTimeout(async () => {
     if (req.url === '/wp-json/tcnexus/v1/courses' && req.method === 'GET') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(courses));
@@ -941,13 +947,53 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.url === '/wp-json/tcnexus/v1/shows' && req.method === 'GET') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(shows));
+      try {
+        const response = await fetch(`${LOCAL_WORDPRESS_API_BASE}/shows`);
+        if (!response.ok) throw new Error(`local WordPress returned ${response.status}`);
+        const catalogItems = await response.json();
+        if (!Array.isArray(catalogItems)) throw new Error('local WordPress response was not an array');
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(catalogItems));
+      } catch (error) {
+        console.warn(`tcnexus mock API could not load local Shows: ${error.message}`);
+        res.writeHead(502, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Shows could not be loaded from local WordPress.' }));
+      }
+      return;
+    }
+
+    if (req.url === '/wp-json/tcnexus/v1/live-shows' && req.method === 'GET') {
+      try {
+        const response = await fetch(`${LOCAL_WORDPRESS_API_BASE}/live-shows`);
+        if (!response.ok) throw new Error(`local WordPress returned ${response.status}`);
+        const liveShows = await response.json();
+        if (!Array.isArray(liveShows)) throw new Error('local WordPress response was not an array');
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(liveShows));
+      } catch (error) {
+        console.warn(`tcnexus mock API could not load local Live Shows: ${error.message}`);
+        res.writeHead(502, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Live Shows could not be loaded from local WordPress.' }));
+      }
       return;
     }
 
     const detailMatch = req.method === 'GET' && req.url.match(/^\/wp-json\/tcnexus\/v1\/courses\/(\d+)$/);
     if (detailMatch) {
+      try {
+        const response = await fetch(`${LOCAL_WORDPRESS_API_BASE}/courses/${detailMatch[1]}`);
+        if (response.ok) {
+          const detail = await response.json();
+          if (detail.content_type === 'tc_show') {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(detail));
+            return;
+          }
+        }
+      } catch (error) {
+        console.warn(`tcnexus mock API could not load local course detail: ${error.message}`);
+      }
+
       const course = [...courses, ...shows].find((c) => c.id === Number(detailMatch[1]));
       if (!course) {
         res.writeHead(404);
@@ -1006,4 +1052,33 @@ const server = http.createServer(async (req, res) => {
   }, 400);
 });
 
-server.listen(PORT, () => console.log(`tcnexus mock API listening on http://localhost:${PORT}`));
+async function syncStagingCatalog() {
+  if (process.env.TCNEXUS_SYNC_STAGING === '0') {
+    console.log('tcnexus mock API using bundled fallback catalog');
+    return;
+  }
+
+  try {
+    const [coursesResponse, showsResponse] = await Promise.all([
+      fetch(`${STAGING_API_BASE}/courses`),
+      fetch(`${STAGING_API_BASE}/shows`),
+    ]);
+    if (!coursesResponse.ok || !showsResponse.ok) throw new Error(`staging API returned ${coursesResponse.status}/${showsResponse.status}`);
+
+    const [stagingCourses, stagingShows] = await Promise.all([
+      coursesResponse.json(),
+      showsResponse.json(),
+    ]);
+    if (!Array.isArray(stagingCourses) || !Array.isArray(stagingShows)) throw new Error('staging catalog response was not an array');
+
+    courses.splice(0, courses.length, ...stagingCourses);
+    shows.splice(0, shows.length, ...stagingShows);
+    console.log(`tcnexus mock API synced ${courses.length} courses and ${shows.length} shows from staging`);
+  } catch (error) {
+    console.warn(`tcnexus mock API could not sync staging catalog; using fallback data: ${error.message}`);
+  }
+}
+
+syncStagingCatalog().finally(() => {
+  server.listen(PORT, () => console.log(`tcnexus mock API listening on http://localhost:${PORT}`));
+});

@@ -1,0 +1,22 @@
+<main class="live-stream-layout" [class.live-stream-layout--chat-only]="showChat && !showTcApp" [class.live-stream-layout--tc-lens]="showTcApp && !showTcLensAi" [class.live-stream-layout--tc-lens-chat]="showTcApp && showChat && !showTcLensAi" [class.live-stream-layout--lens-ai]="showTcLensAi" aria-label="Live stream workspace">
+  <header class="live-stream-account"><strong>TC Nexus</strong><span class="live-stream-account__title">LIVE: {{ title }} <em>LIVE SOON</em></span><nav class="live-stream-layout__views" aria-label="Live workspace panels"><button type="button" (click)="toggleChat()" [attr.aria-pressed]="showChat">{{ showChat ? 'Hide Chat' : 'Show Chat' }}</button><button type="button" (click)="toggleTcApp()" [attr.aria-pressed]="showTcApp">{{ showTcApp ? 'Hide TC-LENS' : 'Show TC-LENS' }}</button><button type="button" (click)="toggleTcLensAi()" [attr.aria-pressed]="showTcLensAi">{{ showTcLensAi ? 'Hide TC-LENS + AI' : 'Show TC-LENS + AI' }}</button></nav><button class="live-stream-account__login" type="button" (click)="login()">{{ visitor.isRegistered() ? 'Account' : 'Login' }}</button><button class="live-stream-account__exit" type="button" (click)="exit()">Exit</button></header>
+  <section class="live-stream-video" aria-label="Live video player">
+    <iframe #playerFrame title="{{ title }} live video" [src]="playerUrl" allow="autoplay; fullscreen; picture-in-picture; encrypted-media; web-share" allowfullscreen></iframe>
+    <div class="live-stream-controls" aria-label="Video controls">
+      <button class="live-stream-control" type="button" (click)="togglePlay()" [attr.aria-label]="playing ? 'Pause stream' : 'Play stream'">
+        @if (!playing) { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" /></svg> }
+        @if (playing) { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z" /></svg> }
+      </button>
+      <button class="live-stream-control" type="button" (click)="toggleMute()" [attr.aria-label]="muted ? 'Unmute stream' : 'Mute stream'">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" />@if (!muted) { <path d="M16 9.5a4 4 0 0 1 0 5M18.5 7a7.5 7.5 0 0 1 0 10" /> } @if (muted) { <path d="m16 10 5 5m0-5-5 5" /> }</svg>
+      </button>
+      <span class="live-stream-controls__live"><i></i>LIVE</span>
+      <button class="live-stream-control live-stream-controls__fullscreen" type="button" (click)="fullscreen()" aria-label="Fullscreen">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H4v4M16 4h4v4M20 16v4h-4M4 16v4h4" /></svg>
+      </button>
+    </div>
+  </section>
+  @if (showChat && !showTcLensAi) { <aside class="live-stream-chat" aria-label="Live chat"><iframe title="Live chat" [src]="chatUrl" frameborder="0"></iframe></aside> }
+  @if (showTcApp) { <aside class="live-stream-app" aria-label="TradeCheetah TC Lens application"><iframe id="tc-live-workspace-app" title="TradeCheetah TC Lens app" [src]="tcAppUrl" allow="clipboard-read; clipboard-write" referrerpolicy="strict-origin-when-cross-origin"></iframe></aside> }
+  @if (showTcLensAi) { <section class="live-stream-bottom" [class.live-stream-bottom--with-chat]="showChat" [class.live-stream-bottom--ai-only]="!showChat" aria-label="Live engagement and AI assistant">@if (showChat) { <aside class="live-stream-chat" aria-label="Live chat"><iframe title="Live chat" [src]="chatUrl" frameborder="0"></iframe></aside> }<section class="live-stream-llm" aria-label="TC Nexus AI assistant"><div class="live-stream-llm__tutor"><script type="application/json" id="tc-live-lesson">{"title":"Live stream","description":"Ask questions about this live session.","video_id":66}</script><tc-tutor app-frame="#tc-live-workspace-app" lesson="#tc-live-lesson" video-id="66" chapter="live"></tc-tutor></div></section></section> }
+</main>

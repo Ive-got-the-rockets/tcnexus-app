@@ -1,4 +1,4 @@
 export const environment = {
   production: false,
-  apiBaseUrl: 'http://localhost:8082/wp-json/tcnexus/v1'
+  apiBaseUrl: 'http://127.0.0.1:8787/wp-json/tcnexus/v1'
 };

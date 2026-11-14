@@ -25,6 +25,10 @@ export class CoursesService {
     );
   }
 
+  getLiveShows(): Observable<Course[]> {
+    return this.withTransientRetry(this.http.get<Course[]>(`${this.baseUrl}/live-shows`));
+  }
+
   getCourse(id: number): Observable<CourseDetail> {
     return this.withTransientRetry(this.http.get<CourseDetail>(`${this.baseUrl}/courses/${id}`)).pipe(
       map(detail => {

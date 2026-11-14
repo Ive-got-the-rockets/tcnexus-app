@@ -270,3 +270,27 @@
   color: var(--paper-dim);
   text-align: right;
 }
+.site-header__calendar { position: relative; }
+.calendar-picker { position: absolute; top: calc(100% + .8rem); right: 0; width: 250px; padding: .75rem; background: var(--ink-raised); border: 1px solid var(--rule); box-shadow: 0 18px 40px #0009; z-index: 20; }
+.calendar-picker__title { margin-bottom: .6rem; color: var(--paper-dim); font: 10px var(--font-mono); letter-spacing: .1em; text-transform: uppercase; }
+.calendar-picker__grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: .35rem; }
+.calendar-picker__option { display: grid; place-items: center; gap: .2rem; padding: .35rem .1rem; border: 1px solid transparent; background: transparent; color: var(--paper-dim); cursor: pointer; }
+.calendar-picker__option svg { width: 25px; height: 25px; }
+.calendar-picker__option span { font: 9px var(--font-mono); }
+.calendar-picker__option:hover, .calendar-picker__option--selected { border-color: var(--signal); color: var(--signal); }
+
+.calendar-modal-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 3rem; background: rgba(3, 8, 11, .80); }
+.calendar-modal { width: min(1120px, 96vw); max-height: min(780px, 88vh); overflow: auto; padding: 1.4rem; color: #d7dfdd; background: #11191e; border: 1px solid #2a4650; border-radius: 18px; box-shadow: 0 28px 90px rgba(0,0,0,.58); font-family: var(--font-body); }
+.calendar-modal__toolbar { display: flex; align-items: center; gap: .75rem; padding-bottom: 1rem; border-bottom: 1px solid #2a4650; }
+.calendar-modal__toolbar strong { margin-inline: auto; color: #a8b7b5; font: 500 1rem var(--font-mono); letter-spacing: .12em; }
+.calendar-modal__toggle { display: flex; border: 1px solid #356d6b; border-radius: 8px; overflow: hidden; }
+.calendar-modal__toggle button, .calendar-modal__nav, .calendar-modal__today, .calendar-modal__close { border: 0; background: transparent; color: #a8b7b5; cursor: pointer; font: 600 .75rem var(--font-ui); }
+.calendar-modal__toggle button { padding: .6rem .9rem; }.calendar-modal__toggle .is-active { color: #11191e; background: #52a9a0; }
+.calendar-modal__nav, .calendar-modal__today { min-width: 2.35rem; height: 2.35rem; border: 1px solid #356d6b; border-radius: 999px; }.calendar-modal__today { min-width: 4.8rem; font: 500 .65rem var(--font-mono); }.calendar-modal__close { margin-left: .25rem; font-size: 1.6rem; color: #718381; }
+.calendar-modal__month { display: grid; grid-template-columns: repeat(7, 1fr); border-left: 1px solid #2a4650; border-top: 1px solid #2a4650; margin-top: 1rem; }
+.calendar-modal__weekday, .calendar-modal__day { min-width: 0; border-right: 1px solid #2a4650; border-bottom: 1px solid #2a4650; }
+.calendar-modal__weekday { padding: .65rem .5rem; color: #718381; text-align: center; font: 600 .65rem var(--font-mono); letter-spacing: .08em; }
+.calendar-modal__day { min-height: 7rem; padding: .6rem; color: #d7dfdd; }.calendar-modal__day > span { font: italic 1.2rem var(--font-ui); }.calendar-modal__day.is-muted { color: #526168; }.calendar-modal__day.is-today { background: rgba(230,163,199,.18); color: #e6a3c7; box-shadow: inset 0 0 0 1px #e6a3c7; }
+.calendar-modal__event { margin-top: .55rem; padding: .35rem .45rem; overflow: hidden; color: #d7dfdd; background: #356d6b; border-radius: 5px; white-space: nowrap; text-overflow: ellipsis; font: .68rem var(--font-mono); }.calendar-modal__event b { color: #a8b7b5; font-weight: 500; }
+.calendar-modal__week { margin-top: 1rem; border: 1px solid #2a4650; }.calendar-modal__week-head, .calendar-modal__week-row { display: grid; grid-template-columns: 76px repeat(7, 1fr); }.calendar-modal__week-head > *, .calendar-modal__week-row > * { min-height: 2.4rem; padding: .5rem; border-right: 1px solid #2a4650; border-bottom: 1px solid #2a4650; font: .68rem var(--font-mono); }.calendar-modal__week-head { color: #a8b7b5; background: #172329; text-align: center; }.calendar-modal__week-head .is-today { color: #e6a3c7; }.calendar-modal__week-row > span { color: #718381; text-align: right; }.calendar-modal__week-row > div { min-height: 2.9rem; }
+@media (max-width: 700px) { .calendar-modal-backdrop { padding: .75rem; }.calendar-modal { padding: .8rem; }.calendar-modal__toolbar { flex-wrap: wrap; }.calendar-modal__toolbar strong { order: 3; width: 100%; text-align: center; }.calendar-modal__day { min-height: 5rem; padding: .35rem; }.calendar-modal__event { font-size: .56rem; } }

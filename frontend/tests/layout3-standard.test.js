@@ -63,6 +63,7 @@ assert.match(layout3Styles, /\.style-featured__person-row[\s\S]*font-weight: 600
 assert.match(layout3Styles, /\.style-featured__character span[\s\S]*font-weight: 600;/);
 assert.match(layout3Styles, /\.style-featured__person-row[\s\S]*color: #F2F0E8;/);
 assert.match(layout3Styles, /\.style-course-modal__person-row[\s\S]*color: #F2F0E8;/);
+assert.match(layout3Styles, /\.style-row--shows\s*\{[\s\S]*?margin-top: -260px;/);
 assert.match(layout3Styles, /\.lesson-list--revealed \.lesson-row[\s\S]*transition: transform 0\.1s ease-in, background-color 0\.1s ease-in;/);
 assert.match(layout3Styles, /\.style-course-modal__lesson[\s\S]*transition: transform 0\.1s ease/);
 assert.match(layout3Styles, /\.style-course-modal__lesson:hover[\s\S]*transform: scale\(/);

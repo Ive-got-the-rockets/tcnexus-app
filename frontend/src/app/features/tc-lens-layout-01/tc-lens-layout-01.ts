@@ -1,4 +1,4 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, OnDestroy, afterNextRender, inject, signal, viewChild } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, OnDestroy, afterNextRender, computed, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { DomSanitizer } from '@angular/platform-browser';
 import type { Subscription } from 'rxjs';
@@ -34,6 +34,10 @@ export class TcLensLayout01Page implements OnDestroy {
   private readonly contextHost = viewChild<ElementRef<HTMLElement>>('contextHost');
   protected readonly lessonId = this.positiveId('lessonId', 66);
   private readonly courseId = this.positiveId('courseId', 55);
+  protected readonly liveLabel = computed(() => {
+    const title = this.route.snapshot.queryParamMap.get('liveTitle');
+    return title ? `LIVE: ${title}` : '';
+  });
   protected readonly tcLensUrl = this.sanitizer.bypassSecurityTrustResourceUrl(buildTcLensUrl(TC_APP_ORIGIN, this.lessonId));
   protected readonly videoUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.embeddedVideoUrl());
   protected readonly chapter = signal('intro');
