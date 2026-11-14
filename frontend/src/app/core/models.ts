@@ -58,6 +58,8 @@ export interface Course {
   live_start_date?: string | null;
   live_start_time?: string | null;
   live_status?: string | null;
+  hosts?: Person[];
+  guests?: Person[];
   course_types: string[];
   lesson_count: number;
   overview_link: string | null;

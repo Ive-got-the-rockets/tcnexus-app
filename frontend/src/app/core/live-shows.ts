@@ -5,6 +5,7 @@ export interface LiveShow {
   scheduleLabel: string;
   description: string;
   host: string;
+  hostPhotoUrl?: string | null;
   guests: string[];
   thumbnailUrl: string;
   embedUrl: string;

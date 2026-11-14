@@ -41,6 +41,12 @@ class TCNexus_REST_API {
 			'permission_callback' => '__return_true',
 		) );
 
+		register_rest_route( self::NAMESPACE_, '/live-shows', array(
+			'methods'             => 'GET',
+			'callback'            => array( __CLASS__, 'get_live_shows' ),
+			'permission_callback' => '__return_true',
+		) );
+
 		register_rest_route( self::NAMESPACE_, '/session', array(
 			'methods'             => 'GET',
 			'callback'            => array( __CLASS__, 'session_status' ),
@@ -90,6 +96,10 @@ class TCNexus_REST_API {
 		return self::get_catalog_items( 'tc_show' );
 	}
 
+	public static function get_live_shows() {
+		return self::get_catalog_items( 'tc_live_show' );
+	}
+
 	private static function get_catalog_items( $post_type ) {
 		$items = get_posts( array(
 			'post_type'      => $post_type,
@@ -118,6 +128,12 @@ class TCNexus_REST_API {
 				'image'         => $primary['image'] ?: ( $image_id ? wp_get_attachment_image_url( $image_id, 'full' ) : null ),
 				'landing_background' => $primary['landing_background'] ?: ( $landing_background_id ? wp_get_attachment_image_url( $landing_background_id, 'full' ) : null ),
 				'title_image'   => $primary['title_image'] ?: ( $title_image_id ? wp_get_attachment_image_url( $title_image_id, 'full' ) : null ),
+				'vimeo_live_event_id' => get_post_meta( $course->ID, TCNexus_Live_Show_Builder::LIVE_STREAM_META_KEY, true ),
+				'live_start_date' => get_post_meta( $course->ID, '_tcnexus_live_start_date', true ) ?: null,
+				'live_start_time' => get_post_meta( $course->ID, '_tcnexus_live_start_time', true ) ?: null,
+				'live_status' => get_post_meta( $course->ID, '_tcnexus_live_status', true ) ?: 'LIVE SOON',
+				'hosts'         => self::format_people( get_post_meta( $course->ID, '_tcnexus_live_hosts', true ) ),
+				'guests'        => self::format_people( get_post_meta( $course->ID, '_tcnexus_live_guests', true ) ),
 				'course_types'  => $primary['course_types'],
 				'lesson_count'  => count( $primary['lessons'] ),
 				'overview_link' => $primary['overview_link'] ?: null,
@@ -159,6 +175,7 @@ class TCNexus_REST_API {
 
 		$response = array(
 			'id'            => $course->ID,
+			'content_type'  => $course->post_type,
 			'title'         => $primary['title'] ?: $course->post_title,
 			'content'       => $primary['content'] ? apply_filters( 'the_content', $primary['content'] ) : apply_filters( 'the_content', $course->post_content ),
 			'thumbnail'     => $primary['thumbnail'] ?: get_the_post_thumbnail_url( $course->ID, 'large' ),
