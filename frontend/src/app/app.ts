@@ -34,6 +34,7 @@ export class App implements OnInit, OnDestroy {
   protected readonly calendarView = signal<'month' | 'week'>('month');
   protected readonly calendarAnchor = signal(new Date());
   protected readonly liveShows = signal<Course[]>([]);
+  protected readonly selectedCalendarEvent = signal<Course | null>(null);
   protected readonly selectedCalendarIcon = signal('play');
   protected readonly calendarIcons: readonly CalendarIconOption[] = [
     { key: 'play', label: 'Calendar play', svg: '<rect x="4" y="5.5" width="16" height="14" rx="2"/><path d="M8 3.5v4M16 3.5v4M4 9.5h16M10 13l4 2.5-4 2.5z"/>' },
@@ -93,7 +94,10 @@ export class App implements OnInit, OnDestroy {
   }
 
   protected toggleCalendarMenu(): void { this.calendarMenuOpen.update(open => !open); }
-  protected closeCalendarMenu(): void { this.calendarMenuOpen.set(false); }
+  protected closeCalendarMenu(): void { this.calendarMenuOpen.set(false); this.selectedCalendarEvent.set(null); }
+  protected openCalendarEvent(show: Course): void { this.selectedCalendarEvent.set(show); }
+  protected closeCalendarEvent(): void { this.selectedCalendarEvent.set(null); }
+  protected calendarEventHost(show: Course): string { return show.hosts?.[0]?.name || 'TC Nexus'; }
   protected setCalendarView(view: 'month' | 'week'): void { this.calendarView.set(view); }
   protected shiftCalendar(offset: number): void { this.calendarAnchor.update(date => new Date(date.getFullYear(), date.getMonth() + offset, 1)); }
   protected goToToday(): void { this.calendarAnchor.set(new Date()); }

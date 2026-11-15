@@ -75,11 +75,21 @@
         <div class="calendar-modal__month" role="grid">
           @for (label of ['SUN','MON','TUE','WED','THU','FRI','SAT']; track label) { <div class="calendar-modal__weekday">{{ label }}</div> }
           @for (day of calendarDays(); track day.toISOString()) {
-            <div class="calendar-modal__day" [class.is-muted]="day.getMonth() !== calendarAnchor().getMonth()" [class.is-today]="isToday(day)"><span>{{ day.getDate() }}</span>@for (show of eventsForDay(day); track show.id) { <div class="calendar-modal__event"><b>{{ eventTime(show) }}</b> {{ show.title }}</div> }</div>
+            <div class="calendar-modal__day" [class.is-muted]="day.getMonth() !== calendarAnchor().getMonth()" [class.is-today]="isToday(day)"><span>{{ day.getDate() }}</span>@for (show of eventsForDay(day); track show.id) { <button type="button" class="calendar-modal__event" (click)="openCalendarEvent(show); $event.stopPropagation()"><b>{{ eventTime(show) }}</b> {{ show.title }}</button> }</div>
           }
         </div>
       } @else {
-        <div class="calendar-modal__week"><div class="calendar-modal__week-head"><span></span>@for (day of weekDays(); track day.toISOString()) { <span [class.is-today]="isToday(day)"><b>{{ weekDayLabel(day) }}</b><i>{{ weekDateLabel(day) }}</i></span> }</div><div class="calendar-modal__week-allday"><span>ALL DAY</span><div></div></div>@for (hour of [8,9,10,11,12,13,14,15,16,17,18,19]; track hour) { <div class="calendar-modal__week-row"><span>{{ hour > 12 ? hour - 12 : hour }} {{ hour >= 12 ? 'PM' : 'AM' }}</span>@for (day of weekDays(); track day.toISOString()) { <div>@for (show of eventsForDay(day); track show.id) { <div class="calendar-modal__event">{{ eventTime(show) }} {{ show.title }}</div> }</div> }</div> }</div>
+        <div class="calendar-modal__week"><div class="calendar-modal__week-head"><span></span>@for (day of weekDays(); track day.toISOString()) { <span [class.is-today]="isToday(day)"><b>{{ weekDayLabel(day) }}</b><i>{{ weekDateLabel(day) }}</i></span> }</div><div class="calendar-modal__week-allday"><span>ALL DAY</span><div></div></div>@for (hour of [8,9,10,11,12,13,14,15,16,17,18,19]; track hour) { <div class="calendar-modal__week-row"><span>{{ hour > 12 ? hour - 12 : hour }} {{ hour >= 12 ? 'PM' : 'AM' }}</span>@for (day of weekDays(); track day.toISOString()) { <div>@for (show of eventsForDay(day); track show.id) { <button type="button" class="calendar-modal__event" (click)="openCalendarEvent(show); $event.stopPropagation()">{{ eventTime(show) }} {{ show.title }}</button> }</div> }</div> }</div>
+      }
+      @if (selectedCalendarEvent(); as event) {
+        <aside class="calendar-event-popup" role="dialog" aria-label="Live show details">
+          <button type="button" class="calendar-event-popup__close" (click)="closeCalendarEvent()" aria-label="Close event details">×</button>
+          <p class="calendar-event-popup__eyebrow">LIVE SHOW</p>
+          <h2>{{ event.title }}</h2>
+          <p class="calendar-event-popup__host"><span>HOST</span>{{ calendarEventHost(event) }}</p>
+          <p class="calendar-event-popup__description">{{ event.excerpt || 'Join us live on TC Nexus.' }}</p>
+          <p class="calendar-event-popup__time">{{ eventTime(event) }}</p>
+        </aside>
       }
     </section>
   </div>
