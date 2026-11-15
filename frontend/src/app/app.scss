@@ -280,7 +280,7 @@
 .calendar-picker__option:hover, .calendar-picker__option--selected { border-color: var(--signal); color: var(--signal); }
 
 .calendar-modal-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 3rem; background: rgba(3, 8, 11, .80); }
-.calendar-modal { width: min(1120px, 96vw); max-height: min(780px, 88vh); overflow: auto; padding: 1.4rem; color: #d7dfdd; background: #11191e; border: 1px solid #2a4650; border-radius: 18px; box-shadow: 0 28px 90px rgba(0,0,0,.58); font-family: var(--font-body); }
+.calendar-modal { width: min(1120px, 96vw); max-height: min(780px, 88vh); overflow: auto; padding: 1.4rem; color: #d7dfdd; background: #11191e; border: 1px solid #2a4650; border-radius: 18px; box-shadow: 0 28px 90px rgba(0,0,0,.58); font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 .calendar-modal__toolbar { display: flex; align-items: center; gap: .75rem; padding-bottom: 1rem; border-bottom: 0; }
 .calendar-modal__toolbar strong { margin-inline: auto; color: #a8b7b5; font: 500 1rem var(--font-mono); letter-spacing: .12em; }
 .calendar-modal__toggle { display: flex; border: 1px solid #356d6b; border-radius: 8px; overflow: hidden; }
@@ -298,4 +298,5 @@
 .calendar-modal__week-head { background: transparent; }
 .calendar-modal__week-head { background: transparent !important; }
 .calendar-modal__week-head > span:not(:first-child) { display: flex; flex-direction: column; align-items: center; gap: .12rem; }.calendar-modal__week-head b { color: #d7dfdd; font: 700 .62rem var(--font-mono); letter-spacing: .08em; }.calendar-modal__week-head i { color: #718381; font: italic 1.45rem var(--font-ui); }.calendar-modal__week-head .is-today b, .calendar-modal__week-head .is-today i { color: #e6a3c7; }.calendar-modal__week-head .is-today i { font-weight: 700; }
+.calendar-modal__week-head b { font-family: 'DM Sans', sans-serif; }.calendar-modal__week-head i { font-family: 'DM Sans', sans-serif; }
 @media (max-width: 700px) { .calendar-modal-backdrop { padding: .75rem; }.calendar-modal { padding: .8rem; }.calendar-modal__toolbar { flex-wrap: wrap; }.calendar-modal__toolbar strong { order: 3; width: 100%; text-align: center; }.calendar-modal__day { min-height: 5rem; padding: .35rem; }.calendar-modal__event { font-size: .56rem; } }
