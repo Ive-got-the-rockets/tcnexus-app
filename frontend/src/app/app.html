@@ -86,9 +86,12 @@
           <button type="button" class="calendar-event-popup__close" (click)="closeCalendarEvent()" aria-label="Close event details">×</button>
           <p class="calendar-event-popup__eyebrow">LIVE SHOW</p>
           <h2>{{ event.title }}</h2>
-          <p class="calendar-event-popup__host"><span>HOST</span>{{ calendarEventHost(event) }}</p>
+          <div class="calendar-event-popup__schedule"><span>{{ eventTime(event) }}</span><span>{{ calendarEventDuration(event) }}</span></div>
+          <div class="calendar-event-popup__people">
+            <div class="calendar-event-popup__person-group"><span class="calendar-event-popup__label">HOST</span><div class="calendar-event-popup__person"><img [src]="calendarEventHostPhoto(event)" [alt]="calendarEventHost(event)" /><span>{{ calendarEventHost(event) }}</span></div></div>
+            @if (event.guests?.length) { <div class="calendar-event-popup__person-group"><span class="calendar-event-popup__label">GUESTS</span>@for (guest of event.guests; track guest.id) { <div class="calendar-event-popup__person"><img [src]="guest.photo || profilePlaceholderUrl(guest.id)" [alt]="guest.name" /><span>{{ guest.name }}</span></div> } </div> }
+          </div>
           <p class="calendar-event-popup__description">{{ event.excerpt || 'Join us live on TC Nexus.' }}</p>
-          <p class="calendar-event-popup__time">{{ eventTime(event) }}</p>
         </aside>
       }
     </section>

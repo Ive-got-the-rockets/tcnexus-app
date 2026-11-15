@@ -7,6 +7,7 @@ import { AccessService } from './core/access.service';
 import { VisitorService } from './core/visitor.service';
 import { CoursesService } from './core/courses.service';
 import { Course } from './core/models';
+import { profilePlaceholderUrl } from './core/profile-placeholders';
 import { RegisterModal } from './features/auth/register-modal';
 
 interface CalendarIconOption { key: string; label: string; svg: string; }
@@ -98,6 +99,9 @@ export class App implements OnInit, OnDestroy {
   protected openCalendarEvent(show: Course): void { this.selectedCalendarEvent.set(show); }
   protected closeCalendarEvent(): void { this.selectedCalendarEvent.set(null); }
   protected calendarEventHost(show: Course): string { return show.hosts?.[0]?.name || 'TC Nexus'; }
+  protected calendarEventHostPhoto(show: Course): string { return show.hosts?.[0]?.photo || profilePlaceholderUrl(show.hosts?.[0]?.id || 0); }
+  protected calendarEventDuration(show: Course): string { const minutes = Number(show.live_duration || 0); if (!minutes) return 'Approximate duration unavailable'; return minutes >= 60 ? `${Math.floor(minutes / 60)}${minutes % 60 ? ` hr ${minutes % 60} min` : ' hr'}` : `${minutes} min`; }
+  protected profilePlaceholderUrl(id: number): string { return profilePlaceholderUrl(id); }
   protected setCalendarView(view: 'month' | 'week'): void { this.calendarView.set(view); }
   protected shiftCalendar(offset: number): void { this.calendarAnchor.update(date => new Date(date.getFullYear(), date.getMonth() + offset, 1)); }
   protected goToToday(): void { this.calendarAnchor.set(new Date()); }
