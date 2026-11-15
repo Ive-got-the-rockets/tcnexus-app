@@ -7,6 +7,30 @@
   // #tcnexus-builder wrapper of its own.
   var root = document.getElementById('tcnexus-builder');
 
+  document.querySelectorAll('[data-date-picker], [data-time-picker]').forEach(function (picker) {
+    var dateMode = picker.hasAttribute('data-date-picker');
+    var trigger = picker.querySelector(dateMode ? '[data-date-trigger]' : '[data-time-trigger]');
+    var popup = picker.querySelector(dateMode ? '[data-date-popup]' : '[data-time-popup]');
+    var input = picker.querySelector('input[type="hidden"]');
+    if (!trigger || !popup || !input) return;
+    var close = function () { popup.hidden = true; picker.classList.remove('is-open'); };
+    trigger.addEventListener('click', function (event) {
+      event.preventDefault();
+      document.querySelectorAll('.tcn-schedule-picker.is-open').forEach(function (other) { if (other !== picker) other.classList.remove('is-open'); });
+      if (!dateMode) { popup.hidden = !popup.hidden; picker.classList.toggle('is-open', !popup.hidden); return; }
+      var value = input.value ? new Date(input.value + 'T00:00:00') : new Date();
+      var year = value.getFullYear(), month = value.getMonth();
+      var days = new Date(year, month + 1, 0).getDate(), first = new Date(year, month, 1).getDay();
+      var html = '<div class="tcn-date-popup__head"><button type="button" data-prev>‹</button><strong>' + value.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) + '</strong><button type="button" data-next>›</button></div><div class="tcn-date-popup__week">SUN MON TUE WED THU FRI SAT</div><div class="tcn-date-popup__grid">';
+      for (var blank = 0; blank < first; blank++) html += '<span></span>';
+      for (var day = 1; day <= days; day++) { var key = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0'); html += '<button type="button" data-date-value="' + key + '" class="' + (input.value === key ? 'is-selected' : '') + '">' + day + '</button>'; }
+      popup.innerHTML = html + '</div>'; popup.hidden = false; picker.classList.add('is-open');
+      popup.querySelectorAll('[data-date-value]').forEach(function (button) { button.addEventListener('click', function () { input.value = button.dataset.dateValue; trigger.firstChild.textContent = new Date(button.dataset.dateValue + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }); close(); }); });
+    });
+    popup.addEventListener('click', function (event) { var button = event.target.closest('[data-time-value]'); if (!button) return; input.value = button.dataset.timeValue; trigger.firstChild.textContent = button.textContent; popup.querySelectorAll('.is-selected').forEach(function (item) { item.classList.remove('is-selected'); }); button.classList.add('is-selected'); close(); });
+  });
+  document.addEventListener('click', function (event) { if (!event.target.closest('[data-date-picker], [data-time-picker]')) document.querySelectorAll('.tcn-schedule-picker.is-open').forEach(function (picker) { picker.classList.remove('is-open'); var popup = picker.querySelector('[data-date-popup], [data-time-popup]'); if (popup) popup.hidden = true; }); });
+
   document.querySelectorAll('.tcn-save-confirmation').forEach(function (notice) {
     window.setTimeout(function () {
       notice.classList.add('is-dismissing');
@@ -427,6 +451,17 @@
       courseForm.addEventListener('input', markCourseFormDirty);
       courseForm.addEventListener('change', markCourseFormDirty);
        courseForm.addEventListener('submit', function (event) {
+         // A regular Show has one title. Keep its hidden season value in
+         // lockstep at the last possible point, including paste/autofill
+         // interactions that may bypass the normal input listener.
+         if (isShowBuilder && headerTitle) {
+           var activeShowTitle = root.querySelector('[data-level-title="' + currentLevel + '"]');
+           if (activeShowTitle) activeShowTitle.value = headerTitle.value;
+         }
+         if (saveCourseBtn.disabled) {
+           event.preventDefault();
+           return;
+         }
          if (!validateTimelineRows()) {
            event.preventDefault();
            return;
@@ -437,7 +472,20 @@
            return;
          }
          allowCourseNavigation = true;
+         saveCourseBtn.textContent = 'Saving…';
+         saveCourseBtn.classList.add('is-saving');
+         saveCourseBtn.setAttribute('aria-busy', 'true');
+         saveCourseBtn.disabled = true;
        });
+
+      window.addEventListener('pageshow', function (event) {
+        if (!event.persisted) return;
+        saveCourseBtn.disabled = false;
+        saveCourseBtn.classList.remove('is-saving');
+        saveCourseBtn.removeAttribute('aria-busy');
+        saveCourseBtn.textContent = courseFormDirty ? 'Pending Save' : (isShowBuilder ? 'Save Show' : 'Save Course');
+        allowCourseNavigation = false;
+      });
 
       if (saveCourseBtn && newCourseInput) {
         saveCourseBtn.addEventListener('click', function () {
@@ -1298,6 +1346,7 @@
       var eventRow = templateEvent.cloneNode(true);
       eventRow.hidden = false;
       eventRow.removeAttribute('data-tc-lens-event-template');
+      eventRow.setAttribute('data-tc-lens-event', '');
       eventRow.classList.remove('tcn-tc-lens-event--template');
       eventRow.querySelectorAll('[disabled]').forEach(function (control) {
         control.removeAttribute('disabled');
@@ -1311,6 +1360,8 @@
       }
       events.appendChild(eventRow);
       eventRow.querySelectorAll('.tcn-select').forEach(enhanceSelect);
+      wireTimelineType(eventRow);
+      wireTimelineDelete(eventRow);
       syncTimelinePayload(eventRow);
       refreshLessonPanelHeight(timeline);
       if (typeof markCourseFormDirty === 'function') markCourseFormDirty();
@@ -1327,8 +1378,40 @@
         panel.querySelectorAll('input, textarea, select').forEach(function (control) {
           if (!control.disabled || control.closest('[data-tc-lens-event-template]')) {
             control.setAttribute('aria-hidden', active ? 'false' : 'true');
+            // Read-only inputs still submit their saved values but are excluded
+            // from native constraint validation while their payload is inactive.
+            if (control.matches('input, textarea')) {
+              if (!active && !control.readOnly) {
+                control.dataset.tcLensPayloadReadonly = '1';
+                control.readOnly = true;
+              } else if (active && control.dataset.tcLensPayloadReadonly === '1') {
+                control.readOnly = false;
+                delete control.dataset.tcLensPayloadReadonly;
+              }
+            }
           }
         });
+      });
+    }
+
+    function wireTimelineType(row) {
+      var type = row.querySelector('select[name$="[messageType]"]');
+      if (!type || type.dataset.tcLensTypeWired) return;
+      type.dataset.tcLensTypeWired = '1';
+      type.addEventListener('change', function () {
+        syncTimelinePayload(row);
+        refreshLessonPanelHeight(type.closest('[data-tc-lens-timeline]'));
+      });
+    }
+
+    function wireTimelineDelete(row) {
+      var button = row.querySelector('.tcn-tc-lens-event__remove');
+      if (!button || button.dataset.tcLensDeleteWired) return;
+      button.dataset.tcLensDeleteWired = '1';
+      button.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        deleteTimelineEvent(row, button);
       });
     }
 
@@ -1362,10 +1445,29 @@
           var startSeconds = parseTimelineTime(start.value);
           var endSeconds = String(end.value || '').trim() === '' ? null : parseTimelineTime(end.value);
           var invalid = null === startSeconds ? 'Enter a valid start time as mm:ss.' : (null !== endSeconds && endSeconds < startSeconds ? 'End time must be after the start time.' : (String(end.value || '').trim() !== '' && null === endSeconds ? 'Enter a valid end time as mm:ss.' : ''));
+          var invalidControl = start;
+          var type = row.querySelector('[name$="[messageType]"]');
+          var question = row.querySelector('[name$="[llm][question]"]');
+          var context = row.querySelector('[name$="[llm][sceneContext]"]');
+          var ticker = row.querySelector('[name$="[trade][underlying]"]');
+          var assumptions = row.querySelector('[name$="[trade][assumptions]"]');
+          var strategy = row.querySelector('[name$="[trade][strategy]"]');
+          [question, ticker].forEach(function (field) { if (field) field.removeAttribute('aria-invalid'); });
+          if (!invalid && type && type.value === 'llm' && question && !question.value.trim() && !(context && context.value.trim())) {
+            invalid = 'Enter a prepared question or scene context before saving this LLM message.';
+            invalidControl = question;
+          }
+          if (!invalid && type && type.value === 'trade' && ticker && !ticker.value.trim() &&
+              !(assumptions && assumptions.value.trim()) && !(strategy && strategy.value.trim()) &&
+              !row.querySelector('.tcn-trade-leg, .tcn-stock-leg')) {
+            invalid = 'Enter trade data before saving this message.';
+            invalidControl = ticker;
+          }
           start.removeAttribute('aria-invalid');
           end.removeAttribute('aria-invalid');
           if (invalid) {
-            if (!firstInvalid) firstInvalid = start;
+            if (!firstInvalid) firstInvalid = invalidControl;
+            invalidControl.setAttribute('aria-invalid', 'true');
             if (null === startSeconds) start.setAttribute('aria-invalid', 'true');
             if (String(end.value || '').trim() !== '' && (null === endSeconds || endSeconds < startSeconds)) end.setAttribute('aria-invalid', 'true');
             timelineError = invalid;
@@ -1380,24 +1482,64 @@
       return true;
     }
 
+    function removeTimelineRow(row, timeline) {
+      row.remove();
+      if (timeline) refreshLessonPanelHeight(timeline);
+    }
+
+    function deleteTimelineEvent(row, button) {
+      var timeline = row.closest('[data-tc-lens-timeline]');
+      var eventIdInput = row.querySelector('input[type="hidden"][name$="[id]"]');
+      var eventId = eventIdInput ? eventIdInput.value : '';
+      var lessonId = timeline ? Number(timeline.dataset.lessonId || 0) : 0;
+
+      // Unsaved timeline rows have no database record yet; removing one is
+      // purely local and must not require saving the course.
+      if (!lessonId || !eventId || eventId.indexOf('event-new-') === 0) {
+        removeTimelineRow(row, timeline);
+        return;
+      }
+
+      var form = lessonsList.closest('form');
+      var nonceField = form ? form.querySelector('[name="tcnexus_course_builder_nonce"]') : null;
+      var error = timeline ? timeline.querySelector('.tcn-tc-lens-timeline__error') : null;
+      if (!window.tcnexusMedia || !window.tcnexusMedia.ajaxUrl || !nonceField) {
+        if (error) error.textContent = 'Unable to delete this message. Refresh the editor and try again.';
+        return;
+      }
+
+      button.disabled = true;
+      if (error) error.textContent = '';
+      fetch(window.tcnexusMedia.ajaxUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+        body: new URLSearchParams({
+          action: 'tcnexus_delete_tc_lens_event',
+          nonce: nonceField.value,
+          lesson_id: String(lessonId),
+          event_id: eventId
+        }).toString()
+      }).then(function (response) {
+        return response.json().then(function (result) {
+          if (!response.ok || !result.success) {
+            var message = result && result.data && result.data.message;
+            throw new Error(message || 'Unable to delete this message. Try again.');
+          }
+          return result;
+        });
+      }).then(function () {
+        removeTimelineRow(row, timeline);
+      }).catch(function (requestError) {
+        button.disabled = false;
+        if (error) error.textContent = requestError.message || 'Unable to delete this message. Try again.';
+      });
+    }
+
     lessonsList.addEventListener('click', function (event) {
       var timelineAdd = event.target.closest('.tcn-tc-lens-add');
       if (timelineAdd) {
         var timeline = timelineAdd.closest('[data-tc-lens-timeline]');
         if (timeline) addTimelineEvent(timeline);
-        return;
-      }
-      var timelineRemove = event.target.closest('.tcn-tc-lens-event__remove');
-      if (timelineRemove) {
-        event.preventDefault();
-        event.stopPropagation();
-        var timelineEvent = timelineRemove.closest('[data-tc-lens-event]');
-        var timeline = timelineRemove.closest('[data-tc-lens-timeline]');
-        if (timelineEvent) {
-          timelineEvent.remove();
-          if (timeline) refreshLessonPanelHeight(timeline);
-          if (typeof markCourseFormDirty === 'function') markCourseFormDirty();
-        }
         return;
       }
       if (event.target.classList.contains('tcn-lesson-guest__remove')) {
@@ -1485,14 +1627,11 @@
       if (input.value !== formatted) input.value = formatted;
     });
 
-    lessonsList.addEventListener('change', function (event) {
-      var type = event.target.closest('select[name$="[messageType]"]');
-      if (!type) return;
-      syncTimelinePayload(type.closest('[data-tc-lens-event]'));
-      refreshLessonPanelHeight(type.closest('[data-tc-lens-timeline]'));
+    lessonsList.querySelectorAll('[data-tc-lens-event]:not([data-tc-lens-event-template])').forEach(function (row) {
+      wireTimelineType(row);
+      wireTimelineDelete(row);
+      syncTimelinePayload(row);
     });
-
-    lessonsList.querySelectorAll('[data-tc-lens-event]:not([data-tc-lens-event-template])').forEach(syncTimelinePayload);
 
     lessonsList.addEventListener('change', function (event) {
       if (event.target.matches('.tcn-lesson-guest-picker')) {

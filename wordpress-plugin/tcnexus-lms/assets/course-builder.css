@@ -59,6 +59,21 @@
   background-color: #fff;
 }
 
+.tcn-schedule-picker { position: relative; }
+.tcn-schedule-picker__trigger { width: 100%; display: flex; align-items: center; justify-content: space-between; text-align: left; cursor: pointer; }
+.tcn-schedule-picker__trigger > span { color: #7a756c; font-size: 17px; line-height: 1; }
+.tcn-schedule-picker__popup { position: absolute; z-index: 20; top: calc(100% + 5px); left: 0; min-width: 100%; padding: 14px; background: #fff; border: 1px solid rgba(179,151,0,.25); border-radius: 6px; box-shadow: 0 10px 30px rgba(26,26,26,.12); }
+.tcn-date-popup__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-bottom: 11px; border-bottom: 1px solid #f3f1e9; color: #1c1c1e; font: 600 13px "DM Sans", sans-serif; }
+.tcn-date-popup__head button { border: 0; background: transparent; color: #a85d1b; font-size: 22px; cursor: pointer; }
+.tcn-date-popup__week { display: grid; grid-template-columns: repeat(7, 1fr); padding: 10px 0 5px; color: #999; text-align: center; font: 700 9px "DM Sans", sans-serif; letter-spacing: .04em; }
+.tcn-date-popup__grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.tcn-date-popup__grid button { aspect-ratio: 1; border: 0; border-top: 1px solid #f3f1e9; background: transparent; color: #333; font: 12px "DM Sans", sans-serif; cursor: pointer; }
+.tcn-date-popup__grid button:hover, .tcn-date-popup__grid button.is-selected { background: #b39700; color: #fff; border-radius: 50%; font-weight: 700; }
+.tcn-schedule-picker__popup--time { max-height: 220px; padding: 8px; overflow-y: auto; }
+.tcn-schedule-picker__popup--time button { display: block; width: 100%; padding: 9px 12px; border: 0; border-bottom: 1px solid #e4e0d2; background: transparent; color: #1c1c1e; text-align: left; font: 500 13px ui-monospace, "SF Mono", Menlo, monospace; cursor: pointer; }
+.tcn-schedule-picker__popup--time button:last-child { border-bottom: 0; }
+.tcn-schedule-picker__popup--time button:hover, .tcn-schedule-picker__popup--time button.is-selected { background: #fffbed; color: #a85d1b; font-weight: 700; }
+
 #tcnexus-builder {
   font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
   color: var(--tcn-text);
