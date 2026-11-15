@@ -28,6 +28,20 @@
   --tcn-shadow-3: 0 12px 28px rgba(32, 31, 28, 0.1);
 }
 
+.tcn-live-schedule-field .tcn-kingsley-picker {
+  min-height: 42px;
+  border: 1px solid #e4e0d2;
+  border-radius: 6px;
+  background: rgba(255,255,255,.7);
+  color: #1c1c1e;
+  font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.tcn-live-schedule-field input[type="date"] { padding: 9px 12px; }
+.tcn-live-schedule-field select { padding: 9px 12px; }
+
 #tcnexus-builder {
   font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
   color: var(--tcn-text);
@@ -152,6 +166,35 @@
 
 .tcn-header__save-btn.is-stuck {
   box-shadow: var(--tcn-shadow-2);
+}
+
+.tcn-header__save-btn.is-saving {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: wait;
+}
+
+.tcn-header__save-btn.is-saving::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: tcn-save-spin .7s linear infinite;
+}
+
+@keyframes tcn-save-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tcn-header__save-btn.is-saving::before {
+    animation: none;
+  }
 }
 
 .tcn-save-confirmation {
@@ -597,6 +640,107 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(220px, 1fr));
   gap: 20px;
+}
+
+/* Course media is grouped by responsive target so desktop and mobile artwork
+   can be configured side by side without changing the existing picker itself. */
+.tcn-media-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+/* Apply the responsive media layout to the existing course-builder Media tab
+   while older saved courses continue using the same field names. */
+.tcn-panel[id$="-media"] {
+  display: none;
+}
+
+.tcn-panel[id$="-media"].is-active {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.tcn-panel[id$="-media"] > .tcn-field {
+  min-width: 0;
+  margin: 0;
+  padding: 20px;
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-sm);
+  background: var(--tcn-bg);
+}
+
+.tcn-panel[id$="-media"] > .tcn-field:nth-child(3),
+.tcn-panel[id$="-media"] > .tcn-field:nth-child(4) {
+  grid-column: 1 / -1;
+}
+
+.tcn-panel[id$="-media"] > .tcn-field:nth-child(3) .tcn-media-grid,
+.tcn-panel[id$="-media"] > .tcn-field:nth-child(4) .tcn-media-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 20px;
+}
+
+.tcn-panel[id$="-media"] > .tcn-field .tcn-media-grid {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+@media (max-width: 900px) {
+  .tcn-panel[id$="-media"].is-active {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tcn-media-section {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-sm);
+  background: var(--tcn-bg);
+}
+
+.tcn-media-section__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--tcn-border);
+}
+
+.tcn-media-section__head h3 {
+  margin: 0;
+  color: var(--tcn-text);
+  font-size: 18px;
+}
+
+.tcn-media-section__head p {
+  margin: 4px 0 0;
+  color: var(--tcn-text-dim);
+  font-size: 12px;
+}
+
+.tcn-media-section__head > span {
+  padding: 4px 8px;
+  border: 1px solid #b8dfd1;
+  border-radius: var(--tcn-radius-pill);
+  background: #edf9f4;
+  color: var(--tcn-primary-text);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+.tcn-media-section .tcn-media-picker {
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .tcn-media-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Course and Show Builder media cards share the compact 8:3 landing-image
@@ -1337,6 +1481,42 @@
 }
 
 /* Structured TC Lens trade editor; same cream/mint palette as lesson fields. */
+.tcn-trade-asset {
+  position: relative; display: grid; grid-template-columns: 1fr 1fr;
+  width: 270px; max-width: 100%; padding: 4px; margin-bottom: 20px;
+  border: 1px solid var(--tcn-border); border-radius: 24px; background: var(--tcn-bg-sunken);
+}
+.tcn-trade-asset::before {
+  content: ''; position: absolute; left: 4px; top: 4px; bottom: 4px; width: calc(50% - 4px);
+  border-radius: 20px; background: var(--tcn-primary); transition: transform 180ms ease;
+}
+.tcn-trade-asset[data-asset="crypto"]::before { transform: translateX(100%); }
+.tcn-trade-editor .tcn-trade-asset label { position: relative; display: grid; place-items: center; min-height: 34px; gap: 0; border-radius: 20px; color: var(--tcn-text-dim); cursor: pointer; }
+.tcn-trade-asset label:has(input:checked) span { color: var(--tcn-primary-text); font-weight: 600; }
+.tcn-trade-asset label:has(input[value="crypto"]:not(:checked)) span { opacity: .6; }
+.tcn-trade-asset label:has(input:focus-visible) { outline: 2px solid var(--tcn-primary-strong); outline-offset: 2px; }
+.tcn-trade-editor .tcn-trade-asset input { position: absolute; width: 1px; height: 1px; opacity: 0; margin: 0; padding: 0; }
+.tcn-trade-ticker-actions { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 12px; }
+.tcn-trade-ticker-actions .tcn-trade-editor__ticker { flex: 1 1 270px; }
+.tcn-trade-leg-add { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 39px; padding: 0 16px; border: 1px solid #b6d8ca; border-radius: 20px; background: #e5f2eb; color: var(--tcn-primary-text); font: inherit; font-size: 12px; cursor: pointer; }
+.tcn-trade-leg-add > span { font-size: 20px; line-height: 1; transform: translateY(-1px); }
+.tcn-trade-leg-add:hover { background: var(--tcn-primary); }
+.tcn-trade-leg-add:disabled, .tcn-trade-editor__add:disabled { background: #eeece5; border-color: #e3e0d7; color: #aaa69b; cursor: not-allowed; }
+.tcn-trade-leg-add:focus-visible { outline: 2px solid var(--tcn-primary-strong); outline-offset: 2px; }
+[data-stock-legs], [data-trade-legs] { padding-right: 50px; }
+.tcn-stock-leg { position: relative; display: grid; grid-template-columns: 88px minmax(0, 1fr) minmax(0, 1fr) 30px; align-items: end; gap: 12px; margin-top: 10px; padding: 15px 12px 15px 16px; border: 1px solid var(--tcn-border); border-left: 3px solid #b6a0bd; border-bottom: 1px solid #b6a0bd; border-radius: 8px; background: #faf9f4; }
+.tcn-stock-leg__label { align-self: center; font-size: 12px; color: #786080; }
+.tcn-stock-leg label { font-size: 11px; }
+.tcn-stock-leg input { height: 37px; }
+.tcn-trade-leg { position: relative; }
+.tcn-trade-editor .tcn-trade-row-add { position: absolute; right: -50px; top: 50%; transform: translateY(-50%); margin: 0; }
+.tcn-trade-editor [hidden] { display: none; }
+@container (max-width: 520px) {
+  .tcn-stock-leg { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 30px; }
+  .tcn-stock-leg__label { grid-column: 1 / -1; }
+}
+@media (prefers-reduced-motion: reduce) { .tcn-trade-asset::before { transition: none; } }
+
 .wp-core-ui .tcn-tc-lens-timeline select {
   appearance: none;
   -webkit-appearance: none;
@@ -1588,24 +1768,24 @@
 
 @container (max-width: 820px) {
   .tcn-trade-leg { grid-template-columns: repeat(3, minmax(0, 1fr)) 30px; }
-  .tcn-trade-leg__remove { grid-column: 4; grid-row: 1 / 3; align-self: center; margin-bottom: 0; }
+  .tcn-trade-leg .tcn-trade-leg__remove { grid-column: 4; grid-row: 1 / 3; align-self: center; margin-bottom: 0; }
 }
 
 @container (max-width: 520px) {
   .tcn-trade-leg { grid-template-columns: repeat(2, minmax(0, 1fr)) 30px; }
-  .tcn-trade-leg__remove { grid-column: 3; grid-row: 1 / 4; }
+  .tcn-trade-leg .tcn-trade-leg__remove { grid-column: 3; grid-row: 1 / 4; }
 }
 
 @media (max-width: 1100px) {
   .tcn-trade-leg { grid-template-columns: repeat(3, minmax(0, 1fr)) 30px; }
-  .tcn-trade-leg__remove { grid-column: 4; grid-row: 1 / 3; align-self: center; margin-bottom: 0; }
+  .tcn-trade-leg .tcn-trade-leg__remove { grid-column: 4; grid-row: 1 / 3; align-self: center; margin-bottom: 0; }
 }
 
 @media (max-width: 650px) {
   .tcn-trade-editor__ticker { max-width: none; }
   .tcn-trade-editor__underlying { grid-template-columns: repeat(3, minmax(0, 1fr)) 38px; gap: 8px; }
   .tcn-trade-leg { grid-template-columns: repeat(2, minmax(0, 1fr)) 30px; gap: 10px; padding: 12px; }
-  .tcn-trade-leg__remove { grid-column: 3; grid-row: 1 / 4; }
+  .tcn-trade-leg .tcn-trade-leg__remove { grid-column: 3; grid-row: 1 / 4; }
 }
 
 .tcn-lesson-person-picker {
@@ -2270,6 +2450,18 @@
   padding: 12px 46px 16px 0;
 }
 
+.tcn-course-card__people {
+  margin: 0 46px 12px 0;
+  color: var(--tcn-text-dim);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.tcn-course-card__people b {
+  color: var(--tcn-text);
+  font-weight: 600;
+}
+
 .tcn-course-card__badge {
   flex: 0 0 auto;
   padding: 5px 8px;
@@ -2522,6 +2714,51 @@
 .tcn-unsaved-modal .tcn-save-btn {
   min-height: 40px;
 }
+
+.tcn-profile-saved-actions {
+  align-items: stretch;
+  align-items: center !important;
+  flex-direction: column !important;
+  justify-content: center;
+  gap: 12px;
+}
+
+.tcn-profile-saved-actions a {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 220px !important;
+  max-width: 220px !important;
+  min-height: 42px;
+  padding: 8px 14px;
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-pill);
+  background: transparent !important;
+  color: var(--tcn-text);
+  text-align: center;
+  text-decoration: none;
+}
+
+.tcn-profile-saved-actions a:hover {
+  border-color: var(--tcn-primary-strong) !important;
+  background: var(--tcn-primary) !important;
+  background-color: var(--tcn-primary) !important;
+  color: var(--tcn-primary-text) !important;
+}
+
+.tcn-add-host-modal { position: relative; width: min(560px, calc(100vw - 40px)); max-height: calc(100vh - 48px); overflow-y: auto; scrollbar-width: none; padding: 22px 24px 20px; }
+.tcn-add-host-modal::-webkit-scrollbar { display: none; }
+body.tcn-host-modal-open { overflow: hidden; }
+.tcn-add-host-modal h2 { margin-top: 0; }
+.tcn-add-host-divider { margin: 16px 0; border: 0; border-top: 1px solid var(--tcn-border); }
+.tcn-add-host-modal input[type='text'] { border-radius: var(--tcn-radius-sm); }
+.tcn-host-bio-input { display: block; box-sizing: border-box; width: 100%; min-height: 132px; resize: vertical; border: 1px solid var(--tcn-border); border-radius: var(--tcn-radius-sm); background: var(--tcn-bg-sunken); color: var(--tcn-text); padding: 12px 14px; font: 400 14px/1.55 'Plus Jakarta Sans', -apple-system, sans-serif; box-shadow: none; }
+.tcn-host-bio-input:focus { outline: none; border-color: var(--tcn-primary-strong); background: var(--tcn-bg); box-shadow: 0 0 0 3px rgba(95, 199, 168, .16); }
+.tcn-host-bio-input::placeholder { color: var(--tcn-text-dim); }
+.tcn-add-host-modal__close, .tcn-modal__close { position: absolute; top: 12px; right: 14px; border: 0; background: transparent; color: var(--tcn-text-dim); font-size: 24px; cursor: pointer; }
+.tcn-add-host-modal form { padding: 0; }
+.tcn-add-host-modal input[type='text'] { width: 100%; min-height: 44px; }
+.tcn-add-host-submit:hover { background: var(--tcn-primary) !important; color: var(--tcn-primary-text) !important; }
 
 /* Independent Beginner / Intermediate / Advanced course versions */
 .tcn-course-language-tabs {
@@ -2821,3 +3058,8 @@
 }
 
 .tcn-organized-media-modal{position:fixed;inset:0;z-index:100000;background:rgba(12,13,13,.72);display:grid;place-items:center;padding:24px}.tcn-organized-media-modal__panel{width:min(980px,100%);max-height:90vh;overflow:auto;border-radius:16px;background:#fffdf9;padding:24px;box-shadow:0 24px 80px rgba(0,0,0,.35)}.tcn-organized-media-modal__close{float:right;border:0;border-radius:50%;background:#33373d;color:#fff;width:34px;height:34px;font-size:22px;cursor:pointer}.tcn-organized-media-modal__body{display:grid;grid-template-columns:210px 1fr;gap:24px}.tcn-organized-media-modal__body h2{margin:0 0 20px}.tcn-organized-media-modal__folders{display:flex;flex-direction:column;gap:5px}.tcn-organized-media-modal__folder{border:0;border-radius:8px;background:transparent;text-align:left;padding:10px;color:#1b2b3c;cursor:pointer}.tcn-organized-media-modal__folder.is-active,.tcn-organized-media-modal__folder:hover{background:#dff2ef;color:#087f7d;font-weight:600}.tcn-organized-media-modal__grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px}.tcn-organized-media-modal__item{border:1px solid #e1ded6;border-radius:9px;background:#fff;text-align:left;padding:0;overflow:hidden;cursor:pointer}.tcn-organized-media-modal__item:hover{border-color:#087f7d}.tcn-organized-media-modal__item img{display:block;width:100%;height:90px;object-fit:cover;background:#e8e7e1}.tcn-organized-media-modal__item strong,.tcn-organized-media-modal__item small{display:block;padding:6px 8px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tcn-organized-media-modal__item small{padding-top:2px;padding-bottom:8px;color:#087f7d;font-size:10px}@media(max-width:700px){.tcn-organized-media-modal__body{grid-template-columns:1fr}.tcn-organized-media-modal__folders{display:grid;grid-template-columns:repeat(2,1fr)}}
+
+/* Keep the Course/Show Save border neutral on hover, including Pending Save. */
+#tcnexus-save-course:hover {
+  border-color: var(--tcn-border);
+}
