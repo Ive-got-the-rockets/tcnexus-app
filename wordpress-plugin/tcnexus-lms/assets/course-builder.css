@@ -61,6 +61,7 @@
 
 .tcn-schedule-picker { position: relative; }
 .tcn-schedule-picker__trigger { width: 100%; display: flex; align-items: center; justify-content: space-between; text-align: left; cursor: pointer; }
+.tcn-live-schedule-field .tcn-kingsley-picker { background-color: #F1EFE7; }
 .tcn-schedule-picker__trigger > span { color: #7a756c; font-size: 17px; line-height: 1; }
 .tcn-schedule-picker__popup { position: absolute; z-index: 20; top: calc(100% + 5px); left: 0; min-width: 100%; padding: 14px; background: #fff; border: 1px solid rgba(179,151,0,.25); border-radius: 6px; box-shadow: 0 10px 30px rgba(26,26,26,.12); }
 .tcn-date-popup__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-bottom: 11px; border-bottom: 1px solid #f3f1e9; color: #1c1c1e; font: 600 13px "DM Sans", sans-serif; }

@@ -21,7 +21,7 @@
       var value = input.value ? new Date(input.value + 'T00:00:00') : new Date();
       var year = value.getFullYear(), month = value.getMonth();
       var days = new Date(year, month + 1, 0).getDate(), first = new Date(year, month, 1).getDay();
-      var html = '<div class="tcn-date-popup__head"><button type="button" data-prev>‹</button><strong>' + value.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) + '</strong><button type="button" data-next>›</button></div><div class="tcn-date-popup__week">SUN MON TUE WED THU FRI SAT</div><div class="tcn-date-popup__grid">';
+      var html = '<div class="tcn-date-popup__head"><button type="button" data-prev>‹</button><strong>' + value.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) + '</strong><button type="button" data-next>›</button></div><div class="tcn-date-popup__week"><span>SUN</span><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span></div><div class="tcn-date-popup__grid">';
       for (var blank = 0; blank < first; blank++) html += '<span></span>';
       for (var day = 1; day <= days; day++) { var key = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0'); html += '<button type="button" data-date-value="' + key + '" class="' + (input.value === key ? 'is-selected' : '') + '">' + day + '</button>'; }
       popup.innerHTML = html + '</div>'; popup.hidden = false; picker.classList.add('is-open');
