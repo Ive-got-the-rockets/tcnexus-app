@@ -533,7 +533,7 @@ class TCNexus_Live_Show_Builder {
 	}
 
 	public static function enqueue_assets( $hook ) {
-		if ( $hook !== self::$hook_suffix && $hook !== self::$show_hook_suffix ) {
+		if ( $hook !== self::$hook_suffix && $hook !== self::$show_hook_suffix && self::SHOW_PAGE_SLUG !== ( $_GET['page'] ?? '' ) ) {
 			return;
 		}
 
