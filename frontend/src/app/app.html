@@ -79,7 +79,7 @@
           }
         </div>
       } @else {
-        <div class="calendar-modal__week"><div class="calendar-modal__week-head"><span></span>@for (day of weekDays(); track day.toISOString()) { <span [class.is-today]="isToday(day)">{{ weekLabel(day) }}</span> }</div><div class="calendar-modal__week-allday"><span>ALL DAY</span><div></div></div>@for (hour of [8,9,10,11,12,13,14,15,16,17,18,19]; track hour) { <div class="calendar-modal__week-row"><span>{{ hour > 12 ? hour - 12 : hour }} {{ hour >= 12 ? 'PM' : 'AM' }}</span>@for (day of weekDays(); track day.toISOString()) { <div>@for (show of eventsForDay(day); track show.id) { <div class="calendar-modal__event">{{ eventTime(show) }} {{ show.title }}</div> }</div> }</div> }</div>
+        <div class="calendar-modal__week"><div class="calendar-modal__week-head"><span></span>@for (day of weekDays(); track day.toISOString()) { <span [class.is-today]="isToday(day)"><b>{{ weekDayLabel(day) }}</b><i>{{ weekDateLabel(day) }}</i></span> }</div><div class="calendar-modal__week-allday"><span>ALL DAY</span><div></div></div>@for (hour of [8,9,10,11,12,13,14,15,16,17,18,19]; track hour) { <div class="calendar-modal__week-row"><span>{{ hour > 12 ? hour - 12 : hour }} {{ hour >= 12 ? 'PM' : 'AM' }}</span>@for (day of weekDays(); track day.toISOString()) { <div>@for (show of eventsForDay(day); track show.id) { <div class="calendar-modal__event">{{ eventTime(show) }} {{ show.title }}</div> }</div> }</div> }</div>
       }
     </section>
   </div>

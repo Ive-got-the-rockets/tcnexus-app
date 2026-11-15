@@ -103,7 +103,8 @@ export class App implements OnInit, OnDestroy {
   protected weekDays(): Date[] { const anchor = this.calendarAnchor(); const start = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate()); start.setDate(start.getDate() - start.getDay()); return Array.from({ length: 7 }, (_, index) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + index)); }
   protected eventsForDay(day: Date): Course[] { return this.liveShows().filter(show => show.live_start_date === this.dateKey(day)); }
   protected eventTime(show: Course): string { return show.live_start_time || 'LIVE'; }
-  protected weekLabel(day: Date): string { return day.toLocaleDateString('en-US', { weekday: 'short', day: '2-digit' }); }
+  protected weekDayLabel(day: Date): string { return day.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase(); }
+  protected weekDateLabel(day: Date): string { return day.toLocaleDateString('en-US', { day: '2-digit' }); }
   protected isToday(day: Date): boolean { return this.dateKey(day) === this.dateKey(new Date()); }
   private dateKey(date: Date): string { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
   protected chooseCalendarIcon(key: string): void { this.selectedCalendarIcon.set(key); this.calendarMenuOpen.set(false); }
