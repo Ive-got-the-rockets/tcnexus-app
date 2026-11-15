@@ -66,9 +66,9 @@
       <div class="calendar-modal__toolbar">
         <div class="calendar-modal__toggle"><button type="button" [class.is-active]="calendarView() === 'month'" (click)="setCalendarView('month')">Month</button><button type="button" [class.is-active]="calendarView() === 'week'" (click)="setCalendarView('week')">Week</button></div>
         <strong>{{ calendarMonthLabel() }}</strong>
-        <button type="button" class="calendar-modal__nav" (click)="shiftCalendar(-1)" aria-label="Previous month">‹</button>
+        <button type="button" class="calendar-modal__nav" (click)="shiftCalendar(-1)" aria-label="Previous month"><span aria-hidden="true">‹</span></button>
         <button type="button" class="calendar-modal__today" (click)="goToToday()">TODAY {{ todayNumber() }}</button>
-        <button type="button" class="calendar-modal__nav" (click)="shiftCalendar(1)" aria-label="Next month">›</button>
+        <button type="button" class="calendar-modal__nav" (click)="shiftCalendar(1)" aria-label="Next month"><span aria-hidden="true">›</span></button>
         <button type="button" class="calendar-modal__close" (click)="closeCalendarMenu()" aria-label="Close calendar">×</button>
       </div>
       @if (calendarView() === 'month') {

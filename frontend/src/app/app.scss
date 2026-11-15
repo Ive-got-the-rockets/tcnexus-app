@@ -286,7 +286,7 @@
 .calendar-modal__toggle { display: flex; border: 1px solid #356d6b; border-radius: 8px; overflow: hidden; }
 .calendar-modal__toggle button, .calendar-modal__nav, .calendar-modal__today, .calendar-modal__close { border: 0; background: transparent; color: #a8b7b5; cursor: pointer; font: 600 .75rem var(--font-ui); }
 .calendar-modal__toggle button { padding: .6rem .9rem; }.calendar-modal__toggle .is-active { color: #11191e; background: #52a9a0; }
-.calendar-modal__nav, .calendar-modal__today { min-width: 2.35rem; height: 2.35rem; border: 1px solid #356d6b; border-radius: 999px; }.calendar-modal__nav { font-size: 25px; line-height: 1; transform: translateY(-4px); }.calendar-modal__today { min-width: 4.8rem; font: 500 .65rem var(--font-mono); }.calendar-modal__close { margin-left: .25rem; font-size: 1.6rem; color: #718381; }
+.calendar-modal__nav, .calendar-modal__today { min-width: 2.35rem; height: 2.35rem; border: 1px solid #356d6b; border-radius: 999px; }.calendar-modal__nav { font-size: 25px; line-height: 1; }.calendar-modal__nav > span { display: inline-block; transform: translateY(-2px); }.calendar-modal__today { min-width: 4.8rem; font: 500 .65rem var(--font-mono); }.calendar-modal__close { margin-left: .25rem; font-size: 1.6rem; color: #718381; }
 .calendar-modal__month { display: grid; grid-template-columns: repeat(7, 1fr); margin-top: 1rem; }
 .calendar-modal__weekday, .calendar-modal__day { min-width: 0; }
 .calendar-modal__weekday { padding: .65rem .5rem; color: #718381; text-align: center; font: 600 .65rem var(--font-mono); letter-spacing: .08em; }
