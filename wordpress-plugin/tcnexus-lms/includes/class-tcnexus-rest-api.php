@@ -131,6 +131,7 @@ class TCNexus_REST_API {
 				'vimeo_live_event_id' => get_post_meta( $course->ID, TCNexus_Live_Show_Builder::LIVE_STREAM_META_KEY, true ),
 				'live_start_date' => get_post_meta( $course->ID, '_tcnexus_live_start_date', true ) ?: null,
 				'live_start_time' => get_post_meta( $course->ID, '_tcnexus_live_start_time', true ) ?: null,
+				'live_duration' => get_post_meta( $course->ID, '_tcnexus_live_duration', true ) ?: null,
 				'live_status' => get_post_meta( $course->ID, '_tcnexus_live_status', true ) ?: 'LIVE SOON',
 				'hosts'         => self::format_people( get_post_meta( $course->ID, '_tcnexus_live_hosts', true ) ),
 				'guests'        => self::format_people( get_post_meta( $course->ID, '_tcnexus_live_guests', true ) ),

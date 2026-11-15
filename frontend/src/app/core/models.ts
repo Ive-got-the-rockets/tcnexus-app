@@ -57,6 +57,7 @@ export interface Course {
   vimeo_live_event_id?: string | null;
   live_start_date?: string | null;
   live_start_time?: string | null;
+  live_duration?: string | null;
   live_status?: string | null;
   hosts?: Person[];
   guests?: Person[];

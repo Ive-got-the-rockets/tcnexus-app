@@ -20,6 +20,7 @@ class TCNexus_Live_Show_Builder {
 	const LIVE_STREAM_META_KEY = '_tcnexus_vimeo_live_event_id';
 	const LIVE_START_DATE_META_KEY = '_tcnexus_live_start_date';
 	const LIVE_START_TIME_META_KEY = '_tcnexus_live_start_time';
+	const LIVE_DURATION_META_KEY = '_tcnexus_live_duration';
 
 	const LEVELS = array(
 		'beginner'     => 'Beginner',
@@ -871,6 +872,7 @@ class TCNexus_Live_Show_Builder {
 		$authors = get_users( array( 'capability' => array( 'edit_posts' ), 'orderby' => 'display_name' ) );
 		$live_start_date = $is_show ? get_post_meta( $course_id, self::LIVE_START_DATE_META_KEY, true ) : '';
 		$live_start_time = $is_show ? get_post_meta( $course_id, self::LIVE_START_TIME_META_KEY, true ) : '';
+		$live_duration = $is_show ? get_post_meta( $course_id, self::LIVE_DURATION_META_KEY, true ) : '';
 
 		$lessons = get_posts( array(
 			'post_type'      => 'tc_lesson',
@@ -1024,16 +1026,25 @@ class TCNexus_Live_Show_Builder {
 						<div class="tcn-row">
 							<?php if ( $is_show ) : ?>
 							<div class="tcn-field tcn-live-schedule-field">
-								<label class="tcn-field__label" for="tcn-live-start-date">Date</label>
+								<label class="tcn-field__label" for="tcn-live-start-date">Start Date</label>
 								<input id="tcn-live-start-date" class="tcn-input tcn-kingsley-picker" type="date" name="live_start_date" value="<?php echo esc_attr( $live_start_date ); ?>" />
 							</div>
 							<div class="tcn-field tcn-live-schedule-field">
-								<label class="tcn-field__label" for="tcn-live-start-time">Time</label>
+								<label class="tcn-field__label" for="tcn-live-start-time">Start Time</label>
 								<select id="tcn-live-start-time" class="tcn-select tcn-kingsley-picker" name="live_start_time">
 									<option value="">Select time</option>
 									<?php for ( $hour = 0; $hour < 24; $hour++ ) : foreach ( array( 0, 30 ) as $minute ) : $time_value = sprintf( '%02d:%02d', $hour, $minute ); ?>
 										<option value="<?php echo esc_attr( $time_value ); ?>" <?php selected( $live_start_time, $time_value ); ?>><?php echo esc_html( date_i18n( 'g:i A', strtotime( $time_value ) ) ); ?></option>
 									<?php endforeach; endfor; ?>
+								</select>
+							</div>
+							<div class="tcn-field tcn-live-schedule-field">
+								<label class="tcn-field__label" for="tcn-live-duration">Approximate Duration</label>
+								<select id="tcn-live-duration" class="tcn-select tcn-kingsley-picker" name="live_duration">
+									<option value="">Select duration</option>
+									<?php foreach ( array( '30' => '30 minutes', '45' => '45 minutes', '60' => '1 hour', '90' => '1 hour 30 minutes', '120' => '2 hours', '180' => '3 hours' ) as $duration_value => $duration_label ) : ?>
+										<option value="<?php echo esc_attr( $duration_value ); ?>" <?php selected( (string) $live_duration, (string) $duration_value ); ?>><?php echo esc_html( $duration_label ); ?></option>
+									<?php endforeach; ?>
 								</select>
 							</div>
 							<?php endif; ?>
@@ -1927,8 +1938,10 @@ class TCNexus_Live_Show_Builder {
 		if ( $is_show ) {
 			$live_start_date = isset( $_POST['live_start_date'] ) ? sanitize_text_field( wp_unslash( $_POST['live_start_date'] ) ) : '';
 			$live_start_time = isset( $_POST['live_start_time'] ) ? sanitize_text_field( wp_unslash( $_POST['live_start_time'] ) ) : '';
+			$live_duration = isset( $_POST['live_duration'] ) ? absint( $_POST['live_duration'] ) : 0;
 			update_post_meta( $course_id, self::LIVE_START_DATE_META_KEY, preg_match( '/^\d{4}-\d{2}-\d{2}$/', $live_start_date ) ? $live_start_date : '' );
 			update_post_meta( $course_id, self::LIVE_START_TIME_META_KEY, preg_match( '/^\d{2}:\d{2}$/', $live_start_time ) ? $live_start_time : '' );
+			update_post_meta( $course_id, self::LIVE_DURATION_META_KEY, in_array( $live_duration, array( 30, 45, 60, 90, 120, 180 ), true ) ? $live_duration : '' );
 		}
 		update_post_meta( $course_id, self::LANGUAGE_META_KEY, $languages );
 		update_post_meta( $course_id, self::LEVEL_META_KEY, $english_levels );
