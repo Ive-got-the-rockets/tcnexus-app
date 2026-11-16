@@ -296,6 +296,23 @@
     </section>
   }
 
+  @if (liveOnly() && liveShowCourses().length > 0) {
+    <section class="live-schedule" aria-labelledby="live-schedule-title">
+      <h2 id="live-schedule-title" class="style-row__title">Live Schedule</h2>
+      <div class="live-schedule__viewport">
+        <div class="live-schedule__grid">
+          <div class="live-schedule__corner"></div>
+          @for (slot of scheduleSlots(); track slot) { <div class="live-schedule__time">{{ slot }}</div> }
+          @for (day of scheduleDays(); track day.toISOString()) {
+            <div class="live-schedule__day"><b>{{ scheduleDayLabel(day) }}</b><i>{{ scheduleDateLabel(day) }}</i></div>
+            <div class="live-schedule__track">@for (show of scheduleShowsForDay(day); track show.id) { <button type="button" class="live-schedule__event" [style]="scheduleEventStyle(show)" [attr.aria-label]="show.title + ' at ' + scheduleEventTime(show)"><strong>{{ show.title }}</strong><span>{{ scheduleEventTime(show) }}</span></button> }</div>
+          }
+        </div>
+        @if (scheduleNowVisible()) { <div class="live-schedule__now" [style]="scheduleNowStyle()"><span></span></div> }
+      </div>
+    </section>
+  }
+
   @if (carouselShows().length > 0 && !liveOnly()) {
     <section class="style-row style-row--shows" aria-labelledby="shows-title">
       <div class="style-carousel" #showsCarousel [class.style-carousel--at-start]="showsEdges().atStart" [class.style-carousel--at-end]="showsEdges().atEnd">

@@ -99,6 +99,25 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   protected readonly liveShows = signal<LiveShow[]>([]);
   protected readonly liveShowCourses = signal<Course[]>([]);
 
+  protected scheduleDays(): Date[] {
+    const today = new Date();
+    return Array.from({ length: 7 }, (_, index) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + index));
+  }
+
+  protected scheduleSlots(): string[] {
+    return Array.from({ length: 35 }, (_, index) => { const minutes = 390 + index * 30; return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`; });
+  }
+
+  protected scheduleDayLabel(day: Date): string { return day.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase(); }
+  protected scheduleDateLabel(day: Date): string { return String(day.getDate()).padStart(2, '0'); }
+  protected scheduleDateKey(day: Date): string { return `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`; }
+  protected scheduleShowsForDay(day: Date): Course[] { return this.liveShowCourses().filter(show => show.live_start_date === this.scheduleDateKey(day)); }
+  protected scheduleEventStyle(show: Course): string { const start = this.scheduleMinutes(show.live_start_time); const duration = Math.max(Number(show.live_duration || 60), 30); return `left: ${Math.max(start - 390, 0) / 30 * 92}px; width: ${duration / 30 * 92 - 8}px;`; }
+  protected scheduleNowStyle(): string { const minutes = new Date().getHours() * 60 + new Date().getMinutes(); return `left: ${Math.max(minutes - 390, 0) / 30 * 92 + 76}px;`; }
+  protected scheduleNowVisible(): boolean { const minutes = new Date().getHours() * 60 + new Date().getMinutes(); return minutes >= 390 && minutes <= 1440; }
+  protected scheduleEventTime(show: Course): string { const minutes = this.scheduleMinutes(show.live_start_time); return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`; }
+  private scheduleMinutes(value: string | null | undefined): number { const match = String(value || '').match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/i); if (!match) return 390; let hour = Number(match[1]); const minute = Number(match[2] || 0); const meridiem = match[3]?.toUpperCase(); if (meridiem === 'PM' && hour < 12) hour += 12; if (meridiem === 'AM' && hour === 12) hour = 0; return hour * 60 + minute; }
+
   protected openLiveShow(id: string): void {
     void this.router.navigate(['/live', id]);
   }

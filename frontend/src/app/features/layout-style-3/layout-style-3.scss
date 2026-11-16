@@ -17,6 +17,49 @@
   background: #090a09;
 }
 
+.live-schedule {
+  margin: 2.5rem var(--page-gutter) 4rem;
+  color: var(--paper);
+}
+
+.live-schedule__viewport {
+  position: relative;
+  overflow-x: auto;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 12px;
+  background: rgba(11,13,12,.82);
+}
+
+.live-schedule__grid {
+  display: grid;
+  min-width: 3296px;
+  grid-template-columns: 76px repeat(35, 92px);
+}
+
+.live-schedule__corner, .live-schedule__time, .live-schedule__day, .live-schedule__track {
+  min-height: 62px;
+  border-right: 1px solid rgba(255,255,255,.08);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+.live-schedule__corner { grid-column: 1; min-height: 48px; }
+.live-schedule__time { min-height: 48px; padding: 14px 8px; color: var(--paper); text-align: center; font: 600 13px/1 var(--font-ui); }
+.live-schedule__day { display: flex; flex-direction: column; justify-content: center; gap: 3px; padding: 10px 14px; background: rgba(255,255,255,.025); }
+.live-schedule__day b { font: 600 12px/1 var(--font-ui); letter-spacing: .08em; }
+.live-schedule__day i { color: var(--paper-dim); font: italic 22px/1 var(--font-ui); }
+.live-schedule__track { position: relative; grid-column: 2 / -1; min-height: 76px; background: linear-gradient(90deg, rgba(82,169,160,.06), transparent 65%); }
+.live-schedule__event { position: absolute; top: 10px; height: 56px; overflow: hidden; padding: 9px 12px; border: 1px solid rgba(82,169,160,.7); border-radius: 6px; background: #151719; color: var(--paper); cursor: pointer; text-align: left; }
+.live-schedule__event strong, .live-schedule__event span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.live-schedule__event strong { font: 600 15px/1.2 var(--font-ui); }
+.live-schedule__event span { margin-top: 5px; color: var(--paper-dim); font: 12px/1 var(--font-mono); }
+.live-schedule__event:hover { border-color: #fff; background: #fff; color: #151719; }
+.live-schedule__now { position: absolute; top: 0; bottom: 0; width: 1px; pointer-events: none; background: #ff3b30; box-shadow: 0 0 10px rgba(255,59,48,.5); }
+.live-schedule__now span { position: absolute; top: 0; left: -4px; width: 9px; height: 9px; border-radius: 50%; background: #ff3b30; }
+
+@media (max-width: 700px) {
+  .live-schedule { margin-inline: 1rem; }
+}
+
 @media (min-width: 600px) {
   :host {
     --cards-per-page: 4;
