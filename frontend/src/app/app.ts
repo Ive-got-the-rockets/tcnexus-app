@@ -111,6 +111,19 @@ export class App implements OnInit, OnDestroy {
   protected weekDays(): Date[] { const anchor = this.calendarAnchor(); const start = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate()); start.setDate(start.getDate() - start.getDay()); return Array.from({ length: 7 }, (_, index) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + index)); }
   protected eventsForDay(day: Date): Course[] { return this.liveShows().filter(show => show.live_start_date === this.dateKey(day)); }
   protected eventTime(show: Course): string { return show.live_start_time || 'LIVE'; }
+  protected isWeekEventStart(show: Course, hour: number): boolean { return this.weekEventTime(show).hour === hour; }
+  protected weekEventStyle(show: Course): string { const time = this.weekEventTime(show); const duration = Math.max(Number(show.live_duration || 60), 30); return `top: ${time.minute / 60 * 2.9}rem; height: ${Math.max(duration / 60 * 2.9 - .35, 2.2)}rem;`; }
+  private weekEventTime(show: Course): { hour: number; minute: number } {
+    const value = String(show.live_start_time || '').trim();
+    const match = value.match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/i);
+    if (!match) return { hour: 0, minute: 0 };
+    let hour = Number(match[1]);
+    const minute = Number(match[2] || 0);
+    const meridiem = match[3]?.toUpperCase();
+    if (meridiem === 'PM' && hour < 12) hour += 12;
+    if (meridiem === 'AM' && hour === 12) hour = 0;
+    return { hour, minute };
+  }
   protected weekDayLabel(day: Date): string { return day.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase(); }
   protected weekDateLabel(day: Date): string { return day.toLocaleDateString('en-US', { day: '2-digit' }); }
   protected isToday(day: Date): boolean { return this.dateKey(day) === this.dateKey(new Date()); }

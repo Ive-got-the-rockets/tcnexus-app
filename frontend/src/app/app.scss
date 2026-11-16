@@ -304,6 +304,8 @@
 .calendar-modal__week { position: relative; }.calendar-modal__week::before { content: ''; position: absolute; top: -15px; left: -1.4rem; right: -1.4rem; height: 1px; background: #2a4650; }.calendar-modal__week-head { border-top: 0; border-bottom: 0; }
 .calendar-modal__week-allday > div { border-right: 0; }
 .calendar-modal__week-row > * { border-color: rgba(42, 70, 80, .35); }
+.calendar-modal__week-row > div { position: relative; }
+.calendar-modal__week-row .calendar-modal__event { position: absolute; left: .35rem; right: .35rem; z-index: 2; width: auto; margin-top: 0; overflow: hidden; }
 .calendar-modal__week-head > span:not(:first-child) { display: flex; flex-direction: column; align-items: center; gap: .12rem; }.calendar-modal__week-head b { color: #d7dfdd; font: 700 .62rem var(--font-mono); letter-spacing: .08em; }.calendar-modal__week-head i { color: #718381; font: italic 1.45rem var(--font-ui); }.calendar-modal__week-head .is-today b, .calendar-modal__week-head .is-today i { color: #e6a3c7; }.calendar-modal__week-head .is-today i { font-weight: 700; }
 .calendar-modal__week-head b { font-family: 'DM Sans', sans-serif; }.calendar-modal__week-head i { font-family: 'DM Sans', sans-serif; }
 @media (max-width: 700px) { .calendar-modal-backdrop { padding: .75rem; }.calendar-modal { padding: .8rem; }.calendar-modal__toolbar { flex-wrap: wrap; }.calendar-modal__toolbar strong { order: 3; width: 100%; text-align: center; }.calendar-modal__day { min-height: 5rem; padding: .35rem; }.calendar-modal__event { font-size: .56rem; } }
