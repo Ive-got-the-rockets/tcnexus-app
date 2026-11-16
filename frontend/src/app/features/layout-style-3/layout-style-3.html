@@ -305,7 +305,7 @@
           @for (slot of scheduleSlots(); track slot) { <div class="live-schedule__time">{{ slot }}</div> }
           @for (day of scheduleDays(); track day.toISOString()) {
             <div class="live-schedule__day" [class.live-schedule__day--today]="isScheduleToday(day)"><b>{{ scheduleDayLabel(day) }}</b><i>{{ scheduleDateLabel(day) }}</i></div>
-            <div class="live-schedule__track">@for (show of scheduleShowsForDay(day); track show.id) { <button type="button" class="live-schedule__event" [class]="scheduleEventClass(show)" [style]="scheduleEventStyle(show)" [attr.aria-label]="show.title + ' at ' + scheduleEventRange(show)"><strong>{{ show.title }}</strong>@if (show.tone === 'red') { <em class="live-schedule__live-badge"><span></span>LIVE</em> }<span>{{ scheduleEventRange(show) }}</span></button> }</div>
+            <div class="live-schedule__track">@for (show of scheduleShowsForDay(day); track show.id) { <button type="button" class="live-schedule__event" [class]="scheduleEventClass(show)" [style]="scheduleEventStyle(show)" [attr.aria-label]="show.title + ' at ' + scheduleEventRange(show)"><div class="live-schedule__event-title-row"><strong>{{ show.title }}</strong>@if (show.tone === 'red') { <em class="live-schedule__live-badge"><span></span>LIVE</em> }</div><span>{{ scheduleEventRange(show) }}</span></button> }</div>
           }
         </div>
         @if (scheduleNowVisible()) { <div class="live-schedule__now" [style]="scheduleNowStyle()"><span></span></div> }
