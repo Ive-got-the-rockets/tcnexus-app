@@ -298,7 +298,7 @@
 .calendar-modal__week-head > * { border: 0; }
 .calendar-modal__week-head { background: transparent; }
 .calendar-modal { background: rgba(11,13,12,.85); }
-.calendar-modal--week { overflow: hidden; }
+.calendar-modal--week { overflow: visible; }
 .calendar-modal__week-scroll { max-height: calc(88vh - 15rem); overflow-y: auto; overflow-x: hidden; }
 .calendar-event-popup__description { padding-bottom: 20px; }
 .calendar-event-popup { border-color: color-mix(in srgb, var(--paper) 40%, transparent); }
