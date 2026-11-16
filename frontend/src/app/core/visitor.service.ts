@@ -3,6 +3,7 @@ import { Injectable, signal } from '@angular/core';
 const VISITOR_ID_KEY = 'tcnexus_visitor_id';
 const TOKEN_KEY = 'tcnexus_token';
 const EMAIL_KEY = 'tcnexus_email';
+const PROFILE_IMAGE_KEY = 'tcnexus_profile_image';
 
 @Injectable({ providedIn: 'root' })
 export class VisitorService {
@@ -26,6 +27,7 @@ export class VisitorService {
   }
   /** No display name to work with (registration is email-only) — the header icon uses this letter instead of an avatar. */
   private readonly email = signal<string | null>(localStorage.getItem(EMAIL_KEY));
+  private readonly profileImageUrl = signal<string | null>(localStorage.getItem(PROFILE_IMAGE_KEY));
 
   getVisitorId(): string {
     let id = localStorage.getItem(VISITOR_ID_KEY);
@@ -42,6 +44,17 @@ export class VisitorService {
 
   getEmail(): string | null {
     return this.email();
+  }
+
+  profileImage(): string | null {
+    return this.profileImageUrl();
+  }
+
+  setProfileImage(image: string | null): void {
+    if (image) localStorage.setItem(PROFILE_IMAGE_KEY, image);
+    else localStorage.removeItem(PROFILE_IMAGE_KEY);
+    this.profileImageUrl.set(image);
+    window.dispatchEvent(new Event('tcnexus-profile-image-changed'));
   }
 
   setToken(token: string): void {
