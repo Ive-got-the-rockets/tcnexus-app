@@ -49,14 +49,14 @@
 
 .live-schedule__corner { grid-column: 1; min-height: 48px; }
 .live-schedule__time { min-height: 48px; padding: 14px 8px; color: var(--paper); text-align: center; font: 600 13px/1 var(--font-ui); }
-.live-schedule__day { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(255,255,255,.025); }
+.live-schedule__day { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(255,255,255,.12); }
 .live-schedule__day b { font: 600 12px/1 var(--font-ui); letter-spacing: .08em; }
 .live-schedule__day i { color: var(--paper-dim); font: italic 22px/1 var(--font-ui); }
 .live-schedule__day--today { background: rgba(230,163,199,.22); color: #e6a3c7; }
 .live-schedule__day--today i { color: #e6a3c7; }
 .live-schedule__track { position: relative; grid-column: 2 / -1; min-height: 86px; background: linear-gradient(90deg, rgba(82,169,160,.06), transparent 65%); }
-.live-schedule__event { position: absolute; top: 10px; height: 66px; overflow: hidden; padding: 10px 12px; border: 1px solid rgba(82,169,160,.7); border-right: 5px solid #52a9a0; border-radius: 6px; background: #151719; color: var(--paper); cursor: pointer; text-align: left; }
-.live-schedule__event--red { border-color: rgba(255,59,48,.7); border-right-color: #ff3b30; background: linear-gradient(270deg, rgba(255,59,48,.45), #151719 72%); }
+.live-schedule__event { position: absolute; top: 10px; height: 66px; overflow: hidden; padding: 10px 12px; border: 1px solid rgba(82,169,160,.7); border-left: 5px solid #52a9a0; border-radius: 6px; background: #151719; color: var(--paper); cursor: pointer; text-align: left; }
+.live-schedule__event--red { border-color: rgba(255,59,48,.7); border-left-color: #ff3b30; background: linear-gradient(270deg, rgba(255,59,48,.45), #151719 72%); }
 .live-schedule__event-title-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .live-schedule__event strong, .live-schedule__event span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .live-schedule__event strong { font: 600 15px/1.2 var(--font-ui); }
