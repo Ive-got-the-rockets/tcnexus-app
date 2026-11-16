@@ -273,8 +273,8 @@
 }
 .site-header__calendar { position: relative; }
 .site-header__nav-link--live { position: relative; }
-.site-header__live-indicator { position: absolute; top: calc(50% + 2px); right: -12px; width: 8px; height: 8px; transform: translateY(-50%); border-radius: 50%; background: #ff3b30; transition: width .2s ease, border-radius .2s ease; }
-.site-header__nav-link--live:hover .site-header__live-indicator, .site-header__nav-link--live:focus-visible .site-header__live-indicator { width: 16px; border-radius: 2px; }
+.site-header__live-indicator { position: absolute; top: calc(50% + 2px); right: -12px; width: 8px; height: 8px; transform: translateY(-50%); border-radius: 50%; background: #ff3b30; transition: width .2s ease, height .2s ease, clip-path .2s ease; }
+.site-header__nav-link--live:hover .site-header__live-indicator, .site-header__nav-link--live:focus-visible .site-header__live-indicator { width: 16px; height: 14px; border-radius: 0; clip-path: polygon(0 0, 100% 50%, 0 100%); }
 .site-header__actions .site-header__icon, .site-header__actions .site-header__icon svg { width: 30px; height: 30px; }
 .site-header__profile-image { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
 .site-header__profile > .site-header__icon { transform: translateY(3px); }
