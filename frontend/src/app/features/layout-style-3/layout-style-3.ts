@@ -65,6 +65,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   private readonly showsCarousel = viewChild<ElementRef<HTMLElement>>('showsCarousel');
   private readonly liveTrack = viewChild<ElementRef<HTMLElement>>('liveTrack');
   private readonly liveCarousel = viewChild<ElementRef<HTMLElement>>('liveCarousel');
+  private readonly scheduleViewport = viewChild<ElementRef<HTMLElement>>('scheduleViewport');
   private readonly overviewDialog = viewChild(CourseOverview);
   private resizeObserver?: ResizeObserver;
   private pageExitTimer?: ReturnType<typeof setTimeout>;
@@ -116,8 +117,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   protected scheduleSlots(): string[] {
-    const start = this.scheduleStartMinutes();
-    return Array.from({ length: 35 }, (_, index) => this.formatScheduleTime(start + index * 30));
+    return Array.from({ length: 48 }, (_, index) => this.formatScheduleTime(index * 30));
   }
 
   protected scheduleDayLabel(day: Date): string { return day.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase(); }
@@ -149,7 +149,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   protected beginScheduleDrag(event: PointerEvent): void { const viewport = event.currentTarget as HTMLElement; this.scheduleDragging = true; this.scheduleDragStartX = event.clientX; this.scheduleScrollStart = viewport.scrollLeft; viewport.setPointerCapture(event.pointerId); }
   protected dragSchedule(event: PointerEvent): void { if (!this.scheduleDragging) return; const viewport = event.currentTarget as HTMLElement; viewport.scrollLeft = this.scheduleScrollStart - (event.clientX - this.scheduleDragStartX); }
   protected endScheduleDrag(): void { this.scheduleDragging = false; }
-  private scheduleStartMinutes(): number { return Math.max(new Date().getHours() * 60 - 60, 0); }
+  private scheduleStartMinutes(): number { return 0; }
   private formatScheduleTime(minutes: number): string { const normalized = Math.min(Math.max(minutes, 0), 1439); return `${String(Math.floor(normalized / 60)).padStart(2, '0')}:${String(normalized % 60).padStart(2, '0')}`; }
   private scheduleMinutes(value: string | null | undefined): number { const match = String(value || '').match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/i); if (!match) return this.scheduleStartMinutes(); let hour = Number(match[1]); const minute = Number(match[2] || 0); const meridiem = match[3]?.toUpperCase(); if (meridiem === 'PM' && hour < 12) hour += 12; if (meridiem === 'AM' && hour === 12) hour = 0; return hour * 60 + minute; }
 
@@ -652,7 +652,10 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
     this.measureEdges('live');
     this.measureEdges();
     this.measureEdges('platform');
+    setTimeout(() => this.positionScheduleAtCurrentHour(), 0);
   }
+
+  private positionScheduleAtCurrentHour(): void { const viewport = this.scheduleViewport()?.nativeElement; if (!viewport) return; const current = new Date().getHours() * 60 + new Date().getMinutes(); viewport.scrollLeft = Math.max((Math.max(current - 60, 0) / 30) * 92, 0); }
 
   ngOnDestroy(): void {
     const track = this.track()?.nativeElement;
