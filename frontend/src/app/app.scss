@@ -313,8 +313,8 @@
 .calendar-modal__week-head > span:not(:first-child) { display: flex; flex-direction: column; align-items: center; gap: .12rem; }.calendar-modal__week-head b { color: #fff; font: 700 .62rem var(--font-mono); letter-spacing: .08em; }.calendar-modal__week-head i { color: #fff; font: italic 1.45rem var(--font-ui); }.calendar-modal__week-head .is-today b, .calendar-modal__week-head .is-today i { color: #e6a3c7; }.calendar-modal__week-head .is-today i { font-weight: 700; }
 .calendar-modal__week-allday, .calendar-modal__week-row > span { color: #fff; }
 .calendar-modal__week-head b { font-family: 'DM Sans', sans-serif; }.calendar-modal__week-head i { font-family: 'DM Sans', sans-serif; }
-.calendar-modal { border-color: #fff; }
-.calendar-modal__week-head > *, .calendar-modal__week-allday > *, .calendar-modal__week-row > * { border-right-color: #fff; border-bottom-color: #fff; }
-.calendar-modal__week::before { background: #fff; }
-.calendar-modal__week-row > * { border-color: rgba(255, 255, 255, .35); }
+.calendar-modal { border-color: rgba(255, 255, 255, .5); }
+.calendar-modal__week-head > *, .calendar-modal__week-allday > *, .calendar-modal__week-row > * { border-right-color: rgba(255, 255, 255, .5); border-bottom-color: rgba(255, 255, 255, .5); }
+.calendar-modal__week::before { background: rgba(255, 255, 255, .5); }
+.calendar-modal__week-row > * { border-color: rgba(255, 255, 255, .5); }
 @media (max-width: 700px) { .calendar-modal-backdrop { padding: .75rem; }.calendar-modal { padding: .8rem; }.calendar-modal__toolbar { flex-wrap: wrap; }.calendar-modal__toolbar strong { order: 3; width: 100%; text-align: center; }.calendar-modal__day { min-height: 5rem; padding: .35rem; }.calendar-modal__event { font-size: .56rem; } }
