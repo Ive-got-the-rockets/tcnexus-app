@@ -75,7 +75,7 @@
         <div class="calendar-modal__month" role="grid">
           @for (label of ['SUN','MON','TUE','WED','THU','FRI','SAT']; track label) { <div class="calendar-modal__weekday">{{ label }}</div> }
           @for (day of calendarDays(); track day.toISOString()) {
-            <div class="calendar-modal__day" [class.is-muted]="day.getMonth() !== calendarAnchor().getMonth()" [class.is-today]="isToday(day)"><span>{{ day.getDate() }}</span>@for (show of eventsForDay(day); track show.id) { <button type="button" class="calendar-modal__event" (click)="openCalendarEvent(show); $event.stopPropagation()"><span class="calendar-modal__event-title">{{ show.title }}</span><span class="calendar-modal__event-time">{{ eventTime24(show) }}</span></button> }</div>
+            <div class="calendar-modal__day" [class.is-muted]="day.getMonth() !== calendarAnchor().getMonth()" [class.is-today]="isToday(day)"><span>@if (isToday(day)) { <small>TODAY</small> }{{ day.getDate() }}</span>@for (show of eventsForDay(day); track show.id) { <button type="button" class="calendar-modal__event" (click)="openCalendarEvent(show); $event.stopPropagation()"><span class="calendar-modal__event-title">{{ show.title }}</span><span class="calendar-modal__event-time">{{ eventTime24(show) }}</span></button> }</div>
           }
         </div>
       } @else {
