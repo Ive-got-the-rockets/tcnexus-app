@@ -126,7 +126,8 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   protected scheduleDateKey(day: Date): string { return `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`; }
   protected scheduleShowsForDay(day: Date): ScheduleEvent[] {
     const realShows = this.liveShowCourses().filter(show => show.live_start_date === this.scheduleDateKey(day)).map(show => ({ id: show.id, title: show.title, start: this.scheduleEventTime(show), duration: Number(show.live_duration || 60), tone: show.title.toLowerCase().includes('live with lex') || show.live_status?.toLowerCase() === 'live' ? 'red' as const : 'cyan' as const }));
-    if (realShows.length) return realShows;
+    const isToday = day.getTime() === new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()).getTime();
+    if (realShows.length && !(isToday && !realShows.some(show => show.title.toLowerCase().includes('live with lex')))) return realShows;
     const base = this.scheduleStartMinutes();
     const demo = [
       { title: 'Morning Brief', offset: 30, duration: 90, tone: 'cyan' as const },
@@ -138,7 +139,9 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
       { title: 'Weekend Digest', offset: 30, duration: 120, tone: 'cyan' as const },
     ];
     const item = demo[day.getDay() % demo.length];
-    return [{ ...item, start: this.formatScheduleTime(base + item.offset), id: `demo-${this.scheduleDateKey(day)}` }];
+    const fallback = { ...item, start: this.formatScheduleTime(base + item.offset), id: `demo-${this.scheduleDateKey(day)}` };
+    if (isToday && !realShows.some(show => show.title.toLowerCase().includes('live with lex'))) return [{ title: 'Live with Lex', start: this.formatScheduleTime(base + 150), duration: 120, tone: 'red' as const, id: `demo-live-with-lex-${this.scheduleDateKey(day)}` }, fallback];
+    return [fallback];
   }
   protected scheduleEventStyle(show: ScheduleEvent): string { const start = this.scheduleMinutes(show.start); return `left: ${Math.max(start - this.scheduleStartMinutes(), 0) / 30 * 92}px; width: ${Math.max(show.duration / 30 * 92 - 8, 84)}px;`; }
   protected scheduleEventClass(show: ScheduleEvent): string { return `live-schedule__event--${show.tone}`; }
@@ -513,6 +516,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
     }).subscribe({
       next: ({ courses, shows, liveShows }) => {
         this.liveShowCourses.set(liveShows);
+        setTimeout(() => this.positionScheduleAtCurrentHour(), 0);
         this.liveShows.set(liveShows.map(show => ({
           id: String(show.id),
           title: show.title,
