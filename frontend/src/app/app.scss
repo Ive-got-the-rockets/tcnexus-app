@@ -317,6 +317,8 @@
 .calendar-modal__week-head > *, .calendar-modal__week-allday > *, .calendar-modal__week-row > * { border-right-color: rgba(255, 255, 255, .3); border-bottom-color: rgba(255, 255, 255, .3); }
 .calendar-modal__week::before { background: rgba(255, 255, 255, .3); }
 .calendar-modal__week-row > * { border-color: rgba(255, 255, 255, .3); }
+.calendar-modal__event { background: #151719; border: 1px solid #ff3b30; }
+.calendar-modal__event:hover { background: #151719; }
 .calendar-modal__week-allday { position: relative; border-bottom: 0; }
 .calendar-modal__week-allday > * { border-bottom-color: transparent; }
 .calendar-modal__week-allday::after { content: ''; position: absolute; left: -1.4rem; right: auto; bottom: 0; width: calc(100% + 2.8rem); height: 1px; background: rgba(255, 255, 255, .3); }
