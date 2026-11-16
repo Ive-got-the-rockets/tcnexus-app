@@ -271,6 +271,8 @@
   text-align: right;
 }
 .site-header__calendar { position: relative; }
+.site-header__nav-link--live { position: relative; }
+.site-header__nav-link--live::after { content: ''; position: absolute; top: 50%; right: -5px; width: 3px; height: 3px; transform: translateY(-50%); border-radius: 50%; background: #ff3b30; }
 .site-header__calendar .site-header__icon { width: 25px; height: 25px; }
 .site-header__calendar .site-header__icon svg { width: 25px; height: 25px; }
 .calendar-picker { position: absolute; top: calc(100% + .8rem); right: 0; width: 250px; padding: .75rem; background: var(--ink-raised); border: 1px solid var(--rule); box-shadow: 0 18px 40px #0009; z-index: 20; }
