@@ -83,7 +83,7 @@
       }
       @if (selectedCalendarEvent(); as event) {
         <aside class="calendar-event-popup" role="dialog" aria-label="Live show details">
-          <button type="button" class="calendar-event-popup__close" (click)="closeCalendarEvent()" aria-label="Close event details">×</button>
+          <button type="button" class="calendar-event-popup__close" (click)="closeCalendarEvent()" aria-label="Close event details"><span aria-hidden="true">×</span></button>
           <p class="calendar-event-popup__eyebrow">LIVE SHOW</p>
           <h2>{{ event.title }}</h2>
           <div class="calendar-event-popup__schedule"><span>{{ eventTime(event) }}</span><span>{{ calendarEventDuration(event) }}</span></div>
