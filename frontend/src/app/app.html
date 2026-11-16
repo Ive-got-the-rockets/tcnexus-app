@@ -69,7 +69,7 @@
         <button type="button" class="calendar-modal__nav" (click)="shiftCalendar(-1)" aria-label="Previous month"><span aria-hidden="true">‹</span></button>
         <button type="button" class="calendar-modal__today" (click)="goToToday()">TODAY {{ todayNumber() }}</button>
         <button type="button" class="calendar-modal__nav" (click)="shiftCalendar(1)" aria-label="Next month"><span aria-hidden="true">›</span></button>
-        <button type="button" class="calendar-modal__close" (click)="closeCalendarMenu()" aria-label="Close calendar">×</button>
+        <button type="button" class="calendar-modal__close" (click)="closeCalendarMenu()" aria-label="Close calendar"><span aria-hidden="true">×</span></button>
       </div>
       @if (calendarView() === 'month') {
         <div class="calendar-modal__month" role="grid">
