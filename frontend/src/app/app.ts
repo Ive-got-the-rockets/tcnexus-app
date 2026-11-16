@@ -105,6 +105,7 @@ export class App implements OnInit, OnDestroy {
   protected setCalendarView(view: 'month' | 'week'): void { this.calendarView.set(view); if (view === 'week') this.scrollWeekTo0630(); }
   private scrollWeekTo0630(): void { requestAnimationFrame(() => { const scroll = document.querySelector<HTMLElement>('.calendar-modal__week-scroll'); const row = scroll?.querySelector<HTMLElement>('.calendar-modal__week-row'); if (scroll && row) scroll.scrollTop = row.offsetHeight * 13; }); }
   protected shiftCalendar(offset: number): void { this.calendarAnchor.update(date => new Date(date.getFullYear(), date.getMonth() + offset, 1)); }
+  protected shiftWeek(offset: number): void { this.calendarAnchor.update(date => new Date(date.getFullYear(), date.getMonth(), date.getDate() + offset)); }
   protected goToToday(): void { this.calendarAnchor.set(new Date()); }
   protected todayNumber(): number { return new Date().getDate(); }
   protected calendarMonthLabel(): string { return this.calendarAnchor().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase(); }
