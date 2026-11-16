@@ -62,7 +62,7 @@
 
 @if (calendarMenuOpen()) {
   <div class="calendar-modal-backdrop" role="presentation" (click)="closeCalendarMenu()">
-    <section class="calendar-modal" role="dialog" aria-modal="true" aria-label="Live show calendar" (click)="$event.stopPropagation()">
+    <section class="calendar-modal" [class.calendar-modal--week]="calendarView() === 'week'" role="dialog" aria-modal="true" aria-label="Live show calendar" (click)="$event.stopPropagation()">
       <div class="calendar-modal__toolbar">
         <div class="calendar-modal__toggle"><button type="button" [class.is-active]="calendarView() === 'month'" (click)="setCalendarView('month')">Month</button><button type="button" [class.is-active]="calendarView() === 'week'" (click)="setCalendarView('week')">Week</button></div>
         <strong>{{ calendarMonthLabel() }}</strong>
@@ -79,7 +79,7 @@
           }
         </div>
       } @else {
-        <div class="calendar-modal__week"><div class="calendar-modal__week-head"><span></span>@for (day of weekDays(); track day.toISOString()) { <span [class.is-today]="isToday(day)"><b>{{ weekDayLabel(day) }}</b><i>{{ weekDateLabel(day) }}</i></span> }</div><div class="calendar-modal__week-allday"><span>ALL DAY</span><div></div></div>@for (slot of timeSlots(); track slot.hour + ':' + slot.minute) { <div class="calendar-modal__week-row" [class.is-quiet]="isQuietTime(slot)"><span>{{ timeSlotLabel(slot) }}</span>@for (day of weekDays(); track day.toISOString()) { <div>@for (show of eventsForDay(day); track show.id) { @if (isWeekEventStart(show, slot.hour, slot.minute)) { <button type="button" class="calendar-modal__event" [style]="weekEventStyle(show)" (click)="openCalendarEvent(show); $event.stopPropagation()">{{ eventTime(show) }} {{ show.title }}</button> } }</div> }</div> }</div>
+        <div class="calendar-modal__week"><div class="calendar-modal__week-head"><span></span>@for (day of weekDays(); track day.toISOString()) { <span [class.is-today]="isToday(day)"><b>{{ weekDayLabel(day) }}</b><i>{{ weekDateLabel(day) }}</i></span> }</div><div class="calendar-modal__week-allday"><span>ALL DAY</span><div></div></div><div class="calendar-modal__week-scroll">@for (slot of timeSlots(); track slot.hour + ':' + slot.minute) { <div class="calendar-modal__week-row" [class.is-quiet]="isQuietTime(slot)"><span>{{ timeSlotLabel(slot) }}</span>@for (day of weekDays(); track day.toISOString()) { <div>@for (show of eventsForDay(day); track show.id) { @if (isWeekEventStart(show, slot.hour, slot.minute)) { <button type="button" class="calendar-modal__event" [style]="weekEventStyle(show)" (click)="openCalendarEvent(show); $event.stopPropagation()">{{ eventTime(show) }} {{ show.title }}</button> } }</div> }</div> }</div></div>
       }
       @if (selectedCalendarEvent(); as event) {
         <aside class="calendar-event-popup" role="dialog" aria-label="Live show details">
