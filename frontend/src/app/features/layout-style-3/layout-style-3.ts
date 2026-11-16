@@ -124,7 +124,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   protected isScheduleToday(day: Date): boolean { return this.scheduleDateKey(day) === this.scheduleDateKey(new Date()); }
   protected scheduleDateKey(day: Date): string { return `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`; }
   protected scheduleShowsForDay(day: Date): ScheduleEvent[] {
-    const realShows = this.liveShowCourses().filter(show => show.live_start_date === this.scheduleDateKey(day)).map(show => ({ id: show.id, title: show.title, start: this.scheduleEventTime(show), duration: Number(show.live_duration || 60), tone: 'cyan' as const }));
+    const realShows = this.liveShowCourses().filter(show => show.live_start_date === this.scheduleDateKey(day)).map(show => ({ id: show.id, title: show.title, start: this.scheduleEventTime(show), duration: Number(show.live_duration || 60), tone: show.live_status?.toLowerCase() === 'live' ? 'red' as const : 'cyan' as const }));
     if (realShows.length) return realShows;
     const demo = [
       { title: 'Morning Brief', start: '06:30', duration: 90, tone: 'cyan' as const },
@@ -143,6 +143,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   protected scheduleNowStyle(): string { const minutes = new Date().getHours() * 60 + new Date().getMinutes(); return `left: ${Math.max(minutes - 390, 0) / 30 * 92 + 76}px;`; }
   protected scheduleNowVisible(): boolean { const minutes = new Date().getHours() * 60 + new Date().getMinutes(); return minutes >= 390 && minutes <= 1440; }
   protected scheduleEventTime(show: Course): string { const minutes = this.scheduleMinutes(show.live_start_time); return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`; }
+  protected scheduleEventRange(show: ScheduleEvent): string { const end = this.scheduleMinutes(show.start) + show.duration; return `${show.start} – ${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`; }
   protected beginScheduleDrag(event: PointerEvent): void { const viewport = event.currentTarget as HTMLElement; this.scheduleDragging = true; this.scheduleDragStartX = event.clientX; this.scheduleScrollStart = viewport.scrollLeft; viewport.setPointerCapture(event.pointerId); }
   protected dragSchedule(event: PointerEvent): void { if (!this.scheduleDragging) return; const viewport = event.currentTarget as HTMLElement; viewport.scrollLeft = this.scheduleScrollStart - (event.clientX - this.scheduleDragStartX); }
   protected endScheduleDrag(): void { this.scheduleDragging = false; }
