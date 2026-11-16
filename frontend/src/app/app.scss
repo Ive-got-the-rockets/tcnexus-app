@@ -283,9 +283,9 @@
 .calendar-modal { width: min(1120px, 96vw); max-height: min(780px, 88vh); overflow: auto; padding: 1.4rem; color: #d7dfdd; background: #11191e; border: 1px solid #2a4650; border-radius: 18px; box-shadow: 0 28px 90px rgba(0,0,0,.58); font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 .calendar-modal__toolbar { display: flex; align-items: center; gap: .75rem; padding-bottom: 1rem; border-bottom: 0; }
 .calendar-modal__toolbar strong { margin-inline: auto; color: #a8b7b5; font: 500 1rem var(--font-mono); letter-spacing: .12em; }
-.calendar-modal__toggle { display: flex; border: 1px solid color-mix(in srgb, var(--paper) 40%, transparent); border-radius: 8px; overflow: hidden; }
+.calendar-modal__toggle { display: flex; border: 0; border-radius: 8px; overflow: hidden; background: #151719; }
 .calendar-modal__toggle button, .calendar-modal__nav, .calendar-modal__today, .calendar-modal__close { border: 0; background: transparent; color: #a8b7b5; cursor: pointer; font: 600 .75rem var(--font-ui); }
-.calendar-modal__toggle button { padding: .6rem .9rem; }.calendar-modal__toggle .is-active { color: #11191e; background: color-mix(in srgb, var(--paper) 40%, transparent); }
+.calendar-modal__toggle button { padding: .6rem .9rem; color: #fff; }.calendar-modal__toggle .is-active { color: #151719; background: #fff; }
 .calendar-modal__nav, .calendar-modal__today { min-width: 2.35rem; height: 2.35rem; border: 0; border-radius: 999px; background: #151719; color: #fff; font-family: 'Barlow', sans-serif; font-weight: 500; }.calendar-modal__nav:hover, .calendar-modal__today:hover { background: #fff; color: #151719; }.calendar-modal__nav { font-size: 25px; line-height: 1; }.calendar-modal__nav > span { display: inline-block; transform: translateY(-2px); }.calendar-modal__today { min-width: 4.8rem; font-size: .65rem; }.calendar-modal__close { margin-left: .25rem; font-size: 1.6rem; color: #718381; }
 .calendar-modal__month { display: grid; grid-template-columns: repeat(7, 1fr); margin-top: 1rem; }
 .calendar-modal__weekday, .calendar-modal__day { min-width: 0; }
