@@ -307,6 +307,8 @@
 .calendar-event-popup { border-color: color-mix(in srgb, var(--paper) 40%, transparent); }
 .calendar-event-popup { animation: calendar-event-popup-in .22s ease-in-out both; }
 .calendar-event-popup__description { padding-bottom: 20px; margin-bottom: 20px; }
+.calendar-event-popup__close { top: .55rem; right: .55rem; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 4.8px; background: transparent; color: var(--paper); font-size: 2rem; line-height: 1; }
+.calendar-event-popup__close:hover { background: #fff; color: #151719; }
 @keyframes calendar-event-popup-in { from { opacity: 0; transform: translate(-50%, -50%) scale(1.08); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 .calendar-modal__week-head { background: transparent !important; }
 .calendar-modal__week { position: relative; }.calendar-modal__week::before { content: ''; position: absolute; top: -15px; left: -1.4rem; right: -1.4rem; height: 1px; background: #2a4650; }.calendar-modal__week-head { border-top: 0; border-bottom: 0; }
