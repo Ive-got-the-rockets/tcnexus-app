@@ -319,6 +319,9 @@
 .calendar-modal__week-row > * { border-color: rgba(255, 255, 255, .3); }
 .calendar-modal__event { background: #151719; border: 1px solid #ff3b30; }
 .calendar-modal__event:hover { background: #151719; }
+.calendar-modal__event { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: .2rem; padding: .45rem .55rem; text-align: left; white-space: normal; font: 500 16px/1.15 'Barlow', sans-serif; }
+.calendar-modal__event-title { display: block; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.calendar-modal__event-time { display: block; color: #fff; font-size: .8em; line-height: 1; }
 .calendar-modal__week-allday { position: relative; border-bottom: 0; }
 .calendar-modal__week-allday > * { border-bottom-color: transparent; }
 .calendar-modal__week-allday::after { content: ''; position: absolute; left: -1.4rem; right: auto; bottom: 0; width: calc(100% + 2.8rem); height: 1px; background: rgba(255, 255, 255, .3); }

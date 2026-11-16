@@ -112,6 +112,7 @@ export class App implements OnInit, OnDestroy {
   protected weekDays(): Date[] { const anchor = this.calendarAnchor(); const start = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate()); start.setDate(start.getDate() - start.getDay()); return Array.from({ length: 7 }, (_, index) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + index)); }
   protected eventsForDay(day: Date): Course[] { return this.liveShows().filter(show => show.live_start_date === this.dateKey(day)); }
   protected eventTime(show: Course): string { return show.live_start_time || 'LIVE'; }
+  protected eventTime24(show: Course): string { const value = String(show.live_start_time || '').trim(); if (!value) return 'LIVE'; const time = this.weekEventTime(show); return `${String(time.hour).padStart(2, '0')}:${String(time.minute).padStart(2, '0')}`; }
   protected timeSlots(): Array<{ hour: number; minute: number }> { return Array.from({ length: 48 }, (_, index) => ({ hour: Math.floor(index / 2), minute: index % 2 ? 30 : 0 })); }
   protected timeSlotLabel(slot: { hour: number; minute: number }): string { return `${String(slot.hour).padStart(2, '0')}:${String(slot.minute).padStart(2, '0')}`; }
   protected isQuietTime(slot: { hour: number }): boolean { return slot.hour < 7 || slot.hour >= 19; }
