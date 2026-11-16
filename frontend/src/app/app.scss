@@ -276,6 +276,7 @@
 .site-header__nav-link--live::after { content: ''; position: absolute; top: 50%; right: -10px; bottom: auto; left: auto; width: 8px; height: 8px; transform: translateY(-50%); border-radius: 50%; background: #ff3b30; }
 .site-header__actions .site-header__icon, .site-header__actions .site-header__icon svg { width: 30px; height: 30px; }
 .site-header__profile-image { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+.site-header__profile > .site-header__icon { transform: translateY(3px); }
 .site-header__calendar .site-header__icon { width: 30px; height: 30px; }
 .site-header__calendar .site-header__icon svg { width: 30px; height: 30px; }
 .calendar-picker { position: absolute; top: calc(100% + .8rem); right: 0; width: 250px; padding: .75rem; background: var(--ink-raised); border: 1px solid var(--rule); box-shadow: 0 18px 40px #0009; z-index: 20; }
