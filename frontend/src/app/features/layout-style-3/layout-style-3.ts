@@ -26,6 +26,14 @@ interface ReturnOverlayState {
   thumbnailUrl: string;
 }
 
+interface ScheduleEvent {
+  id: string | number;
+  title: string;
+  start: string;
+  duration: number;
+  tone: 'cyan' | 'red';
+}
+
 @Component({
   selector: 'app-layout-style-3',
   imports: [RowScrollDirective, CourseOverview],
@@ -70,6 +78,9 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   private featuredTouchLastX: number | null = null;
   private featuredTouchLastAt = 0;
   private featuredSwipeSettleTimer?: ReturnType<typeof setTimeout>;
+  private scheduleDragStartX = 0;
+  private scheduleScrollStart = 0;
+  private scheduleDragging = false;
   protected readonly featuredSwipeOffset = signal(0);
   protected readonly featuredSwipeDragging = signal(false);
   private readonly onScroll = () => {
@@ -110,12 +121,31 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
 
   protected scheduleDayLabel(day: Date): string { return day.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase(); }
   protected scheduleDateLabel(day: Date): string { return String(day.getDate()).padStart(2, '0'); }
+  protected isScheduleToday(day: Date): boolean { return this.scheduleDateKey(day) === this.scheduleDateKey(new Date()); }
   protected scheduleDateKey(day: Date): string { return `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`; }
-  protected scheduleShowsForDay(day: Date): Course[] { return this.liveShowCourses().filter(show => show.live_start_date === this.scheduleDateKey(day)); }
-  protected scheduleEventStyle(show: Course): string { const start = this.scheduleMinutes(show.live_start_time); const duration = Math.max(Number(show.live_duration || 60), 30); return `left: ${Math.max(start - 390, 0) / 30 * 92}px; width: ${duration / 30 * 92 - 8}px;`; }
+  protected scheduleShowsForDay(day: Date): ScheduleEvent[] {
+    const realShows = this.liveShowCourses().filter(show => show.live_start_date === this.scheduleDateKey(day)).map(show => ({ id: show.id, title: show.title, start: this.scheduleEventTime(show), duration: Number(show.live_duration || 60), tone: 'cyan' as const }));
+    if (realShows.length) return realShows;
+    const demo = [
+      { title: 'Morning Brief', start: '06:30', duration: 90, tone: 'cyan' as const },
+      { title: 'Market Pulse', start: '09:00', duration: 120, tone: 'red' as const },
+      { title: 'Tech Today', start: '07:00', duration: 150, tone: 'cyan' as const },
+      { title: 'Industry Insights', start: '10:00', duration: 120, tone: 'cyan' as const },
+      { title: 'Global Update', start: '07:30', duration: 150, tone: 'cyan' as const },
+      { title: 'Innovation Hour', start: '09:00', duration: 150, tone: 'red' as const },
+      { title: 'Weekend Digest', start: '06:30', duration: 120, tone: 'cyan' as const },
+    ];
+    const item = demo[day.getDay() % demo.length];
+    return [{ ...item, id: `demo-${this.scheduleDateKey(day)}` }];
+  }
+  protected scheduleEventStyle(show: ScheduleEvent): string { const start = this.scheduleMinutes(show.start); return `left: ${Math.max(start - 390, 0) / 30 * 92}px; width: ${Math.max(show.duration / 30 * 92 - 8, 84)}px;`; }
+  protected scheduleEventClass(show: ScheduleEvent): string { return `live-schedule__event--${show.tone}`; }
   protected scheduleNowStyle(): string { const minutes = new Date().getHours() * 60 + new Date().getMinutes(); return `left: ${Math.max(minutes - 390, 0) / 30 * 92 + 76}px;`; }
   protected scheduleNowVisible(): boolean { const minutes = new Date().getHours() * 60 + new Date().getMinutes(); return minutes >= 390 && minutes <= 1440; }
   protected scheduleEventTime(show: Course): string { const minutes = this.scheduleMinutes(show.live_start_time); return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`; }
+  protected beginScheduleDrag(event: PointerEvent): void { const viewport = event.currentTarget as HTMLElement; this.scheduleDragging = true; this.scheduleDragStartX = event.clientX; this.scheduleScrollStart = viewport.scrollLeft; viewport.setPointerCapture(event.pointerId); }
+  protected dragSchedule(event: PointerEvent): void { if (!this.scheduleDragging) return; const viewport = event.currentTarget as HTMLElement; viewport.scrollLeft = this.scheduleScrollStart - (event.clientX - this.scheduleDragStartX); }
+  protected endScheduleDrag(): void { this.scheduleDragging = false; }
   private scheduleMinutes(value: string | null | undefined): number { const match = String(value || '').match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/i); if (!match) return 390; let hour = Number(match[1]); const minute = Number(match[2] || 0); const meridiem = match[3]?.toUpperCase(); if (meridiem === 'PM' && hour < 12) hour += 12; if (meridiem === 'AM' && hour === 12) hour = 0; return hour * 60 + minute; }
 
   protected openLiveShow(id: string): void {

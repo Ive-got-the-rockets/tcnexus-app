@@ -25,10 +25,13 @@
 .live-schedule__viewport {
   position: relative;
   overflow-x: auto;
+  cursor: grab;
+  scrollbar-color: rgba(242,240,232,.4) transparent;
   border: 1px solid rgba(255,255,255,.18);
   border-radius: 12px;
   background: rgba(11,13,12,.82);
 }
+.live-schedule__viewport:active { cursor: grabbing; }
 
 .live-schedule__grid {
   display: grid;
@@ -41,14 +44,19 @@
   border-right: 1px solid rgba(255,255,255,.08);
   border-bottom: 1px solid rgba(255,255,255,.08);
 }
+.live-schedule__corner, .live-schedule__day { position: sticky; left: 0; z-index: 4; }
+.live-schedule__corner { background: #151719; }
 
 .live-schedule__corner { grid-column: 1; min-height: 48px; }
 .live-schedule__time { min-height: 48px; padding: 14px 8px; color: var(--paper); text-align: center; font: 600 13px/1 var(--font-ui); }
 .live-schedule__day { display: flex; flex-direction: column; justify-content: center; gap: 3px; padding: 10px 14px; background: rgba(255,255,255,.025); }
 .live-schedule__day b { font: 600 12px/1 var(--font-ui); letter-spacing: .08em; }
 .live-schedule__day i { color: var(--paper-dim); font: italic 22px/1 var(--font-ui); }
+.live-schedule__day--today { background: rgba(230,163,199,.22); color: #e6a3c7; }
+.live-schedule__day--today i { color: #e6a3c7; }
 .live-schedule__track { position: relative; grid-column: 2 / -1; min-height: 76px; background: linear-gradient(90deg, rgba(82,169,160,.06), transparent 65%); }
-.live-schedule__event { position: absolute; top: 10px; height: 56px; overflow: hidden; padding: 9px 12px; border: 1px solid rgba(82,169,160,.7); border-radius: 6px; background: #151719; color: var(--paper); cursor: pointer; text-align: left; }
+.live-schedule__event { position: absolute; top: 10px; height: 56px; overflow: hidden; padding: 9px 12px; border: 1px solid rgba(82,169,160,.7); border-left: 5px solid #52a9a0; border-radius: 6px; background: #151719; color: var(--paper); cursor: pointer; text-align: left; }
+.live-schedule__event--red { border-color: rgba(255,59,48,.7); border-left-color: #ff3b30; }
 .live-schedule__event strong, .live-schedule__event span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .live-schedule__event strong { font: 600 15px/1.2 var(--font-ui); }
 .live-schedule__event span { margin-top: 5px; color: var(--paper-dim); font: 12px/1 var(--font-mono); }
