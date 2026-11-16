@@ -318,6 +318,6 @@
 .calendar-modal__week::before { background: rgba(255, 255, 255, .3); }
 .calendar-modal__week-row > * { border-color: rgba(255, 255, 255, .3); }
 .calendar-modal__week-allday { position: relative; border-bottom: 0; }
-.calendar-modal__week-allday::after { content: ''; position: absolute; left: -1.4rem; right: -1.4rem; bottom: 0; height: 1px; background: rgba(255, 255, 255, .3); }
+.calendar-modal__week-allday::after { content: ''; position: absolute; left: -1.4rem; right: auto; bottom: 0; width: calc(100% + 2.8rem); height: 1px; background: rgba(255, 255, 255, .3); }
 .calendar-modal__week-scroll .calendar-modal__week-row > * { border-color: rgba(255, 255, 255, .05); }
 @media (max-width: 700px) { .calendar-modal-backdrop { padding: .75rem; }.calendar-modal { padding: .8rem; }.calendar-modal__toolbar { flex-wrap: wrap; }.calendar-modal__toolbar strong { order: 3; width: 100%; text-align: center; }.calendar-modal__day { min-height: 5rem; padding: .35rem; }.calendar-modal__event { font-size: .56rem; } }
