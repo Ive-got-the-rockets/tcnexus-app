@@ -659,7 +659,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
     setTimeout(() => this.positionScheduleAtCurrentHour(), 0);
   }
 
-  private positionScheduleAtCurrentHour(): void { const viewport = this.scheduleViewport()?.nativeElement; if (!viewport) return; const current = new Date().getHours() * 60 + new Date().getMinutes(); viewport.scrollLeft = Math.max((Math.max(current - 60, 0) / 30) * 92, 0); }
+  private positionScheduleAtCurrentHour(): void { const viewport = this.scheduleViewport()?.nativeElement; if (!viewport) return; const previousHour = Math.max(new Date().getHours() - 1, 0); viewport.scrollLeft = previousHour * 2 * 92; }
 
   ngOnDestroy(): void {
     const track = this.track()?.nativeElement;

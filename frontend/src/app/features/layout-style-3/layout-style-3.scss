@@ -59,7 +59,7 @@
 .live-schedule__track { position: relative; grid-column: 2 / -1; min-height: 86px; background: linear-gradient(90deg, rgba(82,169,160,.06), transparent 65%); }
 .live-schedule__event { position: absolute; top: 10px; height: 66px; overflow: hidden; padding: 10px 12px; border: 1px solid rgba(82,169,160,.7); border-left: 5px solid #52a9a0; border-radius: 6px; background: #151719; color: var(--paper); cursor: pointer; text-align: left; }
 .live-schedule__event::before { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 5px; background: #52a9a0; }
-.live-schedule__event--red { border-color: rgba(255,59,48,.7); border-left-color: #ff3b30; background: linear-gradient(270deg, rgba(255,59,48,.45), #151719 72%); }
+.live-schedule__event--red { border-color: rgba(255,59,48,.7); border-left-color: #ff3b30; background: linear-gradient(270deg, rgba(255,59,48,.6) 0%, rgba(255,59,48,.22) 45%, #151719 100%); }
 .live-schedule__event--red::before { background: #ff3b30; }
 .live-schedule__event-title-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .live-schedule__event strong, .live-schedule__event span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
