@@ -94,7 +94,7 @@ export class App implements OnInit, OnDestroy {
     return 'home';
   }
 
-  protected toggleCalendarMenu(): void { this.calendarMenuOpen.update(open => !open); }
+  protected toggleCalendarMenu(): void { this.calendarMenuOpen.update(open => !open); if (this.calendarMenuOpen() && this.calendarView() === 'week') this.scrollWeekTo0630(); }
   protected closeCalendarMenu(): void { this.calendarMenuOpen.set(false); this.selectedCalendarEvent.set(null); }
   protected openCalendarEvent(show: Course): void { this.selectedCalendarEvent.set(show); }
   protected closeCalendarEvent(): void { this.selectedCalendarEvent.set(null); }
@@ -102,7 +102,8 @@ export class App implements OnInit, OnDestroy {
   protected calendarEventHostPhoto(show: Course): string { return show.hosts?.[0]?.photo || profilePlaceholderUrl(show.hosts?.[0]?.id || 0); }
   protected calendarEventDuration(show: Course): string { const minutes = Number(show.live_duration || 0); if (!minutes) return 'Approximate duration unavailable'; return minutes >= 60 ? `${Math.floor(minutes / 60)}${minutes % 60 ? ` hr ${minutes % 60} min` : ' hr'}` : `${minutes} min`; }
   protected profilePlaceholderUrl(id: number): string { return profilePlaceholderUrl(id); }
-  protected setCalendarView(view: 'month' | 'week'): void { this.calendarView.set(view); }
+  protected setCalendarView(view: 'month' | 'week'): void { this.calendarView.set(view); if (view === 'week') this.scrollWeekTo0630(); }
+  private scrollWeekTo0630(): void { requestAnimationFrame(() => { const scroll = document.querySelector<HTMLElement>('.calendar-modal__week-scroll'); const row = scroll?.querySelector<HTMLElement>('.calendar-modal__week-row'); if (scroll && row) scroll.scrollTop = row.offsetHeight * 13; }); }
   protected shiftCalendar(offset: number): void { this.calendarAnchor.update(date => new Date(date.getFullYear(), date.getMonth() + offset, 1)); }
   protected goToToday(): void { this.calendarAnchor.set(new Date()); }
   protected todayNumber(): number { return new Date().getDate(); }
