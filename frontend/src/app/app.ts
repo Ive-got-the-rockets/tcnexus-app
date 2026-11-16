@@ -111,8 +111,11 @@ export class App implements OnInit, OnDestroy {
   protected weekDays(): Date[] { const anchor = this.calendarAnchor(); const start = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate()); start.setDate(start.getDate() - start.getDay()); return Array.from({ length: 7 }, (_, index) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + index)); }
   protected eventsForDay(day: Date): Course[] { return this.liveShows().filter(show => show.live_start_date === this.dateKey(day)); }
   protected eventTime(show: Course): string { return show.live_start_time || 'LIVE'; }
-  protected isWeekEventStart(show: Course, hour: number): boolean { return this.weekEventTime(show).hour === hour; }
-  protected weekEventStyle(show: Course): string { const time = this.weekEventTime(show); const duration = Math.max(Number(show.live_duration || 60), 30); return `top: ${time.minute / 60 * 2.9}rem; height: ${Math.max(duration / 60 * 2.9 - .35, 2.2)}rem;`; }
+  protected timeSlots(): Array<{ hour: number; minute: number }> { return Array.from({ length: 48 }, (_, index) => ({ hour: Math.floor(index / 2), minute: index % 2 ? 30 : 0 })); }
+  protected timeSlotLabel(slot: { hour: number; minute: number }): string { return `${String(slot.hour).padStart(2, '0')}:${String(slot.minute).padStart(2, '0')}`; }
+  protected isQuietTime(slot: { hour: number }): boolean { return slot.hour < 7 || slot.hour >= 19; }
+  protected isWeekEventStart(show: Course, hour: number, minute: number): boolean { const time = this.weekEventTime(show); return Math.floor((time.hour * 60 + time.minute) / 30) === hour * 2 + minute / 30; }
+  protected weekEventStyle(show: Course): string { const time = this.weekEventTime(show); const duration = Math.max(Number(show.live_duration || 60), 30); const offset = (time.minute % 30) / 30 * 1.45; return `top: ${offset}rem; height: ${Math.max(duration / 60 * 2.9 - .35, 2.2)}rem;`; }
   private weekEventTime(show: Course): { hour: number; minute: number } {
     const value = String(show.live_start_time || '').trim();
     const match = value.match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/i);

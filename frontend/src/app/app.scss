@@ -306,6 +306,7 @@
 .calendar-modal__week-row > * { border-color: rgba(42, 70, 80, .35); }
 .calendar-modal__week-row > div { position: relative; }
 .calendar-modal__week-row .calendar-modal__event { position: absolute; left: .35rem; right: .35rem; z-index: 2; width: auto; margin-top: 0; overflow: hidden; }
+.calendar-modal__week-row.is-quiet > * { background: linear-gradient(90deg, rgba(255,255,255,.2), transparent 72%); }
 .calendar-modal__week-head > span:not(:first-child) { display: flex; flex-direction: column; align-items: center; gap: .12rem; }.calendar-modal__week-head b { color: #fff; font: 700 .62rem var(--font-mono); letter-spacing: .08em; }.calendar-modal__week-head i { color: #fff; font: italic 1.45rem var(--font-ui); }.calendar-modal__week-head .is-today b, .calendar-modal__week-head .is-today i { color: #e6a3c7; }.calendar-modal__week-head .is-today i { font-weight: 700; }
 .calendar-modal__week-allday, .calendar-modal__week-row > span { color: #fff; }
 .calendar-modal__week-head b { font-family: 'DM Sans', sans-serif; }.calendar-modal__week-head i { font-family: 'DM Sans', sans-serif; }
