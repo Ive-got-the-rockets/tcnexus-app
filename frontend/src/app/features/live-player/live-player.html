@@ -7,7 +7,7 @@
     <main class="live-detail-page" [style.--live-detail-image]="'url(' + liveShow.thumbnailUrl + ')'">
       <div class="live-detail-backdrop" aria-hidden="true"></div>
       <section class="live-detail-content" aria-labelledby="live-detail-title">
-        <p class="live-player-kicker">LIVE SOON</p>
+        <p class="live-player-kicker">LIVE SHOW</p>
         <h1 id="live-detail-title">{{ liveShow.title }}</h1>
         <div class="live-detail-badges"><span class="live-detail-badge live-detail-badge--highlighted">LIVE</span><span class="live-detail-meta-dot" aria-hidden="true"></span><span class="live-detail-badge">{{ liveShow.scheduleLabel }}</span></div>
         <p class="live-detail-description">{{ liveShow.description }}</p>
@@ -23,14 +23,38 @@
             </div>
           </div>
         </div>
-        <button type="button" class="live-detail-watch" (click)="openWorkspace()">Watch Live</button>
       </section>
-      <aside class="live-detail-mini-player" aria-label="Live show preview">
-        <img [src]="liveShow.thumbnailUrl" [alt]="liveShow.title + ' preview'" />
-        <button type="button" class="live-detail-mini-play" (click)="openWorkspace()" [attr.aria-label]="'Open ' + liveShow.title">
-          <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" /></svg>
-        </button>
-      </aside>
+      <section class="live-detail-clock" aria-label="Live show playback and schedule">
+        @let countdown = clock();
+        @if (countdown.isLive) {
+          <button type="button" class="live-detail-play" (click)="openWorkspace()" [attr.aria-label]="'Play ' + liveShow.title">
+            <svg viewBox="0 0 88 88" aria-hidden="true">
+              <circle cx="44" cy="44" r="39" />
+              <path d="M37 27.5c-1.3-.8-3 .2-3 1.7v29.6c0 1.5 1.7 2.5 3 1.7l24-14.8a2 2 0 0 0 0-3.4L37 27.5Z" />
+            </svg>
+          </button>
+        }
+        <p class="live-detail-clock__label" [class.live-detail-clock__label--countdown]="countdown.units.length > 0" role="status">{{ countdown.label }}</p>
+        @if (countdown.units.length) {
+          <div class="live-detail-clock__digits" role="timer">
+            @for (unit of countdown.units; track unit.label) {
+              @if (!$first) { <span class="live-detail-clock__separator" aria-hidden="true">:</span> }
+              <div class="live-detail-clock__unit">
+                <span class="live-detail-clock__value" [attr.aria-label]="unit.digits.join('') + ' ' + unit.label">
+                  @for (digit of unit.digits; track $index) {
+                    <span class="live-detail-clock__digit-window" aria-hidden="true">
+                      @for (value of [digit]; track value) {
+                        <span class="live-detail-clock__digit" animate.enter="live-detail-clock__digit--enter" animate.leave="live-detail-clock__digit--leave">{{ value }}</span>
+                      }
+                    </span>
+                  }
+                </span>
+                <span class="live-detail-clock__unit-label" aria-hidden="true">{{ unit.label }}</span>
+              </div>
+            }
+          </div>
+        }
+      </section>
     </main>
   }
 } @else {

@@ -1,6 +1,8 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DomSanitizer } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { interval } from 'rxjs';
 import { CoursesService } from '../../core/courses.service';
 import { LiveShow } from '../../core/live-shows';
 import { Course } from '../../core/models';
@@ -17,8 +19,33 @@ export class LivePlayerPage {
   private readonly sanitizer = inject(DomSanitizer);
   private readonly coursesService = inject(CoursesService);
   private readonly liveShowId = this.route.snapshot.paramMap.get('id');
+  private readonly now = signal(Date.now());
+  private readonly schedule = signal<{ start: number; duration: number } | null>(null);
   protected readonly show = signal<LiveShow | undefined>(undefined);
   protected readonly workspaceMode = this.route.snapshot.queryParamMap.get('mode') === 'workspace';
+  protected readonly clock = computed(() => {
+    const schedule = this.schedule();
+    if (!schedule) return { label: 'Schedule to be announced', units: [], isLive: false };
+
+    const remaining = schedule.start - this.now();
+    if (remaining <= 0) {
+      const isLive = remaining > -schedule.duration * 60_000;
+      return { label: isLive ? 'Live now' : 'Scheduled time has passed', units: [], isLive };
+    }
+
+    const seconds = Math.ceil(remaining / 1_000);
+    const units = [
+      { label: 'Days', value: Math.floor(seconds / 86_400) },
+      { label: 'Hours', value: Math.floor(seconds / 3_600) % 24 },
+      { label: 'Minutes', value: Math.floor(seconds / 60) % 60 },
+    ];
+    if (remaining <= 10 * 60_000) units.push({ label: 'Seconds', value: seconds % 60 });
+    return {
+      label: 'Live in',
+      units: units.map(({ label, value }) => ({ label, digits: String(value).padStart(2, '0').split('') })),
+      isLive: false,
+    };
+  });
   protected readonly embedUrl = computed(() => {
     const url = this.show()?.embedUrl;
     if (!url) return null;
@@ -29,10 +56,25 @@ export class LivePlayerPage {
   });
 
   constructor() {
-    this.coursesService.getLiveShows().subscribe({
+    const destroyRef = inject(DestroyRef);
+    if (!this.workspaceMode) {
+      interval(1_000).pipe(takeUntilDestroyed(destroyRef)).subscribe(() => this.now.set(Date.now()));
+    }
+
+    this.coursesService.getLiveShows().pipe(takeUntilDestroyed(destroyRef)).subscribe({
       next: shows => {
         const catalogShow = shows.find(show => String(show.id) === this.liveShowId);
-        if (catalogShow) this.show.set(this.catalogLiveShow(catalogShow));
+        if (!catalogShow) return;
+
+        const date = catalogShow.live_start_date;
+        const time = catalogShow.live_start_time;
+        if (date && time && /^\d{4}-\d{2}-\d{2}$/.test(date) && /^\d{2}:\d{2}$/.test(time)) {
+          const start = Date.parse(`${date}T${time}`);
+          if (Number.isFinite(start)) {
+            this.schedule.set({ start, duration: Number(catalogShow.live_duration) || 0 });
+          }
+        }
+        this.show.set(this.catalogLiveShow(catalogShow));
       },
     });
   }

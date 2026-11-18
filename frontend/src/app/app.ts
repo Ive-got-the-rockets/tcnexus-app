@@ -198,8 +198,9 @@ export class App implements OnInit, OnDestroy {
     const explicitDesktopRoute = path === '/layout-style-3' || path === '/layout-style-4';
     const mobileRoute = path === '/mobile-layout-1' || path.startsWith('/mobile-layout-1/');
     const chromeFreeRoute = path.startsWith('/tc-lens') || path.startsWith('/courses/');
+    const livePlaybackRoute = path.startsWith('/live/') || path === '/live-stream-layout';
 
-    if (window.matchMedia(`(max-width: ${mobileWidth - 1}px)`).matches && !explicitDesktopRoute && !mobileRoute && !chromeFreeRoute) {
+    if (window.matchMedia(`(max-width: ${mobileWidth - 1}px)`).matches && !explicitDesktopRoute && !mobileRoute && !chromeFreeRoute && !livePlaybackRoute) {
       void this.router.navigateByUrl('/mobile-layout-1', { replaceUrl: true });
     }
   }
