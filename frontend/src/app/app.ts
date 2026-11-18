@@ -36,6 +36,8 @@ export class App implements OnInit, OnDestroy {
   protected readonly calendarAnchor = signal(new Date());
   protected readonly liveShows = signal<Course[]>([]);
   protected readonly selectedCalendarEvent = signal<Course | null>(null);
+  private calendarEventCloseTimer?: ReturnType<typeof setTimeout>;
+  protected readonly calendarEventClosing = signal(false);
   protected readonly selectedCalendarIcon = signal('play');
   protected readonly calendarIcons: readonly CalendarIconOption[] = [
     { key: 'play', label: 'Calendar play', svg: '<rect x="4" y="5.5" width="16" height="14" rx="2"/><path d="M8 3.5v4M16 3.5v4M4 9.5h16M10 13l4 2.5-4 2.5z"/>' },
@@ -95,9 +97,23 @@ export class App implements OnInit, OnDestroy {
   }
 
   protected toggleCalendarMenu(): void { this.calendarMenuOpen.update(open => !open); if (this.calendarMenuOpen() && this.calendarView() === 'week') this.scrollWeekTo0630(); }
-  protected closeCalendarMenu(): void { this.calendarMenuOpen.set(false); this.selectedCalendarEvent.set(null); }
-  protected openCalendarEvent(show: Course): void { this.selectedCalendarEvent.set(show); }
-  protected closeCalendarEvent(): void { this.selectedCalendarEvent.set(null); }
+  protected closeCalendarMenu(): void { this.calendarMenuOpen.set(false); this.cancelCalendarEventClose(); this.selectedCalendarEvent.set(null); }
+  protected openCalendarEvent(show: Course): void { this.cancelCalendarEventClose(); this.selectedCalendarEvent.set(show); }
+  protected closeCalendarEvent(): void {
+    if (!this.selectedCalendarEvent() || this.calendarEventCloseTimer !== undefined) return;
+    this.calendarEventCloseTimer = setTimeout(() => {
+      this.calendarEventClosing.set(true);
+      this.calendarEventCloseTimer = setTimeout(() => {
+        this.selectedCalendarEvent.set(null);
+        this.cancelCalendarEventClose();
+      }, 220);
+    }, 120);
+  }
+  protected cancelCalendarEventClose(): void {
+    clearTimeout(this.calendarEventCloseTimer);
+    this.calendarEventCloseTimer = undefined;
+    this.calendarEventClosing.set(false);
+  }
   protected calendarEventHost(show: Course): string { return show.hosts?.[0]?.name || 'TC Nexus'; }
   protected calendarEventHostPhoto(show: Course): string { return show.hosts?.[0]?.photo || profilePlaceholderUrl(show.hosts?.[0]?.id || 0); }
   protected calendarEventDuration(show: Course): string { const minutes = Number(show.live_duration || 0); if (!minutes) return 'Approximate duration unavailable'; return minutes >= 60 ? `${Math.floor(minutes / 60)}${minutes % 60 ? ` hr ${minutes % 60} min` : ' hr'}` : `${minutes} min`; }
@@ -189,6 +205,7 @@ export class App implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    clearTimeout(this.calendarEventCloseTimer);
     window.removeEventListener('scroll', this.onScroll);
   }
 }

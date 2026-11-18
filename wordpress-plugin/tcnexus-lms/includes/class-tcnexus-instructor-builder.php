@@ -18,13 +18,14 @@ class TCNexus_Instructor_Builder {
 	private static $hook_suffix;
 
 	public static function register() {
-		self::$hook_suffix = add_submenu_page(
-			TCNexus_Course_Builder::PAGE_SLUG,
-			'Instructors & Guests',
-			'Instructors & Guests',
+		self::$hook_suffix = add_menu_page(
+			'Instructors / Hosts & Guests',
+			'Instructors / Hosts & Guests',
 			'edit_posts',
 			self::PAGE_SLUG,
-			array( __CLASS__, 'render' )
+			array( __CLASS__, 'render' ),
+			'dashicons-groups',
+			3.35
 		);
 
 		add_action( 'load-' . self::$hook_suffix, array( __CLASS__, 'maybe_create_instructor' ) );
@@ -36,7 +37,7 @@ class TCNexus_Instructor_Builder {
 
 	public static function set_page_title() {
 		global $title;
-		$title = 'Instructors & Guests';
+		$title = 'Instructors / Hosts & Guests';
 	}
 
 	public static function maybe_create_instructor() {
@@ -47,13 +48,13 @@ class TCNexus_Instructor_Builder {
 			wp_die( 'You do not have permission to access this page.' );
 		}
 
-		$role = isset( $_GET['role'] ) && 'guest' === $_GET['role'] ? 'guest' : 'instructor';
+		$role = isset( $_GET['role'] ) && in_array( $_GET['role'], array( 'guest', 'host' ), true ) ? sanitize_key( $_GET['role'] ) : 'instructor';
 
-		$role = sanitize_key( $_POST['role'] ?? 'instructor' );
+		$role = sanitize_key( $_POST['role'] ?? ( $_GET['role'] ?? 'instructor' ) );
 		$is_character = 'character' === $role;
 		$new_id = wp_insert_post( array(
 			'post_type'   => $is_character ? 'tc_character' : 'tc_instructor',
-			'post_title'  => 'guest' === $role ? 'Untitled Guest' : 'Untitled Instructor',
+			'post_title'  => 'guest' === $role ? 'Untitled Guest' : ( 'host' === $role ? 'Untitled Host' : 'Untitled Instructor' ),
 			'post_status' => 'publish',
 		) );
 		TCNexus_Post_Types::set_person_role( $new_id, $role );
@@ -165,10 +166,14 @@ class TCNexus_Instructor_Builder {
 		) );
 
 		$instructors = array();
+		$hosts       = array();
 		$guests      = array();
 		foreach ( $people as $person ) {
-			if ( 'guest' === TCNexus_Post_Types::get_person_role( $person->ID ) ) {
+			$role = TCNexus_Post_Types::get_person_role( $person->ID );
+			if ( 'guest' === $role ) {
 				$guests[] = $person;
+			} elseif ( 'host' === $role ) {
+				$hosts[] = $person;
 			} else {
 				$instructors[] = $person;
 			}
@@ -176,7 +181,15 @@ class TCNexus_Instructor_Builder {
 		?>
 		<div class="wrap tcn-list-wrap">
 			<div class="tcn-list-header">
-				<h1>Instructors &amp; Guests</h1>
+			<h1>Instructors / Hosts &amp; Guests</h1>
+			</div>
+
+			<div class="tcn-person-section tcn-person-section--hosts">
+				<div class="tcn-list-header tcn-list-header--sub">
+					<h2>Hosts</h2>
+					<button type="button" class="tcn-add-course-btn" data-add-person-modal-role="host">+ Add New Host</button>
+				</div>
+				<?php self::render_person_cards( $hosts, 'Untitled Host' ); ?>
 			</div>
 
 			<?php if ( isset( $_GET['deleted'] ) ) : ?>
@@ -186,7 +199,7 @@ class TCNexus_Instructor_Builder {
 			<div class="tcn-person-section">
 				<div class="tcn-list-header tcn-list-header--sub">
 					<h2>Instructors</h2>
-					<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::PAGE_SLUG . '&new=1&role=instructor' ) ); ?>" class="tcn-add-course-btn">+ Add New Instructor</a>
+					<button type="button" class="tcn-add-course-btn" data-add-person-modal-role="instructor">+ Add New Instructor</button>
 				</div>
 				<?php self::render_person_cards( $instructors, 'Untitled Instructor' ); ?>
 			</div>
@@ -194,7 +207,7 @@ class TCNexus_Instructor_Builder {
 			<div class="tcn-person-section tcn-person-section--guests">
 				<div class="tcn-list-header tcn-list-header--sub tcn-list-header--guests">
 					<h2>Guests</h2>
-					<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::PAGE_SLUG . '&new=1&role=guest' ) ); ?>" class="tcn-add-course-btn">+ Add New Guest</a>
+					<button type="button" class="tcn-add-course-btn" data-add-person-modal-role="guest">+ Add New Guest</button>
 				</div>
 				<?php self::render_person_cards( $guests, 'Untitled Guest' ); ?>
 			</div>
@@ -209,6 +222,26 @@ class TCNexus_Instructor_Builder {
 					</div>
 				</div>
 			</div>
+
+			<div class="tcn-modal-backdrop" id="tcn-add-host-modal" aria-hidden="true">
+				<div class="tcn-modal tcn-modal--center tcn-add-host-modal" role="dialog" aria-modal="true" aria-labelledby="tcn-add-person-title">
+					<button type="button" class="tcn-modal__close" id="tcn-add-person-modal-close" aria-label="Close">×</button>
+					<h2 id="tcn-add-person-title">Add New Host</h2>
+					<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+						<input type="hidden" name="action" value="tcnexus_create_host_modal" />
+						<?php wp_nonce_field( 'tcnexus_create_host_modal', 'tcnexus_create_host_nonce' ); ?>
+						<div class="tcn-field"><label class="tcn-field__label" for="tcn-modal-person-name">Name</label><input type="text" id="tcn-modal-person-name" name="person_name" required /></div>
+						<hr class="tcn-add-host-divider" />
+						<div class="tcn-field"><label class="tcn-field__label">Role</label><div class="tcn-pill-toggle"><input type="radio" id="tcn-modal-role-instructor" name="person_role" value="instructor" /><label for="tcn-modal-role-instructor">Instructor</label><input type="radio" id="tcn-modal-role-host" name="person_role" value="host" checked /><label for="tcn-modal-role-host">Host</label><input type="radio" id="tcn-modal-role-guest" name="person_role" value="guest" /><label for="tcn-modal-role-guest">Guest</label></div></div>
+						<div class="tcn-field"><label class="tcn-field__label">Photo</label><?php self::render_media_picker( 'host_photo_id', 0, 'Select photo' ); ?></div>
+						<div class="tcn-field"><label class="tcn-field__label" for="tcn-modal-person-bio">Bio</label><textarea class="tcn-host-bio-input" id="tcn-modal-person-bio" name="person_bio" rows="6" placeholder="Write a short bio…"></textarea></div>
+						<div class="tcn-modal__actions"><button type="button" class="tcn-btn-ghost" id="tcn-add-person-modal-cancel">Cancel</button><button type="submit" class="tcn-btn-ghost tcn-add-host-submit" id="tcn-add-person-submit">Add Host</button></div>
+					</form>
+				</div>
+			</div>
+			<script>
+				(function () { var modal = document.getElementById('tcn-add-host-modal'), close = function () { modal.classList.remove('is-open'); modal.setAttribute('aria-hidden', 'true'); document.body.classList.remove('tcn-host-modal-open'); }; if (!modal) return; document.querySelectorAll('[data-add-person-modal-role]').forEach(function (open) { open.addEventListener('click', function () { var role = open.getAttribute('data-add-person-modal-role'), label = role === 'guest' ? 'Guest' : (role === 'instructor' ? 'Instructor' : 'Host'); modal.classList.add('is-open'); modal.setAttribute('aria-hidden', 'false'); document.body.classList.add('tcn-host-modal-open'); document.getElementById('tcn-add-person-title').textContent = 'Add New ' + label; document.getElementById('tcn-add-person-submit').textContent = 'Add ' + label; document.getElementById('tcn-modal-role-' + role).checked = true; document.getElementById('tcn-modal-person-name').focus(); }); }); document.getElementById('tcn-add-person-modal-close').addEventListener('click', close); document.getElementById('tcn-add-person-modal-cancel').addEventListener('click', close); modal.addEventListener('click', function (event) { if (event.target === modal) close(); }); }());
+			</script>
 		</div>
 		<?php
 	}
@@ -283,7 +316,7 @@ class TCNexus_Instructor_Builder {
 				<div id="tcnexus-builder">
 					<div class="tcn-header">
 						<div class="tcn-header__title-row">
-							<p class="tcn-header__eyebrow"><?php echo 'guest' === $role ? 'Guest' : 'Instructor'; ?></p>
+							<p class="tcn-header__eyebrow"><?php echo 'guest' === $role ? 'Guest' : ( 'host' === $role ? 'Host' : 'Instructor' ); ?></p>
 							<input type="text" id="instructor_name" name="instructor_name" class="tcn-title-input" value="<?php echo esc_attr( $person->post_title ); ?>" placeholder="Name" />
 						</div>
 						<div class="tcn-header__actions">
@@ -303,6 +336,8 @@ class TCNexus_Instructor_Builder {
 								<label for="role_instructor">Instructor</label>
 								<input type="radio" id="role_guest" name="role" value="guest" <?php checked( $role, 'guest' ); ?> />
 								<label for="role_guest">Guest</label>
+								<input type="radio" id="role_host" name="role" value="host" <?php checked( $role, 'host' ); ?> />
+								<label for="role_host">Host</label>
 							</div>
 						</div>
 
@@ -342,11 +377,11 @@ class TCNexus_Instructor_Builder {
 				     this screen is one of the two explicit choices. -->
 				<div class="tcn-modal-backdrop is-open" id="tcn-instructor-saved-modal">
 					<div class="tcn-modal tcn-modal--center">
-						<h2><?php echo 'guest' === $role ? 'Guest Added' : 'Instructor Added'; ?></h2>
+						<h2><?php echo 'guest' === $role ? 'Guest Added' : ( 'host' === $role ? 'Host Added' : 'Instructor Added' ); ?></h2>
 						<p>What would you like to do next?</p>
-						<div class="tcn-modal__actions">
-							<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::PAGE_SLUG ) ); ?>" class="tcn-btn-ghost">Back To All Instructors &amp; Guests</a>
-							<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::PAGE_SLUG . '&new=1&role=' . $role ) ); ?>" class="tcn-save-btn">Add New <?php echo 'guest' === $role ? 'Guest' : 'Instructor'; ?></a>
+						<div class="tcn-modal__actions tcn-profile-saved-actions">
+							<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::PAGE_SLUG ) ); ?>" class="tcn-btn-ghost">Back To All Instructors / Hosts &amp; Guests</a>
+							<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::PAGE_SLUG . '&new=1&role=' . $role ) ); ?>" class="tcn-btn-ghost">Add New <?php echo 'guest' === $role ? 'Guest' : ( 'host' === $role ? 'Host' : 'Instructor' ); ?></a>
 						</div>
 					</div>
 				</div>
@@ -395,6 +430,25 @@ class TCNexus_Instructor_Builder {
 
 		wp_safe_redirect( $redirect );
 		exit;
+	}
+
+	public static function handle_create_host_modal() {
+		if ( ! current_user_can( 'edit_posts' ) || ! isset( $_POST['tcnexus_create_host_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['tcnexus_create_host_nonce'] ) ), 'tcnexus_create_host_modal' ) ) { wp_die( 'Invalid request.' ); }
+		$name = sanitize_text_field( wp_unslash( $_POST['person_name'] ?? $_POST['host_name'] ?? '' ) );
+		$bio = wp_kses_post( wp_unslash( $_POST['person_bio'] ?? $_POST['host_bio'] ?? '' ) );
+		$photo_id = absint( $_POST['host_photo_id'] ?? 0 );
+		$role = in_array( sanitize_key( $_POST['person_role'] ?? $_POST['host_role'] ?? 'host' ), array( 'instructor', 'host', 'guest' ), true ) ? sanitize_key( $_POST['person_role'] ?? $_POST['host_role'] ?? 'host' ) : 'host';
+		if ( '' !== $name ) {
+			$id = wp_insert_post( array( 'post_type' => 'tc_instructor', 'post_title' => $name, 'post_content' => $bio, 'post_status' => 'publish' ), true );
+			if ( ! is_wp_error( $id ) ) { TCNexus_Post_Types::set_person_role( $id, $role ); if ( $photo_id ) { set_post_thumbnail( $id, $photo_id ); TCNexus_Media_Library::assign_attachment( $photo_id, 'guest' === $role ? 'guests' : 'instructors' ); TCNexus_Profile_Placeholders::clear( $id ); } else { TCNexus_Profile_Placeholders::assign_if_missing( $id ); } }
+		}
+		$return_url = ! empty( $_POST['return_url'] ) ? esc_url_raw( wp_unslash( $_POST['return_url'] ) ) : admin_url( 'admin.php?page=' . self::PAGE_SLUG . '&created=1' );
+		$redirect_args = array( 'created' => '1' );
+		if ( ! empty( $id ) && ! is_wp_error( $id ) ) {
+			$redirect_args['created_person_id'] = absint( $id );
+			$redirect_args['created_person_role'] = $role;
+		}
+		wp_safe_redirect( add_query_arg( $redirect_args, $return_url ) ); exit;
 	}
 
 	/**

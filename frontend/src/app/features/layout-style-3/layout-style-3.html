@@ -70,6 +70,35 @@
         [attr.aria-label]="'Open featured ' + featuredLabel(course) + ': ' + course.title"
         (click)="openCourse(course, $event)"
       ></button>
+      @if (isLiveShow(course)) {
+        <div class="style-featured__live-control">
+          <button type="button" class="style-featured__live-play" [attr.aria-label]="featuredPlayTooltip(course)" (click)="startWatching(course)">
+            <svg viewBox="0 0 88 88" aria-hidden="true">
+              <circle cx="44" cy="44" r="39" />
+              <path d="M37 27.5c-1.3-.8-3 .2-3 1.7v29.6c0 1.5 1.7 2.5 3 1.7l24-14.8a2 2 0 0 0 0-3.4L37 27.5Z" />
+            </svg>
+            <span class="style-featured__tooltip" aria-hidden="true">{{ featuredPlayTooltip(course) }}</span>
+          </button>
+          @if (liveCountdown(course); as countdown) {
+            @if (countdown.isLive) {
+              <div class="style-featured__countdown style-featured__countdown--live" role="status">LIVE NOW</div>
+            } @else {
+              <span class="style-featured__countdown-label">LIVE IN</span>
+              <div class="style-featured__countdown" role="timer" [attr.aria-label]="countdown.days + ' days, ' + countdown.hours + ' hours, ' + countdown.minutes + ' minutes, ' + countdown.seconds + ' seconds until the live show starts'">
+                <span class="style-featured__countdown-unit"><strong class="style-featured__countdown-value">@for (digit of countdownDigits(countdown.days); track $index) {<span class="style-featured__countdown-digit-window">@for (displayDigit of [digit]; track displayDigit) {<span class="style-featured__countdown-digit" animate.enter="style-featured__countdown-digit--enter" animate.leave="style-featured__countdown-digit--leave">{{ displayDigit }}</span>}</span>}</strong><small>Days</small></span>
+                <span class="style-featured__countdown-separator">:</span>
+                <span class="style-featured__countdown-unit"><strong class="style-featured__countdown-value">@for (digit of countdownDigits(countdown.hours); track $index) {<span class="style-featured__countdown-digit-window">@for (displayDigit of [digit]; track displayDigit) {<span class="style-featured__countdown-digit" animate.enter="style-featured__countdown-digit--enter" animate.leave="style-featured__countdown-digit--leave">{{ displayDigit }}</span>}</span>}</strong><small>Hours</small></span>
+                <span class="style-featured__countdown-separator">:</span>
+                <span class="style-featured__countdown-unit"><strong class="style-featured__countdown-value">@for (digit of countdownDigits(countdown.minutes); track $index) {<span class="style-featured__countdown-digit-window">@for (displayDigit of [digit]; track displayDigit) {<span class="style-featured__countdown-digit" animate.enter="style-featured__countdown-digit--enter" animate.leave="style-featured__countdown-digit--leave">{{ displayDigit }}</span>}</span>}</strong><small>Minutes</small></span>
+                @if (countdown.showSeconds) {
+                  <span class="style-featured__countdown-separator">:</span>
+                  <span class="style-featured__countdown-unit"><strong class="style-featured__countdown-value">@for (digit of countdownDigits(countdown.seconds); track $index) {<span class="style-featured__countdown-digit-window">@for (displayDigit of [digit]; track displayDigit) {<span class="style-featured__countdown-digit" animate.enter="style-featured__countdown-digit--enter" animate.leave="style-featured__countdown-digit--leave">{{ displayDigit }}</span>}</span>}</strong><small>Seconds</small></span>
+                }
+              </div>
+            }
+          }
+        </div>
+      }
     </div>
     <section class="style-featured" aria-labelledby="style-featured-title">
       @if (!hideFeaturedTitle()) {
@@ -186,13 +215,15 @@
         }
       </div>
       <div class="style-featured__actions">
-        <button type="button" class="style-featured__start" [attr.aria-label]="featuredPlayTooltip(course)" (click)="startWatching(course)">
-          <span class="style-featured__tooltip" aria-hidden="true">{{ featuredPlayTooltip(course) }}</span>
-          <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true">
-            <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
-          </svg>
-          <span class="style-featured__start-label">{{ isLiveShow(course) ? 'Watch Live' : 'Play' }}</span>
-        </button>
+        @if (!isLiveShow(course)) {
+          <button type="button" class="style-featured__start" [attr.aria-label]="featuredPlayTooltip(course)" (click)="startWatching(course)">
+            <span class="style-featured__tooltip" aria-hidden="true">{{ featuredPlayTooltip(course) }}</span>
+            <svg class="play-triangle" viewBox="0 0 12 12" aria-hidden="true">
+              <path d="M3.15 2.1c-.55-.32-1.25.08-1.25.72v6.36c0 .64.7 1.04 1.25.72l5.5-3.18a.83.83 0 0 0 0-1.44L3.15 2.1Z" />
+            </svg>
+            <span class="style-featured__start-label">Play</span>
+          </button>
+        }
         @if (featured()?.trailer_link) {
           <button type="button" class="style-featured__trailer" aria-label="Play Trailer" (click)="openTrailer()">
             <span class="style-featured__tooltip" aria-hidden="true">Play Trailer</span>
@@ -254,7 +285,7 @@
   @if (liveShows().length > 0 && !showsOnly()) {
     <section class="style-row style-row--live" data-live-row aria-labelledby="live-title">
       <div class="style-carousel" #liveCarousel [class.style-carousel--at-start]="liveEdges().atStart" [class.style-carousel--at-end]="liveEdges().atEnd">
-        <h2 id="live-title" class="style-row__title">Live</h2>
+        <h2 id="live-title" class="style-row__title">Live This Week</h2>
         @if (pageCount('live') > 1) {
           <div class="style-carousel__pages" aria-label="Live pages">
             @for (page of pageRange(pageCount('live')); track page) {
@@ -269,7 +300,9 @@
           <div class="style-carousel__track" #liveTrack [appRowScroll]="'animation-style-2-live'" (edgesChange)="onCarouselEdgesChange('live', $event)" (scrollSettled)="onCarouselScrollSettled('live')">
             @for (liveShow of liveShows(); track liveShow.id) {
               <article class="style-card style-card--live" data-live-card role="link" tabindex="0" [attr.aria-label]="'Open live show ' + liveShow.title" (mouseenter)="onCardEnter($event, 'live')" (mouseleave)="onCardLeave()" (click)="openLiveShow(liveShow.id)" (keydown.enter)="openLiveShow(liveShow.id)" (keydown.space)="openLiveShow(liveShow.id); $event.preventDefault()">
-                <div class="style-card__art"><img [src]="liveShow.thumbnailUrl" [alt]="liveShow.title" loading="lazy" /></div>
+                <div class="style-card__art">
+                  <img [src]="liveShow.thumbnailUrl" [alt]="liveShow.title" loading="lazy" />
+                </div>
                 <div class="style-card__details">
                   <div class="style-card__actions">
                     <button type="button" class="style-card__play" [attr.aria-label]="'Open ' + liveShow.title" (click)="openLiveShow(liveShow.id); $event.stopPropagation()">
@@ -282,6 +315,26 @@
                       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="1.5" /><circle cx="6" cy="12" r="1.5" /><circle cx="6" cy="18" r="1.5" /><path d="M11 6h8M11 12h8M11 18h8" /></svg>
                     </button>
                   </div>
+                  @if (liveShowCardCountdown(liveShow.id); as countdown) {
+                    <div class="style-card__countdown">
+                      @if (countdown.isLive) {
+                        <div class="style-featured__countdown style-featured__countdown--live" role="status">LIVE NOW</div>
+                      } @else {
+                        <span class="style-featured__countdown-label">LIVE IN</span>
+                        <div class="style-featured__countdown style-featured__countdown--card" role="timer" [attr.aria-label]="countdown.days + ' days, ' + countdown.hours + ' hours, ' + countdown.minutes + ' minutes until ' + liveShow.title">
+                          <span class="style-featured__countdown-unit"><strong class="style-featured__countdown-value">@for (digit of countdownDigits(countdown.days); track $index) {<span class="style-featured__countdown-digit-window">@for (displayDigit of [digit]; track displayDigit) {<span class="style-featured__countdown-digit" animate.enter="style-featured__countdown-digit--enter" animate.leave="style-featured__countdown-digit--leave">{{ displayDigit }}</span>}</span>}</strong><small>Days</small></span>
+                          <span class="style-featured__countdown-separator">:</span>
+                          <span class="style-featured__countdown-unit"><strong class="style-featured__countdown-value">@for (digit of countdownDigits(countdown.hours); track $index) {<span class="style-featured__countdown-digit-window">@for (displayDigit of [digit]; track displayDigit) {<span class="style-featured__countdown-digit" animate.enter="style-featured__countdown-digit--enter" animate.leave="style-featured__countdown-digit--leave">{{ displayDigit }}</span>}</span>}</strong><small>Hours</small></span>
+                          <span class="style-featured__countdown-separator">:</span>
+                          <span class="style-featured__countdown-unit"><strong class="style-featured__countdown-value">@for (digit of countdownDigits(countdown.minutes); track $index) {<span class="style-featured__countdown-digit-window">@for (displayDigit of [digit]; track displayDigit) {<span class="style-featured__countdown-digit" animate.enter="style-featured__countdown-digit--enter" animate.leave="style-featured__countdown-digit--leave">{{ displayDigit }}</span>}</span>}</strong><small>Minutes</small></span>
+                          @if (countdown.showSeconds) {
+                            <span class="style-featured__countdown-separator">:</span>
+                            <span class="style-featured__countdown-unit"><strong class="style-featured__countdown-value">@for (digit of countdownDigits(countdown.seconds); track $index) {<span class="style-featured__countdown-digit-window">@for (displayDigit of [digit]; track displayDigit) {<span class="style-featured__countdown-digit" animate.enter="style-featured__countdown-digit--enter" animate.leave="style-featured__countdown-digit--leave">{{ displayDigit }}</span>}</span>}</strong><small>Seconds</small></span>
+                          }
+                        </div>
+                      }
+                    </div>
+                  }
                   <div class="style-card__title-row"><h3>{{ liveShow.title }}</h3></div>
                   <div class="style-card__meta"><div class="style-card__meta-primary"><span class="style-card__meta-badge style-card__meta-badge--live">{{ liveShow.status }}</span><span class="style-card__meta-dot" aria-hidden="true"></span><span class="style-card__meta-badge">{{ liveShow.scheduleLabel }}</span></div></div>
                 </div>
@@ -305,12 +358,26 @@
           @for (slot of scheduleSlots(); track slot) { <div class="live-schedule__time">{{ slot }}</div> }
           @for (day of scheduleDays(); track day.toISOString()) {
             <div class="live-schedule__day" [class.live-schedule__day--today]="isScheduleToday(day)"><b>{{ scheduleDayLabel(day) }}</b><i>{{ scheduleDateLabel(day) }}</i></div>
-            <div class="live-schedule__track">@for (show of scheduleShowsForDay(day); track show.id) { <button type="button" class="live-schedule__event" [class.live-schedule__event--red]="show.tone === 'red'" [style]="scheduleEventStyle(show)" [attr.aria-label]="show.title + ' at ' + scheduleEventRange(show)"><div class="live-schedule__event-title-row"><strong>{{ show.title }}</strong>@if (show.tone === 'red') { <em class="live-schedule__live-badge"><span></span>LIVE</em> }</div><span>{{ scheduleEventRange(show) }}</span></button> }</div>
+            <div class="live-schedule__track">@for (show of scheduleShowsForDay(day); track show.id) { <button type="button" class="live-schedule__event" [class.live-schedule__event--red]="show.tone === 'red'" [style]="scheduleEventStyle(show)" [attr.aria-label]="show.title + ' at ' + scheduleEventRange(show)" (mouseenter)="openScheduleEvent(show, $event)" (mouseleave)="closeScheduleEvent()" (focus)="openScheduleEvent(show, $event)" (blur)="closeScheduleEvent()" (click)="playScheduleEvent(show, $event)"><div class="live-schedule__event-title-row"><strong>{{ show.title }}</strong>@if (show.tone === 'red') { <em class="live-schedule__live-badge"><span></span>LIVE</em> }</div><span>{{ scheduleEventRange(show) }}</span></button> }</div>
           }
         </div>
         @if (scheduleNowVisible()) { <div class="live-schedule__now" [style]="scheduleNowStyle()"><span></span></div> }
       </div>
     </section>
+  }
+
+  @if (selectedScheduleEvent(); as event) {
+    <aside class="calendar-event-popup live-schedule-event-popup" [class.live-schedule-event-popup--closing]="scheduleEventClosing()" [style.left.px]="schedulePopupPosition().x" [style.top.px]="schedulePopupPosition().y" role="dialog" aria-label="Live show details" (mouseenter)="cancelScheduleEventClose()" (mouseleave)="closeScheduleEvent()">
+      <button type="button" class="calendar-event-popup__close" (click)="closeScheduleEvent()" aria-label="Close event details"><span aria-hidden="true">×</span></button>
+      <p class="calendar-event-popup__eyebrow">LIVE SHOW</p>
+      <h2>{{ event.title }}</h2>
+      <div class="calendar-event-popup__schedule"><span>{{ event.live_start_time || 'LIVE' }}</span><span>{{ scheduleEventDuration(event) }}</span></div>
+      <div class="calendar-event-popup__people">
+        <div class="calendar-event-popup__person-group"><span class="calendar-event-popup__label">{{ (event.hosts?.length ?? 0) > 1 ? 'HOSTS' : 'HOST' }}</span>@if (event.hosts?.length) { @for (host of event.hosts ?? []; track host.id) { <div class="calendar-event-popup__person"><img [src]="scheduleEventHostPhoto(host)" [alt]="host.name" /><span>{{ host.name }}</span></div> } } @else { <div class="calendar-event-popup__person"><img [src]="scheduleEventHostPhoto(null)" alt="TC Nexus" /><span>TC Nexus</span></div> }</div>
+        @if (event.guests?.length) { <div class="calendar-event-popup__person-group"><span class="calendar-event-popup__label">GUESTS</span>@for (guest of event.guests; track guest.id) { <div class="calendar-event-popup__person"><img [src]="guest.photo || profilePlaceholderUrl(guest.id)" [alt]="guest.name" /><span>{{ guest.name }}</span></div> } </div> }
+      </div>
+      <p class="calendar-event-popup__description">{{ event.excerpt || 'Join us live on TC Nexus.' }}</p>
+    </aside>
   }
 
   @if (carouselShows().length > 0 && !liveOnly()) {

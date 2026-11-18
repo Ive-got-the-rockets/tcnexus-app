@@ -3,7 +3,8 @@
 #adminmenu .toplevel_page_tcnexus-membership > a,
 #adminmenu .toplevel_page_tcnexus-global-lessons > a,
 #adminmenu .toplevel_page_tcnexus-animations > a,
-#adminmenu .toplevel_page_tcnexus-show-builder > a {
+#adminmenu .toplevel_page_tcnexus-show-builder > a,
+#adminmenu .toplevel_page_tcnexus-instructor-builder > a {
 	color: #5fc7a8;
 }
 
@@ -11,7 +12,8 @@
 #adminmenu .toplevel_page_tcnexus-membership > a .wp-menu-image::before,
 #adminmenu .toplevel_page_tcnexus-global-lessons > a .wp-menu-image::before,
 #adminmenu .toplevel_page_tcnexus-animations > a .wp-menu-image::before,
-#adminmenu .toplevel_page_tcnexus-show-builder > a .wp-menu-image::before {
+#adminmenu .toplevel_page_tcnexus-show-builder > a .wp-menu-image::before,
+#adminmenu .toplevel_page_tcnexus-instructor-builder > a .wp-menu-image::before {
 	color: #5fc7a8;
 }
 
@@ -20,11 +22,13 @@
 #adminmenu .toplevel_page_tcnexus-global-lessons:hover > a,
 #adminmenu .toplevel_page_tcnexus-animations:hover > a,
 #adminmenu .toplevel_page_tcnexus-show-builder:hover > a,
+#adminmenu .toplevel_page_tcnexus-instructor-builder:hover > a,
 #adminmenu .toplevel_page_tcnexus-course-builder.wp-has-current-submenu > a,
 #adminmenu .toplevel_page_tcnexus-membership.wp-has-current-submenu > a,
 #adminmenu .toplevel_page_tcnexus-global-lessons.wp-has-current-submenu > a,
 #adminmenu .toplevel_page_tcnexus-animations.wp-has-current-submenu > a,
-#adminmenu .toplevel_page_tcnexus-show-builder.wp-has-current-submenu > a {
+#adminmenu .toplevel_page_tcnexus-show-builder.wp-has-current-submenu > a,
+#adminmenu .toplevel_page_tcnexus-instructor-builder.wp-has-current-submenu > a {
 	color: #12352c;
 	background: #5fc7a8;
 }
@@ -34,10 +38,29 @@
 #adminmenu .toplevel_page_tcnexus-global-lessons:hover > a .wp-menu-image::before,
 #adminmenu .toplevel_page_tcnexus-animations:hover > a .wp-menu-image::before,
 #adminmenu .toplevel_page_tcnexus-show-builder:hover > a .wp-menu-image::before,
+#adminmenu .toplevel_page_tcnexus-instructor-builder:hover > a .wp-menu-image::before,
 #adminmenu .toplevel_page_tcnexus-course-builder.wp-has-current-submenu > a .wp-menu-image::before,
 #adminmenu .toplevel_page_tcnexus-membership.wp-has-current-submenu > a .wp-menu-image::before,
 #adminmenu .toplevel_page_tcnexus-global-lessons.wp-has-current-submenu > a .wp-menu-image::before,
 #adminmenu .toplevel_page_tcnexus-animations.wp-has-current-submenu > a .wp-menu-image::before,
-#adminmenu .toplevel_page_tcnexus-show-builder.wp-has-current-submenu > a .wp-menu-image::before {
+#adminmenu .toplevel_page_tcnexus-show-builder.wp-has-current-submenu > a .wp-menu-image::before,
+#adminmenu .toplevel_page_tcnexus-instructor-builder.wp-has-current-submenu > a .wp-menu-image::before {
 	color: #12352c;
+}
+
+/* Live Shows is distinct from the mint course/show tools. */
+#adminmenu .toplevel_page_tcnexus-live-shows > a,
+#adminmenu .toplevel_page_tcnexus-live-shows > a .wp-menu-image::before {
+	color: #f09889;
+}
+
+#adminmenu .toplevel_page_tcnexus-live-shows:hover > a,
+#adminmenu .toplevel_page_tcnexus-live-shows.wp-has-current-submenu > a {
+	color: #201f1c;
+	background: #f09889;
+}
+
+#adminmenu .toplevel_page_tcnexus-live-shows:hover > a .wp-menu-image::before,
+#adminmenu .toplevel_page_tcnexus-live-shows.wp-has-current-submenu > a .wp-menu-image::before {
+	color: #201f1c;
 }

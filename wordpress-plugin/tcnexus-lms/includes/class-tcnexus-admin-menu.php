@@ -19,11 +19,12 @@ class TCNexus_Admin_Menu {
 	}
 
 	public static function enqueue_admin_menu_styles() {
+		$menu_stylesheet = TCNEXUS_LMS_DIR . 'assets/admin-menu.css';
 		wp_enqueue_style(
 			'tcnexus-admin-menu',
 			TCNEXUS_LMS_URL . 'assets/admin-menu.css',
 			array(),
-			TCNEXUS_LMS_VERSION
+			file_exists( $menu_stylesheet ) ? filemtime( $menu_stylesheet ) : TCNEXUS_LMS_VERSION
 		);
 	}
 

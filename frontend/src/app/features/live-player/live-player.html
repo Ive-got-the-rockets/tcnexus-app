@@ -19,7 +19,7 @@
           <div class="live-detail-people-group">
             <p>Guests</p>
             <div class="live-detail-person-row">
-              @for (guest of liveShow.guests; track guest) { <div class="live-detail-person"><img [src]="liveShow.thumbnailUrl" [alt]="guest" /><span>{{ guest }}</span></div> }
+              @for (guest of liveShow.guests; track guest.id) { <div class="live-detail-person"><img [src]="guest.photo || liveShow.thumbnailUrl" [alt]="guest.name" /><span>{{ guest.name }}</span></div> }
             </div>
           </div>
         </div>

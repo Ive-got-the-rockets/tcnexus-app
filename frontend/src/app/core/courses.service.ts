@@ -4,7 +4,6 @@ import { Observable, catchError, map, of, retry } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 import { Course, CourseDetail, Lesson } from './models';
-import { LIVE_SHOWS } from './live-shows';
 
 const PRIMER_TEST_VIDEO_URL = '/video/the-primer-episode-1.m4v';
 
@@ -27,21 +26,8 @@ export class CoursesService {
   }
 
   getLiveShows(): Observable<Course[]> {
-    const fallback = LIVE_SHOWS.map((show, index) => ({
-      id: 9001 + index,
-      title: show.title,
-      excerpt: show.description,
-      thumbnail: show.thumbnailUrl,
-      image: show.thumbnailUrl,
-      course_types: ['Live Shows'],
-      lesson_count: 0,
-      overview_link: null,
-      trailer_link: null,
-      vimeo_live_event_id: show.vimeoLiveEventId || null,
-    } as Course));
     return this.withTransientRetry(this.http.get<Course[]>(`${this.baseUrl}/live-shows`)).pipe(
-      map(shows => shows.length ? shows : fallback),
-      catchError(() => of(fallback))
+      catchError(() => of([]))
     );
   }
 

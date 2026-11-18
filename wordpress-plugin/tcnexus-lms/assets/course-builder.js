@@ -1,4 +1,6 @@
 (function () {
+  var isLiveShowsPage = new URLSearchParams(window.location.search).get('page') === 'tcnexus-live-shows';
+
   // root is Course Builder's own wrapper — some sections below (tabs, slug
   // mirroring, the quick-create-person modal) only ever exist on that page
   // and are gated on it directly. The generic subsystems (custom selects,
@@ -30,6 +32,11 @@
     popup.addEventListener('click', function (event) { var button = event.target.closest('[data-time-value]'); if (!button) return; input.value = button.dataset.timeValue; trigger.firstChild.textContent = button.textContent; popup.querySelectorAll('.is-selected').forEach(function (item) { item.classList.remove('is-selected'); }); button.classList.add('is-selected'); close(); });
   });
   document.addEventListener('click', function (event) { if (!event.target.closest('[data-date-picker], [data-time-picker]')) document.querySelectorAll('.tcn-schedule-picker.is-open').forEach(function (picker) { picker.classList.remove('is-open'); var popup = picker.querySelector('[data-date-popup], [data-time-popup]'); if (popup) popup.hidden = true; }); });
+
+  // The Live Shows controller owns the form, language dialog, and submit
+  // handlers. Keep the shared schedule picker above, but avoid attaching a
+  // second builder controller to the same form.
+  if (isLiveShowsPage) return;
 
   document.querySelectorAll('.tcn-save-confirmation').forEach(function (notice) {
     window.setTimeout(function () {

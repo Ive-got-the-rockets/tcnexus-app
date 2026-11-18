@@ -9,6 +9,7 @@ const adminMenu = fs.readFileSync(`${root}/includes/class-tcnexus-admin-menu.php
 const instructorBuilder = fs.readFileSync(`${root}/includes/class-tcnexus-instructor-builder.php`, 'utf8');
 const postTypes = fs.readFileSync(`${root}/includes/class-tcnexus-post-types.php`, 'utf8');
 const plugin = fs.readFileSync(`${root}/tcnexus-lms.php`, 'utf8');
+const adminMenuCss = fs.readFileSync(`${root}/assets/admin-menu.css`, 'utf8');
 
 assert.match(courseBuilder, /add_menu_page\([\s\S]*self::PAGE_SLUG[\s\S]*3\.1/s);
 assert.match(courseBuilder, /'tcnexus-show-builder'[\s\S]*3\.2/s);
@@ -19,9 +20,13 @@ assert.match(courseBuilder, /add_submenu_page\(\s*self::PAGE_SLUG[\s\S]*'Media L
 assert.match(courseBuilder, /add_submenu_page\(\s*self::PAGE_SLUG[\s\S]*'All Courses'[\s\S]*self::PAGE_SLUG/s);
 assert.match(courseBuilder, /\$submenu\[ self::PAGE_SLUG \]\[\] = array\( 'Add New Course'[\s\S]*'admin\.php\?page=' \. self::PAGE_SLUG \. '&new=1'/s);
 assert.match(courseBuilder, /\$submenu\[ self::PAGE_SLUG \]\[\] = array\( 'Course Types'[\s\S]*'edit-tags\.php\?taxonomy=course_type/s);
-assert.match(instructorBuilder, /add_submenu_page\(\s*TCNexus_Course_Builder::PAGE_SLUG/s);
+assert.match(instructorBuilder, /add_menu_page\(\s*'Instructors \/ Hosts & Guests'[\s\S]*'Instructors \/ Hosts & Guests'[\s\S]*array\( __CLASS__, 'render' \)/s);
+assert.doesNotMatch(instructorBuilder, /add_submenu_page\(\s*TCNexus_Course_Builder::PAGE_SLUG/s);
 assert.match(postTypes, /'tc_course'[\s\S]*?'show_in_menu'\s*=>\s*false/s);
 assert.match(adminMenu, /admin-menu\.css/);
+assert.match(adminMenu, /filemtime\( \$menu_stylesheet \)/, 'Sidebar stylesheet gets a fresh browser version after a color change');
 assert.match(plugin, /enqueue_admin_menu_styles/);
+assert.match(adminMenuCss, /toplevel_page_tcnexus-live-shows[\s\S]*?#f09889/, 'Live Shows is styled red in the sidebar');
+assert.match(adminMenuCss, /toplevel_page_tcnexus-instructor-builder[\s\S]*?#5fc7a8/, 'Instructors, Hosts & Guests uses the shared mint sidebar color');
 
 console.log('admin menu contract passes');

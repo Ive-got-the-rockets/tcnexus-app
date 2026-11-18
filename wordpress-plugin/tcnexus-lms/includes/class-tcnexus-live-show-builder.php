@@ -66,6 +66,10 @@ class TCNexus_Live_Show_Builder {
 			|| 'show' === ( $_POST['builder_mode'] ?? '' );
 	}
 
+	private static function is_live_shows_page() {
+		return 'tcnexus-live-shows' === ( $_GET['page'] ?? '' );
+	}
+
 	private static function content_type() {
 		return self::is_show_mode() ? self::SHOW_POST_TYPE : 'tc_course';
 	}
@@ -655,7 +659,7 @@ class TCNexus_Live_Show_Builder {
 				<div class="tcn-course-view tcn-course-view--detail" data-course-view-panel="detail">
 					<div class="tcn-course-table-wrap">
 						<table class="tcn-course-table tcn-course-table--detail">
-							<thead><tr><th><?php echo esc_html( self::content_label() ); ?></th><th>Type</th><th>Language &amp; Level Breakdown</th><th>Status</th><th>Actions</th></tr></thead>
+							<thead><tr><th><?php echo esc_html( self::content_label() ); ?></th><?php if ( self::is_live_shows_page() ) : ?><th>Language</th><th>Date</th><th>Time</th><th>Approximate Duration</th><?php else : ?><th>Type</th><th>Language &amp; Level Breakdown</th><?php endif; ?><th>Status</th><th>Actions</th></tr></thead>
 							<tbody>
 							<?php foreach ( $courses as $course ) :
 								$types = wp_get_post_terms( $course->ID, 'course_type', array( 'fields' => 'names' ) );
@@ -670,13 +674,29 @@ class TCNexus_Live_Show_Builder {
 								$guest_id = absint( $primary_levels['beginner']['guest_id'] ?? 0 );
 								$guest = $guest_id ? get_post( $guest_id ) : null;
 								$characters = self::is_show_mode() ? array_values( array_filter( array_map( 'get_post', array_map( 'absint', (array) get_post_meta( $course->ID, self::SHOW_CHARACTERS_META_KEY, true ) ) ) ) ) : array();
+								$live_host_ids = array_values( array_filter( array_map( 'absint', (array) get_post_meta( $course->ID, '_tcnexus_live_hosts', true ) ) ) );
+								$live_hosts = array_values( array_filter( array_map( 'get_post', $live_host_ids ) ) );
+								$live_guest_ids = array_values( array_filter( array_map( 'absint', (array) get_post_meta( $course->ID, '_tcnexus_live_guests', true ) ) ) );
+								$live_guests = array_values( array_filter( array_map( 'get_post', $live_guest_ids ) ) );
+								$live_languages = array_values( array_unique( array_map( function ( $language ) { return $language['label'] ?? ''; }, self::get_course_languages( $course->ID ) ) ) );
+								$live_date = get_post_meta( $course->ID, self::LIVE_START_DATE_META_KEY, true );
+								$live_time = get_post_meta( $course->ID, self::LIVE_START_TIME_META_KEY, true );
+								$live_duration = absint( get_post_meta( $course->ID, self::LIVE_DURATION_META_KEY, true ) );
+								$live_duration_labels = array( 30 => '30 minutes', 45 => '45 minutes', 60 => '1 hour', 90 => '1 hour 30 minutes', 120 => '2 hours', 180 => '3 hours' );
 								$edit_url = admin_url( 'admin.php?page=' . self::builder_page() . '&course_id=' . $course->ID );
 								$delete_url = wp_nonce_url( admin_url( 'admin-post.php?action=' . ( self::is_show_mode() ? 'tcnexus_delete_live_show_builder' : 'tcnexus_delete_course' ) . '&course_id=' . $course->ID . '&builder_mode=' . ( self::is_show_mode() ? 'show' : 'course' ) ), 'tcnexus_delete_course_' . $course->ID );
 							?>
 							<tr>
-								<td><div class="tcn-course-table__course"><span class="tcn-course-table__image"><?php if ( $card_image_url ) : ?><img src="<?php echo esc_url( $card_image_url ); ?>" alt="" loading="lazy" /><?php else : ?><span><?php echo esc_html( self::content_label() ); ?> image</span><?php endif; ?></span><div><strong><?php echo esc_html( $course->post_title ?: 'Untitled ' . self::content_label() ); ?></strong><div class="tcn-course-table__people"><?php if ( self::is_show_mode() ) : ?><span><b>Characters:</b> <?php echo esc_html( $characters ? implode( ', ', wp_list_pluck( $characters, 'post_title' ) ) : '—' ); ?></span><?php else : ?><span><b>Instructor:</b> <?php echo esc_html( $instructor_names ?: '—' ); ?></span><span><b>Guest:</b> <?php echo esc_html( $guest ? $guest->post_title : '—' ); ?></span><?php endif; ?></div></div></div></td>
+								<td><div class="tcn-course-table__course"><span class="tcn-course-table__image"><?php if ( $card_image_url ) : ?><img src="<?php echo esc_url( $card_image_url ); ?>" alt="" loading="lazy" /><?php else : ?><span><?php echo esc_html( self::content_label() ); ?> image</span><?php endif; ?></span><div><strong><?php echo esc_html( $course->post_title ?: 'Untitled ' . self::content_label() ); ?></strong><div class="tcn-course-table__people"><?php if ( self::is_live_shows_page() ) : ?><span><b>Host:</b> <?php echo esc_html( $live_hosts ? implode( ', ', wp_list_pluck( $live_hosts, 'post_title' ) ) : '-' ); ?></span><?php if ( $live_guests ) : ?><span><b>Guest<?php echo count( $live_guests ) === 1 ? '' : 's'; ?>:</b> <?php echo esc_html( implode( ', ', wp_list_pluck( $live_guests, 'post_title' ) ) ); ?></span><?php endif; ?><?php elseif ( self::is_show_mode() ) : ?><span><b>Characters:</b> <?php echo esc_html( $characters ? implode( ', ', wp_list_pluck( $characters, 'post_title' ) ) : '-' ); ?></span><?php else : ?><span><b>Instructor:</b> <?php echo esc_html( $instructor_names ?: '-' ); ?></span><span><b>Guest:</b> <?php echo esc_html( $guest ? $guest->post_title : '-' ); ?></span><?php endif; ?></div></div></div></td>
+								<?php if ( self::is_live_shows_page() ) : ?>
+								<td><?php echo esc_html( implode( ', ', array_filter( $live_languages ) ) ?: '-' ); ?></td>
+								<td><?php echo esc_html( $live_date ? date_i18n( 'M j, Y', strtotime( $live_date ) ) : '-' ); ?></td>
+								<td><?php echo esc_html( $live_time ? date_i18n( 'g:i A', strtotime( $live_time ) ) : '-' ); ?></td>
+								<td><?php echo esc_html( $live_duration_labels[ $live_duration ] ?? '-' ); ?></td>
+								<?php else : ?>
 								<td><?php foreach ( is_wp_error( $types ) ? array() : $types as $type ) : ?><span class="tcn-course-table__badge"><?php echo esc_html( $type ); ?></span><?php endforeach; ?></td>
 								<td><div class="tcn-course-table__breakdown"><?php foreach ( $languages as $language_slug => $language_data ) : ?><div class="tcn-course-table__language"><strong><?php echo esc_html( $language_data['label'] ); ?></strong><div><?php foreach ( (array) $language_data['levels'] as $level_slug => $level ) : ?><?php if ( empty( $level['enabled'] ) ) { continue; } ?><span class="tcn-course-table__level"><span><?php echo esc_html( $level['label'] ); ?></span><em><?php echo (int) self::count_language_level_lessons( $course->ID, $language_slug, $level_slug ); ?> <?php echo esc_html( self::is_show_mode() ? 'episodes' : 'lessons' ); ?></em></span><?php endforeach; ?></div></div><?php endforeach; ?></div></td>
+								<?php endif; ?>
 								<td><span class="tcn-course-table__status tcn-course-table__status--<?php echo esc_attr( $course->post_status ); ?>"><span aria-hidden="true">●</span> <?php echo esc_html( ucfirst( $course->post_status ) ); ?></span></td>
 								<td><?php self::render_list_actions( $edit_url, $delete_url, $course ); ?></td>
 							</tr>
@@ -1741,6 +1761,7 @@ class TCNexus_Live_Show_Builder {
 		?>
 		<div class="tcn-course-instructors tcn-live-search-picker" data-live-picker data-person-input-name="<?php echo esc_attr( $field_name ); ?>">
 			<label class="tcn-field__label" for="live-picker-<?php echo esc_attr( $level_slug ); ?>"><?php echo esc_html( $label ); ?>s</label>
+			<p class="tcn-field__hint">You can add more than one <?php echo esc_html( strtolower( $label ) ); ?> by selecting additional names from the search list.</p>
 			<div class="tcn-live-picker-row"><div class="tcn-live-picker__control"><input type="search" id="live-picker-<?php echo esc_attr( $level_slug ); ?>" placeholder="Search <?php echo esc_attr( strtolower( $label ) ); ?>s…" autocomplete="off" data-live-picker-input /><button type="button" class="tcn-live-picker__toggle" aria-label="Show people" data-live-picker-toggle></button></div><button type="button" class="tcn-live-picker__add tcn-live-add-host" data-live-add-person="<?php echo esc_attr( $picker_kind ); ?>">＋ Add <?php echo esc_html( $label ); ?></button></div>
 			<div class="tcn-live-picker__menu" hidden data-live-picker-menu><?php foreach ( $people as $person ) : $role = TCNexus_Post_Types::get_person_role( $person->ID ); $person_picker_photo = get_the_post_thumbnail_url( $person->ID, 'thumbnail' ) ?: TCNexus_Profile_Placeholders::get_saved_url( $person->ID ); ?><button type="button" class="tcn-live-picker__option" data-live-picker-option data-person-id="<?php echo esc_attr( $person->ID ); ?>" data-person-name="<?php echo esc_attr( strtolower( $person->post_title ) ); ?>" data-person-photo="<?php echo esc_url( $person_picker_photo ?: '' ); ?>"><span><?php echo esc_html( $person->post_title ); ?></span><small><?php echo esc_html( ucfirst( $role ) ); ?></small></button><?php endforeach; ?></div>
 			<div class="tcn-lesson-guest-list tcn-course-instructor-list" data-live-picker-selected><?php foreach ( $selected_ids as $person_id ) : $person = get_post( $person_id ); if ( ! $person ) { continue; } $person_photo = get_the_post_thumbnail_url( $person->ID, 'thumbnail' ) ?: TCNexus_Profile_Placeholders::get_saved_url( $person->ID ); ?><div class="tcn-lesson-guest" data-instructor-id="<?php echo esc_attr( $person_id ); ?>"><span class="tcn-lesson-guest__avatar-wrap"><?php if ( $person_photo ) : ?><img class="tcn-lesson-guest__avatar" src="<?php echo esc_url( $person_photo ); ?>" alt="" /><?php else : ?><span class="tcn-live-avatar" aria-hidden="true"><?php echo esc_html( strtoupper( substr( $person->post_title, 0, 1 ) ) ); ?></span><?php endif; ?></span><span class="tcn-lesson-guest__name"><?php echo esc_html( $person->post_title ); ?></span><input type="hidden" form="tcn-live-show-builder-form" name="<?php echo esc_attr( $field_name ); ?>" value="<?php echo esc_attr( $person_id ); ?>" /><button type="button" class="tcn-lesson-guest__remove" aria-label="Remove <?php echo esc_attr( $person->post_title ); ?>">×</button></div><?php endforeach; ?></div>

@@ -310,8 +310,9 @@
 .calendar-modal__week-head > * { border: 0; }
 .calendar-modal__week-head { background: transparent; }
 .calendar-modal { background: rgba(11,13,12,.85); }
-.calendar-modal--week { overflow: visible; }
-.calendar-modal__week-scroll { max-height: calc(88vh - 15rem); overflow-y: auto; overflow-x: hidden; }
+.calendar-modal--week { display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; }
+.calendar-modal--week .calendar-modal__week { min-height: 0; flex: 1 1 auto; display: flex; flex-direction: column; }
+.calendar-modal__week-scroll { min-height: 0; flex: 1 1 auto; max-height: none; overflow-y: auto; overflow-x: hidden; }
 .calendar-event-popup__description { padding-bottom: 20px; }
 .calendar-event-popup { border-color: color-mix(in srgb, var(--paper) 40%, transparent); }
 .calendar-event-popup { animation: calendar-event-popup-in .22s ease-in-out both; }
@@ -354,3 +355,9 @@
 .calendar-modal__week-allday::after { content: ''; position: absolute; left: -1.4rem; right: auto; bottom: 0; width: calc(100% + 2.8rem); height: 1px; background: rgba(255, 255, 255, .3); }
 .calendar-modal__week-scroll .calendar-modal__week-row > * { border-color: rgba(255, 255, 255, .05); }
 @media (max-width: 700px) { .calendar-modal-backdrop { padding: .75rem; }.calendar-modal { padding: .8rem; }.calendar-modal__toolbar { flex-wrap: wrap; }.calendar-modal__toolbar strong { order: 3; width: 100%; text-align: center; }.calendar-modal__day { min-height: 5rem; padding: .35rem; }.calendar-modal__event { font-size: .56rem; } }
+
+/* Event details grow with the description while retaining the requested bottom breathing room. */
+.calendar-event-popup { height: auto; min-height: 0; max-height: calc(100% - 2rem); box-sizing: border-box; padding-bottom: 20px; overflow-y: auto; }
+.calendar-event-popup__description { margin-bottom: 0; padding-bottom: 0; }
+.calendar-event-popup--closing { animation: calendar-event-popup-out .22s ease-out both; pointer-events: none; }
+@keyframes calendar-event-popup-out { from { opacity: 1; transform: translate(-50%, -50%) scale(1); } to { opacity: 0; transform: translate(-50%, -50%) scale(.94); } }

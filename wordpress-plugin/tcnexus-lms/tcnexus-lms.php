@@ -2,7 +2,7 @@
 /**
  * Plugin Name: TC Nexus LMS
  * Description: Headless course/lesson backend for the TC Nexus streaming site — tiers, gating, and the REST API the Angular front-end consumes.
- * Version: 0.1.75
+ * Version: 0.1.76
  * Author: TC Nexus
  * Text Domain: tcnexus-lms
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TCNEXUS_LMS_VERSION', '0.1.75' );
+define( 'TCNEXUS_LMS_VERSION', '0.1.76' );
 define( 'TCNEXUS_LMS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'TCNEXUS_LMS_URL', plugin_dir_url( __FILE__ ) );
 define( 'TCNEXUS_LMS_TABLE_VIEWS', 'tcnexus_lesson_views' );
@@ -72,9 +72,6 @@ add_action( 'admin_menu', array( 'TCNexus_Course_Builder', 'register' ), 20 );
 add_action( 'admin_menu', array( 'TCNexus_Live_Shows', 'register' ), 20 );
 add_action( 'admin_enqueue_scripts', array( 'TCNexus_Live_Shows', 'enqueue_assets' ) );
 add_action( 'admin_enqueue_scripts', array( 'TCNexus_Live_Show_Builder', 'enqueue_assets' ) );
-add_action( 'admin_post_tcnexus_save_live_show', array( 'TCNexus_Live_Shows', 'handle_save' ) );
-add_action( 'admin_post_tcnexus_save_live_people', array( 'TCNexus_Live_Shows', 'handle_save_people' ) );
-add_action( 'admin_post_tcnexus_delete_live_show', array( 'TCNexus_Live_Shows', 'handle_delete' ) );
 add_action( 'admin_post_tcnexus_save_course', array( 'TCNexus_Course_Builder', 'handle_save' ) );
 add_action( 'admin_post_tcnexus_delete_course', array( 'TCNexus_Course_Builder', 'handle_delete_course' ) );
 add_action( 'admin_post_tcnexus_save_show', array( 'TCNexus_Course_Builder', 'handle_save' ) );

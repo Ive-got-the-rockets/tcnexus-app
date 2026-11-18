@@ -11,7 +11,8 @@
     return next.origin === current.origin &&
       next.pathname === current.pathname &&
       next.searchParams.get('page') === current.searchParams.get('page') &&
-      /^tcnexus-(?:course|show)-builder$/.test(next.searchParams.get('page') || '');
+      (/^tcnexus-(?:course|show)-builder$/.test(next.searchParams.get('page') || '') ||
+        next.searchParams.get('page') === 'tcnexus-live-shows');
   }
 
   return { isInternalBuilderNavigation: isInternalBuilderNavigation };

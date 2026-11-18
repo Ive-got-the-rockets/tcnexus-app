@@ -2,7 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CoursesService } from '../../core/courses.service';
-import { LiveShow, liveShowById } from '../../core/live-shows';
+import { LiveShow } from '../../core/live-shows';
 import { Course } from '../../core/models';
 
 @Component({
@@ -17,7 +17,7 @@ export class LivePlayerPage {
   private readonly sanitizer = inject(DomSanitizer);
   private readonly coursesService = inject(CoursesService);
   private readonly liveShowId = this.route.snapshot.paramMap.get('id');
-  protected readonly show = signal<LiveShow | undefined>(liveShowById(this.liveShowId));
+  protected readonly show = signal<LiveShow | undefined>(undefined);
   protected readonly workspaceMode = this.route.snapshot.queryParamMap.get('mode') === 'workspace';
   protected readonly embedUrl = computed(() => {
     const url = this.show()?.embedUrl;
@@ -29,8 +29,6 @@ export class LivePlayerPage {
   });
 
   constructor() {
-    if (this.show()) return;
-
     this.coursesService.getLiveShows().subscribe({
       next: shows => {
         const catalogShow = shows.find(show => String(show.id) === this.liveShowId);
@@ -54,7 +52,7 @@ export class LivePlayerPage {
       description: catalogShow.excerpt || 'Join us live on TC Nexus.',
       host: catalogShow.hosts?.[0]?.name || 'TC Nexus',
       hostPhotoUrl: catalogShow.hosts?.[0]?.photo || null,
-      guests: [],
+      guests: catalogShow.guests || [],
       thumbnailUrl: catalogShow.image || catalogShow.thumbnail || '/shows/the-primer-BG-ratio-8by3.jpg',
       embedUrl: '/live-stream-layout',
       vimeoLiveEventId: catalogShow.vimeo_live_event_id || undefined,

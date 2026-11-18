@@ -6,6 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class TCNexus_Post_Types {
 
 	public static function register() {
+		register_post_type( 'tc_live_show', array( 'labels' => array( 'name' => 'Live Shows', 'singular_name' => 'Live Show' ), 'public' => false, 'show_ui' => false, 'supports' => array( 'title', 'editor' ) ) );
 		register_post_type( 'tc_course', array(
 			'label'        => 'Courses',
 			'labels'       => array(
@@ -144,10 +145,10 @@ class TCNexus_Post_Types {
 	 */
 	public static function get_person_role( $person_id ) {
 		$role = get_post_meta( $person_id, '_tcnexus_person_role', true );
-		return 'guest' === $role ? 'guest' : 'instructor';
+		return in_array( $role, array( 'guest', 'host' ), true ) ? $role : 'instructor';
 	}
 
 	public static function set_person_role( $person_id, $role ) {
-		update_post_meta( $person_id, '_tcnexus_person_role', 'guest' === $role ? 'guest' : 'instructor' );
+		update_post_meta( $person_id, '_tcnexus_person_role', in_array( $role, array( 'guest', 'host' ), true ) ? $role : 'instructor' );
 	}
 }

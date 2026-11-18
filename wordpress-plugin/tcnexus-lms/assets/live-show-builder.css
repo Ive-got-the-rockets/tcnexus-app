@@ -1,0 +1,3122 @@
+/* Course Builder admin page — a self-contained "app" surface dropped into
+   wp-admin, styled to the TC Nexus backend design system (soft cream/mint,
+   per the Product UI Styleguide reference) instead of default wp-admin
+   form-table chrome. This is a distinct palette from the Angular frontend's
+   dark trading-brand look — backend screens only. Scoped entirely under
+   #tcnexus-builder so it can never leak into the rest of wp-admin. */
+
+.tcn-builder-wrap {
+  --tcn-bg: #fffdf9;
+  --tcn-bg-sunken: #f1efe7;
+  --tcn-border: #e5e2d9;
+  --tcn-text: #201f1c;
+  --tcn-text-dim: #7a756c;
+  --tcn-primary: #8fd8c2;
+  --tcn-primary-strong: #5fc7a8;
+  --tcn-primary-text: #12352c;
+  --tcn-warning: #f0cb7e;
+  --tcn-warning-text: #6b4e14;
+  --tcn-error: #efa79c;
+  --tcn-error-text: #6b2a1e;
+  --tcn-disabled-bg: #e7e4db;
+  --tcn-disabled-text: #ada99e;
+  --tcn-radius-sm: 10px;
+  --tcn-radius-md: 16px;
+  --tcn-radius-pill: 999px;
+  --tcn-shadow-1: 0 1px 2px rgba(32, 31, 28, 0.05);
+  --tcn-shadow-2: 0 4px 12px rgba(32, 31, 28, 0.07);
+  --tcn-shadow-3: 0 12px 28px rgba(32, 31, 28, 0.1);
+}
+
+#tcnexus-builder {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  color: var(--tcn-text);
+  background: var(--tcn-bg);
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-md);
+  margin: 20px 0 40px;
+  box-shadow: var(--tcn-shadow-2);
+  /* Not overflow:hidden — no child needs corner-clipping (nothing has a
+     background that would poke a sharp corner past the rounded border), and
+     hiding overflow here was clipping/misplacing the custom select dropdown
+     lists, which are absolutely positioned and can extend past a short
+     panel's bottom edge on a mostly-empty tab. */
+  overflow: visible;
+}
+
+#tcnexus-builder * {
+  box-sizing: border-box;
+}
+
+#tcnexus-builder a {
+  color: var(--tcn-primary-text);
+}
+
+/* ---------- Header ---------- */
+
+.tcn-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 28px 32px 22px;
+  border-bottom: 1px solid var(--tcn-border);
+}
+
+.tcn-header__title-row {
+  flex: 1;
+  min-width: 0;
+}
+
+.tcn-header__eyebrow {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--tcn-text-dim);
+  margin: 0 0 8px;
+}
+
+.tcn-title-input {
+  font-family: 'Fraunces', 'Iowan Old Style', serif;
+  font-size: 32px;
+  font-weight: 400;
+  color: var(--tcn-text);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid transparent;
+  padding: 2px 0;
+  width: 100%;
+  max-width: 640px;
+  transition: border-color 0.15s ease;
+}
+
+.tcn-title-input:hover {
+  border-bottom-color: var(--tcn-border);
+}
+
+.tcn-title-input:focus {
+  outline: none;
+  border-bottom-color: var(--tcn-primary-strong);
+}
+
+.tcn-slug-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 10px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 12.5px;
+  color: var(--tcn-text-dim);
+}
+
+.tcn-slug-row span.tcn-slug-prefix {
+  opacity: 0.7;
+}
+
+.tcn-slug-input {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 12.5px;
+  background: var(--tcn-bg-sunken);
+  border: 1px solid var(--tcn-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: var(--tcn-text);
+  min-width: 220px;
+}
+
+.tcn-header__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  min-width: 160px;
+  flex-shrink: 0;
+}
+
+/* Stays in its normal spot until the page scrolls it up to the WP admin
+   bar's bottom edge, then sticks there (via JS — see course-builder.js;
+   plain position:sticky doesn't have enough room to stick in this shallow
+   flex parent). .is-stuck is toggled once it's actually pinned. */
+.tcn-header__save-btn {
+  z-index: 30;
+}
+
+.tcn-header__save-btn,
+.tcn-save-confirmation {
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.tcn-header__save-btn.is-stuck {
+  box-shadow: var(--tcn-shadow-2);
+}
+
+.tcn-header__save-btn.is-saving {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: wait;
+}
+
+.tcn-header__save-btn.is-saving::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: tcn-save-spin .7s linear infinite;
+}
+
+@keyframes tcn-save-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tcn-header__save-btn.is-saving::before {
+    animation: none;
+  }
+}
+
+.tcn-save-confirmation {
+  display: inline-flex;
+  width: 100%;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 10px 22px;
+  border: 1px solid var(--tcn-primary);
+  border-radius: var(--tcn-radius-pill);
+  background: rgba(95, 199, 168, .14);
+  color: var(--tcn-primary-strong);
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.2;
+  opacity: 1;
+  transition: opacity .22s ease, transform .22s ease;
+}
+
+.tcn-save-confirmation.is-dismissing {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+.tcn-header__save-btn-placeholder {
+  display: none;
+}
+
+.tcn-status-toggle {
+  position: relative;
+  display: inline-flex;
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-pill);
+  padding: 3px;
+  background: var(--tcn-bg-sunken);
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+}
+
+.tcn-status-toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tcn-status-toggle label {
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  padding: 6px 14px;
+  border-radius: var(--tcn-radius-pill);
+  cursor: pointer;
+  color: var(--tcn-text-dim);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tcn-status-toggle input:checked + label {
+  background: var(--tcn-primary);
+  color: var(--tcn-primary-text);
+}
+
+.tcn-save-btn {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  text-decoration: none;
+  display: inline-block;
+  background: var(--tcn-primary);
+  color: var(--tcn-primary-text);
+  border: none;
+  border-radius: var(--tcn-radius-pill);
+  padding: 10px 22px;
+  cursor: pointer;
+  box-shadow: var(--tcn-shadow-1);
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.tcn-save-btn:hover {
+  background: var(--tcn-primary-strong);
+  box-shadow: var(--tcn-shadow-2);
+}
+
+.tcn-save-btn:active {
+  transform: translateY(1px);
+}
+
+#tcnexus-save-course.is-pending {
+  background: #F09889;
+  color: #201f1c;
+}
+
+#tcnexus-save-course.is-pending:hover {
+  background: #F09889;
+  color: #201f1c;
+}
+
+.tcn-back-link {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--tcn-text);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--tcn-bg);
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-pill);
+  padding: 9px 18px;
+  margin-bottom: 16px;
+  box-shadow: var(--tcn-shadow-1);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tcn-back-link:hover {
+  color: var(--tcn-text);
+  border-color: var(--tcn-primary-strong);
+  box-shadow: var(--tcn-shadow-2);
+}
+
+/* ---------- Tabs (underline style) ---------- */
+
+.tcn-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 32px;
+  border-bottom: 1px solid var(--tcn-border);
+  overflow-x: auto;
+}
+
+.tcn-tab {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: var(--tcn-text-dim);
+  background: none;
+  border: none;
+  padding: 14px 16px 12px;
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+}
+
+.tcn-tab::after {
+  content: '';
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: -1px;
+  height: 2px;
+  background: transparent;
+  border-radius: 2px 2px 0 0;
+}
+
+.tcn-tab[aria-selected='true'] {
+  color: var(--tcn-text);
+}
+
+.tcn-tab[aria-selected='true']::after {
+  background: var(--tcn-primary-strong);
+}
+
+.tcn-tab:hover {
+  color: var(--tcn-text);
+}
+
+/* ---------- Panels ---------- */
+
+.tcn-panel {
+  display: none;
+  padding: 28px 32px 36px;
+}
+
+.tcn-panel.is-active {
+  display: block;
+}
+
+.tcn-field {
+  margin-bottom: 22px;
+}
+
+.tcn-field:last-child {
+  margin-bottom: 0;
+}
+
+.tcn-field__label {
+  display: block;
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--tcn-text-dim);
+  margin-bottom: 8px;
+}
+
+/* Give the Description label a clear separation from the WordPress editor. */
+.tcn-field__label[for^="course_content_"] {
+  position: relative;
+  top: 15px;
+  margin-bottom: 15px;
+}
+
+.tcn-field__hint {
+  font-size: 12.5px;
+  color: var(--tcn-text-dim);
+  margin: 6px 0 0;
+}
+
+.tcn-input,
+.tcn-select,
+.tcn-textarea {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 14px;
+  color: var(--tcn-text);
+  background: var(--tcn-bg-sunken);
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-sm);
+  padding: 10px 12px;
+  width: 100%;
+  max-width: 480px;
+}
+
+.tcn-input:focus,
+.tcn-select:focus,
+.tcn-textarea:focus {
+  outline: none;
+  border-color: var(--tcn-primary-strong);
+}
+
+/* wp-admin's own core CSS (.wp-core-ui select:focus, etc.) styles focus with
+   WordPress's blue admin theme color via border-color + box-shadow, at
+   higher specificity than a plain class selector — override it explicitly,
+   using #tcnexus-builder's ID for specificity instead of !important.
+   .tcn-lessons-card needs the same override since it sits outside
+   #tcnexus-builder (a sibling card, not one of its tabs), so its own
+   selects/inputs (the lesson editor's Order, Title, Duration) would
+   otherwise fall back to the unscoped, lower-specificity rule below and
+   still show WordPress's blue ring instead of ours. */
+#tcnexus-builder .tcn-input:focus,
+#tcnexus-builder .tcn-select:focus,
+#tcnexus-builder .tcn-textarea:focus,
+.tcn-lessons-card .tcn-input:focus,
+.tcn-lessons-card .tcn-select:focus,
+.tcn-lessons-card .tcn-textarea:focus {
+  border-color: var(--tcn-primary-strong);
+  box-shadow: 0 0 0 1.5px var(--tcn-primary-strong);
+}
+
+/* ---------- Custom select (replaces native <select> popup) ----------
+   The native open-list popup is OS-rendered and ignores CSS in Chromium, so
+   course-builder.js swaps in this markup for the visible list while keeping
+   the real <select> (hidden, but still submits its value with the form). */
+
+.tcn-select-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+}
+
+.tcn-select-wrap select {
+  display: none;
+}
+
+.tcn-select[multiple] {
+  min-height: 176px;
+  max-width: 480px;
+  padding: 8px 10px;
+  background: var(--tcn-bg-sunken);
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-sm);
+  color: var(--tcn-text);
+}
+
+/* Instructor/Guest: dropdown + a "+" to create a new person without
+   leaving the course (see the quick-create-person modal). */
+.tcn-person-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tcn-person-field .tcn-select-wrap {
+  flex: 1;
+}
+
+.tcn-select-trigger {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 14px;
+  text-align: left;
+  color: var(--tcn-text);
+  background: var(--tcn-bg-sunken);
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-sm);
+  padding: 0 36px 0 12px;
+  width: 100%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.tcn-select-trigger::after {
+  content: '';
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-right: 1.5px solid var(--tcn-text-dim);
+  border-bottom: 1.5px solid var(--tcn-text-dim);
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+
+.tcn-select-trigger[aria-expanded='true'] {
+  border-color: var(--tcn-primary-strong);
+  box-shadow: 0 0 0 1.5px var(--tcn-primary-strong);
+}
+
+.tcn-select-list {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #f1efe7;
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-sm);
+  box-shadow: var(--tcn-shadow-2);
+  padding: 4px;
+  max-height: 260px;
+  overflow-y: auto;
+  z-index: 20;
+}
+
+.tcn-select-list.is-open {
+  display: block;
+}
+
+.tcn-select-option {
+  font-size: 14px;
+  color: var(--tcn-text);
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.tcn-select-option:hover {
+  background: var(--tcn-primary);
+  color: var(--tcn-primary-text);
+}
+
+.tcn-select-option.is-selected {
+  background: var(--tcn-primary);
+  color: var(--tcn-primary-text);
+  font-weight: 400;
+}
+
+.tcn-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.tcn-row .tcn-field {
+  flex: 1;
+  min-width: 220px;
+}
+
+/* Keep the Course Type section visually separated from the Author row. */
+.tcn-panel[id$="-basics"] > .tcn-row + .tcn-field {
+  margin-top: 25px;
+}
+
+.tcn-checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tcn-chip-checkbox {
+  position: relative;
+}
+
+.tcn-chip-checkbox input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tcn-chip-checkbox label {
+  display: inline-block;
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: var(--tcn-radius-pill);
+  border: 1px solid var(--tcn-border);
+  background: var(--tcn-bg-sunken);
+  color: var(--tcn-text-dim);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tcn-chip-checkbox input:checked + label {
+  background: var(--tcn-primary);
+  border-color: var(--tcn-primary);
+  color: var(--tcn-primary-text);
+}
+
+/* Rich text editor: retheme WP's editor chrome to sit on the cream surface */
+
+.tcn-panel .wp-editor-container {
+  border-color: var(--tcn-border);
+  border-radius: var(--tcn-radius-sm);
+  overflow: hidden;
+}
+
+.tcn-panel .wp-editor-tabs {
+  background: var(--tcn-bg-sunken);
+}
+
+.tcn-panel .wp-editor-tabs button {
+  color: var(--tcn-text-dim);
+}
+
+.tcn-panel .mce-toolbar-grp,
+.tcn-panel .quicktags-toolbar {
+  background: var(--tcn-bg-sunken) !important;
+  border-color: var(--tcn-border) !important;
+}
+
+.tcn-panel .mce-btn button {
+  color: var(--tcn-text) !important;
+}
+
+/* ---------- Media pickers ---------- */
+
+.tcn-media-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+/* Course media is grouped by responsive target so desktop and mobile artwork
+   can be configured side by side without changing the existing picker itself. */
+.tcn-media-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+/* Apply the responsive media layout to the existing course-builder Media tab
+   while older saved courses continue using the same field names. */
+.tcn-panel[id$="-media"] {
+  display: none;
+}
+
+.tcn-panel[id$="-media"].is-active {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.tcn-panel[id$="-media"] > .tcn-field {
+  min-width: 0;
+  margin: 0;
+  padding: 20px;
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-sm);
+  background: var(--tcn-bg);
+}
+
+.tcn-panel[id$="-media"] > .tcn-field:nth-child(3),
+.tcn-panel[id$="-media"] > .tcn-field:nth-child(4) {
+  grid-column: 1 / -1;
+}
+
+.tcn-panel[id$="-media"] > .tcn-field:nth-child(3) .tcn-media-grid,
+.tcn-panel[id$="-media"] > .tcn-field:nth-child(4) .tcn-media-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 20px;
+}
+
+.tcn-panel[id$="-media"] > .tcn-field .tcn-media-grid {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+@media (max-width: 900px) {
+  .tcn-panel[id$="-media"].is-active {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tcn-media-section {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-sm);
+  background: var(--tcn-bg);
+}
+
+.tcn-media-section__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--tcn-border);
+}
+
+.tcn-media-section__head h3 {
+  margin: 0;
+  color: var(--tcn-text);
+  font-size: 18px;
+}
+
+.tcn-media-section__head p {
+  margin: 4px 0 0;
+  color: var(--tcn-text-dim);
+  font-size: 12px;
+}
+
+.tcn-media-section__head > span {
+  padding: 4px 8px;
+  border: 1px solid #b8dfd1;
+  border-radius: var(--tcn-radius-pill);
+  background: #edf9f4;
+  color: var(--tcn-primary-text);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+.tcn-media-section .tcn-media-picker {
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .tcn-media-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Course and Show Builder media cards share the compact 8:3 landing-image
+   footprint, so every picker can sit beside its counterpart at a consistent
+   size. The image itself uses cover to fill the preview without distortion. */
+.tcn-course-media-grid {
+  grid-template-columns: repeat(2, 320px);
+  gap: 20px;
+}
+
+.tcn-course-media-grid .tcn-media-picker {
+  width: 320px;
+  box-sizing: border-box;
+}
+
+.tcn-course-media-grid .tcn-media-picker__preview {
+  aspect-ratio: 8 / 3;
+}
+
+.tcn-character-list {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-sm);
+  background: var(--tcn-bg-sunken);
+}
+
+.tcn-character-list__title {
+  margin: 0 0 10px;
+  color: var(--tcn-text-dim);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.tcn-character-list__items {
+  display: grid;
+  gap: 8px;
+}
+
+.tcn-character-list__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-sm);
+  background: var(--tcn-bg);
+  color: var(--tcn-text);
+  font-size: 13px;
+}
+
+.tcn-character-list__remove {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--tcn-text-dim);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.tcn-character-list__remove:hover,
+.tcn-character-list__remove:focus-visible {
+  background: rgba(206, 103, 88, .12);
+  color: var(--tcn-error-text);
+}
+
+.tcn-media-picker {
+  border: 1px dashed var(--tcn-border);
+  border-radius: var(--tcn-radius-sm);
+  padding: 16px;
+  background: var(--tcn-bg-sunken);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+/* Toggled by course-builder.js while a dragged file is over the picker,
+   dropping it anywhere in this box uploads it via wp.Uploader. */
+.tcn-media-picker.is-drag-over {
+  border-color: var(--tcn-primary-strong);
+  background: rgba(95, 199, 168, 0.12);
+}
+
+.tcn-media-picker__empty--error {
+  color: var(--tcn-error-text);
+}
+
+.tcn-media-picker__preview {
+  width: 100%;
+  aspect-ratio: var(--tcn-media-aspect, 16 / 9);
+  border-radius: 6px;
+  background: rgba(32, 31, 28, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.tcn-media-picker__preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tcn-media-picker__empty {
+  font-size: 12px;
+  color: var(--tcn-text-dim);
+}
+
+.tcn-media-picker__device {
+  display: inline-block;
+  margin-bottom: 5px;
+  color: var(--tcn-text);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
+.tcn-media-picker__progress-wrap {
+  width: 80%;
+  max-width: 220px;
+  text-align: center;
+}
+
+.tcn-media-picker__progress {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(32, 31, 28, 0.12);
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.tcn-media-picker__progress-bar {
+  height: 100%;
+  background: var(--tcn-primary);
+  transition: width 0.15s ease;
+}
+
+.tcn-media-picker__progress-label {
+  font-size: 12px;
+  color: var(--tcn-text-dim);
+}
+
+.tcn-media-picker__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.tcn-media-picker__add-wrap {
+  position: relative;
+}
+
+.tcn-media-picker__menu[hidden] {
+  display: none;
+}
+
+.tcn-media-picker__menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 30;
+  display: grid;
+  min-width: 170px;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.tcn-media-picker__menu .tcn-btn-ghost {
+  width: 100%;
+  border-color: var(--tcn-border);
+  background: var(--tcn-bg);
+  box-shadow: 0 4px 12px rgba(32, 31, 28, 0.12);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tcn-media-picker__menu .tcn-btn-ghost:hover,
+.tcn-media-picker__menu .tcn-btn-ghost:focus-visible {
+  border-color: var(--tcn-primary-strong);
+  background: var(--tcn-bg);
+}
+
+.tcn-btn-ghost {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 12.5px;
+  font-weight: 400;
+  text-decoration: none;
+  display: inline-block;
+  background: var(--tcn-bg);
+  color: var(--tcn-text);
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-pill);
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.tcn-btn-ghost:hover {
+  border-color: var(--tcn-primary-strong);
+  color: var(--tcn-primary-text);
+}
+
+.tcn-add-person {
+  width: 40px;
+  height: 40px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #E5E3DB;
+}
+
+.tcn-add-person:hover {
+  color: var(--tcn-primary-strong);
+  border-color: var(--tcn-primary-strong);
+}
+
+#tcn-quick-person-create {
+  font-size: 12.5px;
+  padding: 7px 14px;
+}
+
+#tcn-quick-person-cancel {
+  margin-top: 0;
+}
+
+.tcn-btn-ghost--danger:hover {
+  border-color: var(--tcn-error);
+  color: var(--tcn-error-text);
+}
+
+/* ---------- Lessons card (separate from #tcnexus-builder, sits below it) ---------- */
+
+.tcn-lessons-card {
+  background: var(--tcn-bg);
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-md);
+  box-shadow: var(--tcn-shadow-2);
+  margin: 20px 0 40px;
+  /* Not overflow:hidden — same reasoning as #tcnexus-builder above: nothing
+     here has a background that touches the card's rounded top/bottom
+     corners (the table's sunken header row sits below the title bar, not
+     flush with the card edge), and hiding overflow clipped the Order
+     field's dropdown list once its row was expanded. */
+  overflow: visible;
+}
+
+.tcn-lessons-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 32px;
+  border-bottom: 1px solid var(--tcn-border);
+}
+
+.tcn-lessons-card__title {
+  font-family: 'Fraunces', 'Iowan Old Style', serif;
+  font-size: 19px;
+  font-weight: 400;
+  margin: 0;
+  color: var(--tcn-text);
+}
+
+.tcn-lessons-card__header .tcn-btn-ghost {
+  margin-top: 0;
+}
+
+/* ---------- Live Stream card (Live Show Builder only) ---------- */
+
+.tcn-live-stream-card {
+  background: var(--tcn-bg);
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-md);
+  box-shadow: var(--tcn-shadow-2);
+  margin: 20px 0 40px;
+  overflow: hidden;
+}
+
+.tcn-live-stream-card__header {
+  padding: 22px 32px 18px;
+  border-bottom: 1px solid var(--tcn-border);
+}
+
+.tcn-live-stream-card__title {
+  font-family: 'Fraunces', 'Iowan Old Style', serif;
+  font-size: 23px;
+  font-weight: 400;
+  margin: 0;
+  color: var(--tcn-text);
+}
+
+.tcn-live-stream-card__header p {
+  margin: 5px 0 0;
+  color: var(--tcn-text-dim);
+  font-size: 13px;
+}
+
+.tcn-live-stream-card__body {
+  max-width: 760px;
+  padding: 24px 32px 30px;
+}
+
+.tcn-live-stream-card__body .tcn-input {
+  width: 100%;
+  max-width: 620px;
+  margin-top: 7px;
+}
+
+.tcn-live-stream-card__body .tcn-field__hint {
+  margin: 8px 0 18px;
+}
+
+.tcn-live-stream-card__actions {
+  display: flex;
+  gap: 10px;
+}
+
+.tcn-live-stream-card__actions .tcn-btn-ghost {
+  min-width: 132px;
+  margin-top: 0;
+  text-align: center;
+}
+
+.tcn-live-stream-card__actions .tcn-btn-ghost:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.tcn-live-stream-card__note {
+  background: rgba(137, 216, 198, .22);
+  border-radius: 8px;
+  color: var(--tcn-text);
+  font-size: 13px;
+  margin: 20px 0 0;
+  padding: 12px 14px;
+}
+
+.tcn-lessons-overview {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.tcn-lessons-overview th {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--tcn-text-dim);
+  text-align: left;
+  padding: 12px 32px;
+  background: var(--tcn-bg-sunken);
+}
+
+.tcn-lessons-overview__order,
+.tcn-lessons-overview__type,
+.tcn-lessons-overview__level,
+.tcn-lessons-overview__duration,
+.tcn-lessons-overview__video-id,
+.tcn-lessons-overview__views {
+  width: 120px;
+}
+
+.tcn-lessons-overview__order,
+.tcn-lessons-overview__duration,
+.tcn-lessons-overview__video-id,
+.tcn-lessons-overview__views {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* .tcn-lessons-overview th's own text-align:left (element+class) otherwise
+   outranks the class-only rule above, so the header stays left-aligned
+   while its column's values center underneath — matching specificity here
+   is what actually centers the header text over the numbers. */
+.tcn-lessons-overview th.tcn-lessons-overview__order,
+.tcn-lessons-overview th.tcn-lessons-overview__duration,
+.tcn-lessons-overview th.tcn-lessons-overview__video-id,
+.tcn-lessons-overview th.tcn-lessons-overview__views {
+  text-align: center;
+}
+
+.tcn-lessons-empty-row td {
+  padding: 20px 32px;
+  color: var(--tcn-text-dim);
+}
+
+.tcn-lessons-empty__content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.tcn-lesson-row {
+  cursor: pointer;
+  border-top: 1px solid var(--tcn-border);
+  transition: background 0.12s ease;
+}
+
+.tcn-lesson-row:hover,
+.tcn-lesson-row.is-open {
+  background: var(--tcn-bg-sunken);
+}
+
+.tcn-lesson-row td {
+  padding: 14px 32px;
+  vertical-align: middle;
+}
+
+.tcn-lesson-row__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tcn-lesson-row__chevron {
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.tcn-lesson-row.is-open .tcn-lesson-row__chevron {
+  transform: rotate(90deg);
+}
+
+.tcn-level-chip {
+  display: inline-block;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  padding: 3px 10px;
+  border-radius: var(--tcn-radius-pill);
+  background: var(--tcn-bg-sunken);
+  color: var(--tcn-text-dim);
+  border: 1px solid var(--tcn-border);
+}
+
+.tcn-level-chip--paid {
+  background: var(--tcn-warning);
+  color: var(--tcn-warning-text);
+  border-color: transparent;
+}
+
+.tcn-level-chip--free {
+  background: var(--tcn-primary);
+  color: var(--tcn-primary-text);
+  border-color: transparent;
+}
+
+/* Collapsed by default; toggled open by course-builder.js when its summary
+   row (the sibling .tcn-lesson-row directly above) is clicked. */
+.tcn-lesson-expand td {
+  position: relative;
+  padding: 0;
+  border-top: none;
+  /* Keep the rows underneath from showing through the open editor. */
+  background: var(--tcn-bg, #fffdf9);
+  z-index: 2;
+}
+
+.tcn-lesson-expand__panel {
+  position: relative;
+  z-index: 2;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.2s ease;
+}
+
+.tcn-lesson-expand.is-open .tcn-lesson-expand__panel {
+  max-height: 500px;
+}
+
+/* Toggled by course-builder.js once the open transition has actually
+   finished (see wireLessonRow) — overflow:hidden has to stay in place
+   during the max-height animation itself, but once a row is fully open
+   the Order dropdown needs overflow:visible to escape the panel instead
+   of being clipped by it. */
+.tcn-lesson-expand__panel--settled {
+  overflow: visible;
+}
+
+.tcn-lesson-card {
+  position: relative;
+  display: flex;
+  gap: 20px;
+  padding: 22px 32px;
+  background: #f7f4ef;
+  border-top: 1px solid var(--tcn-border);
+}
+
+.tcn-lesson-card__delete {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--tcn-border);
+  border-radius: 6px;
+  background: var(--tcn-bg-sunken);
+  color: var(--tcn-text-dim);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.tcn-lesson-card__delete:hover {
+  border-color: var(--tcn-error);
+  color: var(--tcn-error-text);
+}
+
+.tcn-lesson-card__media {
+  width: 300px;
+  flex-shrink: 0;
+}
+
+.tcn-lesson-card__media .tcn-media-picker {
+  padding: 10px;
+}
+
+.tcn-lesson-card__media .tcn-media-picker__preview {
+  margin-bottom: 8px;
+}
+
+.tcn-lesson-card__video-id {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 4px 10px 0;
+  color: var(--tcn-text-dim);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tcn-lesson-card__video-id code {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #F1EFE7;
+  color: var(--tcn-text);
+  font-family: var(--tcn-font-mono, monospace);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.tcn-lesson-card__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  justify-content: center;
+}
+
+.tcn-lesson-card__row {
+  display: flex;
+  gap: 12px;
+}
+
+.tcn-lesson-card__row--top {
+  align-items: flex-start;
+  /* Leaves clearance for the absolutely-positioned trash icon (top-right of
+     the whole card) so it never overlaps the Description field's label. */
+  padding-right: 44px;
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  grid-template-areas:
+    "order title"
+    ". description";
+}
+
+.tcn-lesson-card__row--top .tcn-lesson-card__order {
+  grid-area: order;
+  width: 90px;
+  flex-shrink: 0;
+}
+
+.tcn-lesson-card__row--top .tcn-lesson-card__title {
+  grid-area: title;
+  min-width: 0;
+}
+
+.tcn-lesson-card__row--top .tcn-lesson-card__description {
+  grid-area: description;
+  min-width: 0;
+}
+
+.tcn-lesson-card__row--video {
+  align-items: center;
+}
+
+@media (max-width: 1100px) {
+  .tcn-lesson-card__row--top {
+    grid-template-columns: 90px minmax(0, 1fr);
+    grid-template-areas:
+      "order title"
+      ". description";
+  }
+}
+
+@media (max-width: 900px) {
+  .tcn-tc-lens-event {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .tcn-tc-lens-event__type,
+  .tcn-tc-lens-event__message {
+    grid-column: 1 / -1;
+  }
+
+  .tcn-tc-lens-event__remove {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+  }
+}
+
+.tcn-lesson-card__row--video .tcn-video-id-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.tcn-lesson-card__row--meta {
+  align-items: center;
+}
+
+.tcn-lesson-card__row--meta .tcn-lesson-card__duration {
+  width: 160px;
+  flex-shrink: 0;
+}
+
+.tcn-lesson-card__row--meta .tcn-lesson-card__tier {
+  flex-shrink: 0;
+}
+
+.tcn-lesson-card__guests {
+  width: min(100%, 520px);
+}
+
+.tcn-tc-lens-timeline {
+  width: 100%;
+  margin-top: 4px;
+  padding: 16px;
+  border: 1px solid var(--tcn-border);
+  border-radius: 10px;
+  background: var(--tcn-bg-sunken);
+}
+
+.tcn-tc-lens-timeline__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.tcn-tc-lens-timeline__header .tcn-field__hint {
+  margin: 4px 0 0;
+}
+
+.tcn-tc-lens-timeline__error {
+  min-height: 18px;
+  margin: -4px 0 8px;
+  color: var(--tcn-error-text, #a34d4d);
+  font-size: 12px;
+}
+
+.tcn-tc-lens-event input[aria-invalid="true"] {
+  border-color: var(--tcn-error-text, #a34d4d);
+  box-shadow: 0 0 0 1px var(--tcn-error-text, #a34d4d);
+}
+
+.tcn-tc-lens-event {
+  position: relative;
+  display: grid;
+  grid-template-columns: 150px 120px 120px minmax(0, 1fr) 28px;
+  gap: 10px;
+  align-items: start;
+  padding: 12px 34px 12px 12px;
+  border: 1px solid var(--tcn-border);
+  border-radius: 8px;
+  background: var(--tcn-bg);
+}
+
+.tcn-tc-lens-event + .tcn-tc-lens-event {
+  margin-top: 8px;
+}
+
+.tcn-tc-lens-event .tcn-field__label span {
+  color: var(--tcn-text-dim);
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.tcn-tc-lens-event__message textarea,
+.tcn-tc-lens-event__field textarea,
+.tcn-tc-lens-event__field input,
+.tcn-tc-lens-event__field select {
+  width: 100%;
+}
+
+.tcn-tc-lens-event__message textarea,
+.tcn-tc-lens-event__field textarea {
+  min-height: 66px;
+  resize: vertical;
+}
+
+.tcn-tc-lens-payload {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.tcn-tc-lens-payload__trade,
+.tcn-tc-lens-payload__llm {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.tcn-tc-lens-event__field--wide {
+  grid-column: span 2;
+}
+
+.tcn-tc-lens-event__field .tcn-field__label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.tcn-tc-lens-field__help {
+	display: block;
+	margin: -1px 0 5px;
+	color: var(--tcn-text-dim);
+	font-size: 10px;
+	line-height: 1.3;
+}
+
+.tcn-tc-lens-payload [hidden] {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .tcn-tc-lens-payload__trade,
+  .tcn-tc-lens-payload__llm {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .tcn-tc-lens-event__field--wide {
+    grid-column: span 2;
+  }
+}
+
+.tcn-tc-lens-event__remove {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	height: 30px;
+	padding: 0;
+	border: 1px solid transparent;
+	border-radius: 6px;
+	background: transparent;
+	color: var(--tcn-text-dim);
+	cursor: pointer;
+	line-height: 1;
+	transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.tcn-tc-lens-event__remove:hover {
+	border-color: var(--tcn-error);
+	background: rgba(239, 167, 156, 0.2);
+	color: var(--tcn-error-text);
+}
+
+.tcn-tc-lens-event__remove svg {
+	display: block;
+}
+
+.tcn-tc-lens-event--template {
+  display: none;
+}
+
+/* Structured TC Lens trade editor; same cream/mint palette as lesson fields. */
+.tcn-trade-asset {
+  position: relative; display: grid; grid-template-columns: 1fr 1fr;
+  width: 270px; max-width: 100%; padding: 4px; margin-bottom: 20px;
+  border: 1px solid var(--tcn-border); border-radius: 24px; background: var(--tcn-bg-sunken);
+}
+.tcn-trade-asset::before {
+  content: ''; position: absolute; left: 4px; top: 4px; bottom: 4px; width: calc(50% - 4px);
+  border-radius: 20px; background: var(--tcn-primary); transition: transform 180ms ease;
+}
+.tcn-trade-asset[data-asset="crypto"]::before { transform: translateX(100%); }
+.tcn-trade-editor .tcn-trade-asset label { position: relative; display: grid; place-items: center; min-height: 34px; gap: 0; border-radius: 20px; color: var(--tcn-text-dim); cursor: pointer; }
+.tcn-trade-asset label:has(input:checked) span { color: var(--tcn-primary-text); font-weight: 600; }
+.tcn-trade-asset label:has(input[value="crypto"]:not(:checked)) span { opacity: .6; }
+.tcn-trade-asset label:has(input:focus-visible) { outline: 2px solid var(--tcn-primary-strong); outline-offset: 2px; }
+.tcn-trade-editor .tcn-trade-asset input { position: absolute; width: 1px; height: 1px; opacity: 0; margin: 0; padding: 0; }
+.tcn-trade-ticker-actions { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 12px; }
+.tcn-trade-ticker-actions .tcn-trade-editor__ticker { flex: 1 1 270px; }
+.tcn-trade-leg-add { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 39px; padding: 0 16px; border: 1px solid #b6d8ca; border-radius: 20px; background: #e5f2eb; color: var(--tcn-primary-text); font: inherit; font-size: 12px; cursor: pointer; }
+.tcn-trade-leg-add > span { font-size: 20px; line-height: 1; transform: translateY(-1px); }
+.tcn-trade-leg-add:hover { background: var(--tcn-primary); }
+.tcn-trade-leg-add:disabled, .tcn-trade-editor__add:disabled { background: #eeece5; border-color: #e3e0d7; color: #aaa69b; cursor: not-allowed; }
+.tcn-trade-leg-add:focus-visible { outline: 2px solid var(--tcn-primary-strong); outline-offset: 2px; }
+[data-stock-legs], [data-trade-legs] { padding-right: 50px; }
+.tcn-stock-leg { position: relative; display: grid; grid-template-columns: 88px minmax(0, 1fr) minmax(0, 1fr) 30px; align-items: end; gap: 12px; margin-top: 10px; padding: 15px 12px 15px 16px; border: 1px solid var(--tcn-border); border-left: 3px solid #b6a0bd; border-bottom: 1px solid #b6a0bd; border-radius: 8px; background: #faf9f4; }
+.tcn-stock-leg__label { align-self: center; font-size: 12px; color: #786080; }
+.tcn-stock-leg label { font-size: 11px; }
+.tcn-stock-leg input { height: 37px; }
+.tcn-trade-leg { position: relative; }
+.tcn-trade-editor .tcn-trade-row-add { position: absolute; right: -50px; top: 50%; transform: translateY(-50%); margin: 0; }
+.tcn-trade-editor [hidden] { display: none; }
+@container (max-width: 520px) {
+  .tcn-stock-leg { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 30px; }
+  .tcn-stock-leg__label { grid-column: 1 / -1; }
+}
+@media (prefers-reduced-motion: reduce) { .tcn-trade-asset::before { transition: none; } }
+
+.wp-core-ui .tcn-tc-lens-timeline select {
+  appearance: none;
+  -webkit-appearance: none;
+  max-width: none;
+  min-height: 39px;
+  padding: 0 32px 0 10px;
+  border: 1px solid var(--tcn-border, #e5e2d9);
+  border-radius: 6px;
+  background-color: var(--tcn-bg-sunken, #f1efe7);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%237a756c' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-position: right 10px center;
+  background-size: 15px;
+  background-repeat: no-repeat;
+  color: var(--tcn-text, #201f1c);
+  cursor: pointer;
+}
+
+.wp-core-ui .tcn-tc-lens-timeline select:focus {
+  border-color: var(--tcn-primary-strong, #5fc7a8);
+  box-shadow: 0 0 0 2px #8fd8c23d;
+  outline: none;
+}
+
+.tcn-trade-editor input[data-leg-field="expiration"] {
+  padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%237a756c' stroke-width='1.7' stroke-linecap='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M16 3v4M8 3v4M3 11h18'/%3E%3C/svg%3E");
+  background-position: right 10px center;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.tcn-trade-editor input[type="date"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  right: 8px;
+  opacity: 0;
+  cursor: pointer;
+}
+.tcn-trade-editor input[type="date"] { position: relative; }
+
+/* App-owned calendar, mounted outside expanding panels to avoid clipping. */
+.tcn-trade-calendar {
+  position: fixed;
+  z-index: 100100;
+  box-sizing: border-box;
+  width: 302px;
+  max-width: calc(100vw - 16px);
+  padding: 14px;
+  border: 1px solid #e5e2d9;
+  border-radius: 12px;
+  background: #fffdf9;
+  color: #201f1c;
+  font: 12px 'Plus Jakarta Sans', -apple-system, sans-serif;
+  box-shadow: 0 4px 12px #201f1c0d, 0 14px 36px #201f1c1a;
+}
+
+.tcn-trade-calendar__header { display: grid; grid-template-columns: 28px minmax(0, 1fr) 66px 28px; gap: 6px; align-items: center; }
+.wp-core-ui .tcn-trade-calendar select,
+.wp-core-ui .tcn-trade-calendar input {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  max-width: none;
+  min-height: 34px;
+  height: 34px;
+  margin: 0;
+  padding: 0 7px;
+  border: 1px solid #e5e2d9;
+  border-radius: 6px;
+  background-color: #f1efe7;
+  color: #201f1c;
+  font: inherit;
+}
+.wp-core-ui .tcn-trade-calendar select {
+  appearance: none;
+  padding-right: 24px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%237a756c' stroke-width='1.7'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-position: right 6px center;
+  background-repeat: no-repeat;
+  background-size: 14px;
+}
+.tcn-trade-calendar button { display: grid; place-items: center; min-height: 32px; margin: 0; padding: 0; border: 0; border-radius: 6px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.tcn-trade-calendar__header > button { font-size: 23px; }
+.tcn-trade-calendar__week,
+.tcn-trade-calendar__days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+.tcn-trade-calendar__week { margin: 12px 0 5px; text-align: center; color: #7a756c; font-size: 10px; }
+.tcn-trade-calendar button:hover { background: #f1efe7; }
+.tcn-trade-calendar button[aria-current="date"] { box-shadow: inset 0 0 0 1px #78b5a3; }
+.tcn-trade-calendar button.is-selected { background: #8fd8c2; color: #12352c; font-weight: 600; }
+.tcn-trade-calendar button:disabled { opacity: .35; cursor: default; }
+.tcn-trade-calendar button:focus-visible,
+.wp-core-ui .tcn-trade-calendar select:focus,
+.wp-core-ui .tcn-trade-calendar input:focus { outline: 2px solid #5fc7a8; outline-offset: 1px; box-shadow: none; border-color: #78b5a3; }
+.tcn-trade-calendar__footer { display: flex; justify-content: space-between; gap: 8px; border-top: 1px solid #e5e2d9; margin-top: 10px; padding-top: 8px; }
+.tcn-trade-calendar__footer button { padding: 0 9px; color: #47695e; }
+
+.tcn-trade-editor {
+  grid-column: 1 / -1;
+  min-width: 0;
+  container-type: inline-size;
+}
+
+.tcn-trade-editor__heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 15px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tcn-trade-editor__heading::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--tcn-border);
+}
+
+.tcn-trade-editor label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tcn-trade-editor label small,
+.tcn-trade-editor__options-heading > small,
+.tcn-trade-editor__hint {
+  color: var(--tcn-text-dim);
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.tcn-trade-editor__ticker { max-width: 270px; }
+.tcn-trade-editor__ticker input { text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
+
+.tcn-trade-editor__underlying {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) 42px;
+  align-items: end;
+  gap: 14px;
+  margin-top: 17px;
+}
+
+.tcn-trade-editor input,
+.tcn-trade-editor select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 39px;
+  margin: 0;
+  padding: 0 10px;
+  border: 1px solid var(--tcn-border);
+  border-radius: 6px;
+  background: var(--tcn-bg-sunken);
+  color: var(--tcn-text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.tcn-trade-editor input:focus,
+.tcn-trade-editor select:focus {
+  outline: 2px solid var(--tcn-primary);
+  outline-offset: 1px;
+}
+
+.tcn-trade-editor__add {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  margin-bottom: 1px;
+  padding: 0;
+  border: 1px solid #70bea6;
+  border-radius: 50%;
+  background: var(--tcn-primary);
+  color: var(--tcn-primary-text);
+  font-size: 25px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tcn-trade-editor__add > span { transform: translateY(-2px); }
+.tcn-trade-editor__add:hover { background: var(--tcn-primary-strong); }
+
+.tcn-trade-editor__options-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 23px 0 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tcn-trade-editor__symbol {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 4px 8px;
+  border-radius: 20px;
+  background: #e5f2eb;
+  color: #47695e;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.tcn-trade-leg {
+  --leg-accent: #78b5a3;
+  display: grid;
+  grid-template-columns: minmax(75px, .85fr) minmax(130px, 1.45fr) minmax(65px, .7fr) minmax(75px, .85fr) minmax(140px, 1.2fr) minmax(75px, .85fr) 30px;
+  align-items: end;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 15px 12px 15px 16px;
+  border: 1px solid var(--tcn-border);
+  border-left: 3px solid var(--leg-accent);
+  border-bottom: 1px solid var(--leg-accent);
+  border-radius: 8px;
+  background: #faf9f4;
+}
+
+.tcn-trade-leg[data-side="put"] { --leg-accent: var(--tcn-error, #efa79c); }
+.tcn-trade-leg label { font-size: 11px; }
+.tcn-trade-leg input,
+.tcn-trade-leg select { height: 37px; background-color: var(--tcn-bg); }
+
+.tcn-trade-leg__remove {
+  display: grid;
+  place-items: center;
+  align-self: end;
+  width: 30px;
+  height: 30px;
+  margin-bottom: 3.5px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #b65c50;
+  cursor: pointer;
+}
+
+.tcn-trade-leg__remove:hover { background: #efa79c33; color: #6b2a1e; }
+.tcn-trade-leg__remove:focus-visible,
+.tcn-trade-editor__add:focus-visible { outline: 2px solid var(--tcn-primary-strong); outline-offset: 2px; }
+.tcn-trade-editor__hint { margin: 14px 0 6px; }
+.tcn-tc-lens-payload__trade > .tcn-tc-lens-event__field--wide { grid-column: 1 / -1; }
+.tcn-tc-lens-event__remove { color: #b65c50; }
+
+@container (max-width: 820px) {
+  .tcn-trade-leg { grid-template-columns: repeat(3, minmax(0, 1fr)) 30px; }
+  .tcn-trade-leg .tcn-trade-leg__remove { grid-column: 4; grid-row: 1 / 3; align-self: center; margin-bottom: 0; }
+}
+
+@container (max-width: 520px) {
+  .tcn-trade-leg { grid-template-columns: repeat(2, minmax(0, 1fr)) 30px; }
+  .tcn-trade-leg .tcn-trade-leg__remove { grid-column: 3; grid-row: 1 / 4; }
+}
+
+@media (max-width: 1100px) {
+  .tcn-trade-leg { grid-template-columns: repeat(3, minmax(0, 1fr)) 30px; }
+  .tcn-trade-leg .tcn-trade-leg__remove { grid-column: 4; grid-row: 1 / 3; align-self: center; margin-bottom: 0; }
+}
+
+@media (max-width: 650px) {
+  .tcn-trade-editor__ticker { max-width: none; }
+  .tcn-trade-editor__underlying { grid-template-columns: repeat(3, minmax(0, 1fr)) 38px; gap: 8px; }
+  .tcn-trade-leg { grid-template-columns: repeat(2, minmax(0, 1fr)) 30px; gap: 10px; padding: 12px; }
+  .tcn-trade-leg .tcn-trade-leg__remove { grid-column: 3; grid-row: 1 / 4; }
+}
+
+.tcn-lesson-person-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tcn-lesson-person-picker .tcn-select-wrap {
+  flex: 1;
+}
+
+.tcn-lesson-person-add {
+  display: inline-grid;
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  padding: 0;
+  place-items: center;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.tcn-lesson-guest-picker {
+  width: 100%;
+}
+
+.tcn-lesson-guest-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.tcn-lesson-guest {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 4px 8px 4px 10px;
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-pill);
+  background: var(--tcn-bg-sunken);
+  color: var(--tcn-text);
+  font-size: 12px;
+}
+
+.tcn-lesson-guest__remove {
+  border: 0;
+  padding: 0 2px;
+  background: transparent;
+  color: var(--tcn-text-dim);
+  cursor: pointer;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.tcn-lesson-guest__remove:hover {
+  color: var(--tcn-error-text);
+}
+
+.tcn-lesson-guest__avatar-wrap {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+}
+
+.tcn-lesson-guest__avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.tcn-lesson-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding-top: 15px;
+  border-top: 1px solid var(--tcn-border);
+}
+
+.tcn-lesson-card__footer .tcn-add-lesson-btn {
+  margin-left: auto;
+}
+
+.tcn-lesson-card input {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 13.5px;
+  color: var(--tcn-text);
+  background: var(--tcn-bg-sunken);
+  border: 1px solid var(--tcn-border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  width: 100%;
+  height: 34px;
+  box-sizing: border-box;
+}
+
+.tcn-lesson-card textarea {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 13.5px;
+  color: var(--tcn-text);
+  background: var(--tcn-bg-sunken);
+  border: 1px solid var(--tcn-border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  width: 100%;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+/* The Order field is enhanceSelect()'d like every other .tcn-select on this
+   page (see course-builder.js) instead of staying a native <select> — a
+   native popup's option list is OS/browser chrome that ignores our CSS
+   (highlights in the browser's blue, not this design system's green), so
+   matching Order's field height/centering onto the custom trigger button
+   is what keeps parity with the Title field beside it. */
+.tcn-lesson-card__order .tcn-select-trigger {
+  height: 34px;
+  padding: 0 24px 0 8px;
+  justify-content: center;
+  text-align: center;
+}
+
+.tcn-panel .tcn-btn-ghost {
+  margin-top: 14px;
+}
+
+/* The rule above is meant for standalone buttons like "+ Add Lesson" on a
+   .tcn-panel, but .tcn-btn-ghost is reused for buttons inside a lesson card
+   too (Remove, and the image picker's Select/Remove) — an unbalanced
+   margin-top there fights vertical alignment and visibly pushes them down
+   relative to the card's other fields. */
+.tcn-lesson-card .tcn-btn-ghost,
+.tcn-panel .tcn-add-person {
+  margin-top: 0;
+}
+
+/* ---------- Compact pill toggle (video source, tier) ---------- */
+
+.tcn-pill-toggle {
+  position: relative;
+  display: inline-flex;
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-pill);
+  padding: 2px;
+  background: var(--tcn-bg-sunken);
+}
+
+.tcn-pill-toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: auto;
+  height: auto;
+}
+
+.tcn-pill-toggle label {
+  font-size: 11.5px;
+  padding: 5px 10px;
+  border-radius: var(--tcn-radius-pill);
+  cursor: pointer;
+  color: var(--tcn-text-dim);
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tcn-pill-toggle input:checked + label {
+  background: var(--tcn-primary);
+  color: var(--tcn-primary-text);
+}
+
+.tcn-lesson-card__tier .tcn-pill-toggle input[value="paid"]:checked + label {
+  background: var(--tcn-warning);
+  color: var(--tcn-warning-text);
+}
+
+.tcn-lesson-save-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 22px 32px;
+  border-top: 1px solid var(--tcn-border);
+}
+
+.tcn-lesson-save-actions .tcn-btn-ghost {
+  margin-top: 0;
+}
+
+/* ---------- Alerts (success / warning / error) ---------- */
+
+.tcn-notice {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--tcn-radius-pill);
+  padding: 10px 18px;
+  margin: 20px 0 0;
+}
+
+.tcn-notice::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tcn-notice,
+.tcn-notice--success {
+  background: rgba(143, 216, 194, 0.25);
+  color: var(--tcn-primary-text);
+}
+
+.tcn-notice::before,
+.tcn-notice--success::before {
+  background: var(--tcn-primary-strong);
+}
+
+.tcn-notice--warning {
+  background: rgba(240, 203, 126, 0.3);
+  color: var(--tcn-warning-text);
+}
+
+.tcn-notice--warning::before {
+  background: var(--tcn-warning);
+}
+
+.tcn-notice--error {
+  background: rgba(239, 167, 156, 0.3);
+  color: var(--tcn-error-text);
+}
+
+.tcn-notice--error::before {
+  background: var(--tcn-error);
+}
+
+/* ---------- List screen ---------- */
+
+.tcn-list-wrap {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  --tcn-bg: #fffdf9;
+  --tcn-bg-sunken: #f1efe7;
+  --tcn-border: #e5e2d9;
+  --tcn-text: #201f1c;
+  --tcn-text-dim: #7a756c;
+  --tcn-primary: #8fd8c2;
+  --tcn-primary-strong: #5fc7a8;
+  --tcn-primary-text: #12352c;
+  --tcn-warning: #f0cb7e;
+  --tcn-warning-text: #6b4e14;
+  --tcn-error: #efa79c;
+  --tcn-error-text: #6b2a1e;
+  --tcn-disabled-bg: #e7e4db;
+  --tcn-disabled-text: #ada99e;
+  --tcn-radius-sm: 10px;
+  --tcn-radius-md: 16px;
+  --tcn-radius-pill: 999px;
+  --tcn-shadow-1: 0 1px 2px rgba(32, 31, 28, 0.05);
+  --tcn-shadow-2: 0 4px 12px rgba(32, 31, 28, 0.07);
+  --tcn-shadow-3: 0 12px 28px rgba(32, 31, 28, 0.1);
+}
+
+.tcn-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.tcn-list-header h1 {
+  font-family: 'Fraunces', 'Iowan Old Style', serif;
+  font-weight: 400;
+  color: var(--tcn-text);
+}
+
+.tcn-person-section {
+  margin-top: 32px;
+}
+
+.tcn-person-section:first-of-type {
+  margin-top: 0;
+}
+
+/* The Guests section (title + its "+ Add New Guest" button) sits another
+   50px further down than the default gap above Instructors' cards. */
+.tcn-person-section--guests {
+  margin-top: 82px;
+}
+
+.tcn-list-header--sub {
+  /* Overrides the base .tcn-list-header's space-between — the "+ Add New"
+     button sits a fixed distance right of the title instead of pushed all
+     the way to the far edge of the page. */
+  justify-content: flex-start;
+  gap: 50px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--tcn-border);
+}
+
+.tcn-list-header--sub h2 {
+  font-family: 'Fraunces', 'Iowan Old Style', serif;
+  font-weight: 400;
+  font-size: 20px;
+  color: var(--tcn-text);
+  margin: 0;
+}
+
+.tcn-empty-note {
+  font-size: 13px;
+  color: var(--tcn-text-dim);
+}
+
+.tcn-add-course-btn {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-weight: 400;
+  font-size: 13px;
+  background: var(--tcn-primary);
+  color: var(--tcn-primary-text);
+  border: none;
+  border-radius: var(--tcn-radius-pill);
+  padding: 10px 20px;
+  text-decoration: none;
+  display: inline-block;
+  box-shadow: var(--tcn-shadow-1);
+}
+
+.tcn-add-course-btn:hover {
+  background: var(--tcn-primary-strong);
+  color: var(--tcn-primary-text);
+}
+
+.tcn-course-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+/* Course list views share the established admin palette and typography. */
+.tcn-course-view-switcher {
+  display: inline-flex;
+  gap: 3px;
+  margin: 0 0 18px;
+  padding: 4px;
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-sm);
+  background: var(--tcn-bg-sunken);
+}
+
+.tcn-course-view-switcher__button {
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--tcn-text-dim);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.tcn-course-view-switcher__button:hover,
+.tcn-course-view-switcher__button:focus-visible,
+.tcn-course-view-switcher__button.is-active {
+  background: var(--tcn-bg);
+  color: var(--tcn-primary-text);
+  box-shadow: var(--tcn-shadow-1);
+}
+
+.tcn-course-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-md);
+  background: var(--tcn-bg);
+  box-shadow: var(--tcn-shadow-1);
+}
+
+.tcn-course-view--compact,
+.tcn-course-view--detail {
+  margin-bottom: 18px;
+}
+
+.tcn-course-view--compact .tcn-course-table {
+  min-width: 700px;
+}
+
+.tcn-course-table--detail {
+  min-width: 920px;
+}
+
+.tcn-course-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.tcn-course-table th {
+  padding: 12px 14px;
+  background: var(--tcn-bg-sunken);
+  color: var(--tcn-text-dim);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.tcn-course-table td {
+  padding: 14px;
+  border-top: 1px solid var(--tcn-border);
+  color: var(--tcn-text);
+  font-size: 12px;
+  vertical-align: middle;
+}
+
+.tcn-course-table__title,
+.tcn-course-table__course strong {
+  font-family: 'Fraunces', 'Iowan Old Style', serif;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+.tcn-course-table__badge {
+  display: inline-block;
+  margin: 2px 4px 2px 0;
+  padding: 5px 8px;
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-pill);
+  background: var(--tcn-bg-sunken);
+  color: var(--tcn-text-dim);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.tcn-course-table__status {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tcn-course-table__status span { color: var(--tcn-primary-strong); }
+.tcn-course-table__status--draft { color: var(--tcn-warning-text); }
+.tcn-course-table__status--draft span { color: var(--tcn-warning); }
+
+.tcn-course-table__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.tcn-course-table__edit {
+  display: inline-block;
+  padding: 7px 11px;
+  border: 1px solid var(--tcn-primary);
+  border-radius: 7px;
+  background: var(--tcn-primary);
+  color: var(--tcn-primary-text);
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.tcn-course-table__edit:hover { background: var(--tcn-primary-strong); color: var(--tcn-primary-text); }
+
+.tcn-course-table__delete {
+  position: static;
+  width: 30px;
+  height: 30px;
+}
+
+.tcn-course-table__course {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  min-width: 270px;
+}
+
+.tcn-course-table__image {
+  display: grid;
+  width: 90px;
+  height: 58px;
+  flex: 0 0 auto;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--tcn-radius-sm);
+  background: var(--tcn-bg-sunken);
+  color: var(--tcn-text-dim);
+  font-size: 9px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.tcn-course-table__image img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.tcn-course-table__people { display: grid; gap: 3px; margin-top: 6px; color: var(--tcn-text-dim); font-size: 11px; line-height: 1.25; }
+.tcn-course-table__people b { color: var(--tcn-text); font-weight: 600; }
+.tcn-course-table__breakdown { display: grid; gap: 8px; min-width: 320px; }
+.tcn-course-table__language { display: grid; grid-template-columns: 110px 1fr; gap: 12px; padding: 8px 10px; border-radius: var(--tcn-radius-sm); background: var(--tcn-bg-sunken); }
+.tcn-course-table__language > strong { font-size: 11px; }
+.tcn-course-table__level { display: flex; justify-content: space-between; gap: 12px; color: var(--tcn-text-dim); font-size: 11px; }
+.tcn-course-table__level + .tcn-course-table__level { margin-top: 4px; }
+.tcn-course-table__level em { color: var(--tcn-warning-text); font-style: normal; white-space: nowrap; }
+
+@media (max-width: 640px) {
+  .tcn-course-view-switcher { width: 100%; }
+  .tcn-course-view-switcher__button { flex: 1; }
+}
+
+.tcn-course-card {
+  position: relative;
+  background: var(--tcn-bg);
+  border-radius: var(--tcn-radius-md);
+  border: 1px solid var(--tcn-border);
+  box-shadow: var(--tcn-shadow-1);
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.tcn-course-card:hover {
+  border-color: var(--tcn-primary-strong);
+  box-shadow: var(--tcn-shadow-2);
+}
+
+.tcn-course-card__link {
+  color: var(--tcn-text);
+  text-decoration: none;
+  display: block;
+  padding: 18px 20px;
+  padding-right: 44px;
+}
+
+.tcn-course-card__link:hover {
+  color: var(--tcn-text);
+}
+
+.tcn-course-card__delete {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--tcn-text-dim);
+  border: 1px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.tcn-course-card__delete:hover {
+  background: rgba(239, 167, 156, 0.2);
+  border-color: var(--tcn-error);
+  color: var(--tcn-error-text);
+}
+
+.tcn-course-card__title {
+  font-family: 'Fraunces', 'Iowan Old Style', serif;
+  font-size: 18px;
+  margin: 0 0 10px;
+}
+
+.tcn-course-card__meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--tcn-text-dim);
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+}
+
+.tcn-course-card__status {
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-size: 10.5px;
+}
+
+.tcn-course-card__status--publish {
+  color: var(--tcn-primary-strong);
+}
+
+.tcn-course-card__status--draft {
+  color: var(--tcn-warning);
+}
+
+/* Course list cards: image-led, collapsed by default, with language details
+   revealed per card. The toggle lives in the fixed metadata column so it does
+   not move when the details panel grows. */
+.tcn-course-card__image {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--tcn-bg-sunken);
+  border-radius: var(--tcn-radius-md) var(--tcn-radius-md) 0 0;
+}
+
+.tcn-course-card__image img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.tcn-course-card__image-placeholder {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  color: var(--tcn-text-dim);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tcn-course-card__body {
+  position: relative;
+  padding: 0 18px 18px;
+}
+
+.tcn-course-card__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 17px;
+  padding-right: 46px;
+}
+
+.tcn-course-card__heading .tcn-course-card__title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+.tcn-course-card__heading .tcn-course-card__status {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.tcn-course-card__status span {
+  color: var(--tcn-primary-strong);
+}
+
+.tcn-course-card__badges {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px 46px 16px 0;
+}
+
+.tcn-course-card__people {
+  margin: 0 46px 12px 0;
+  color: var(--tcn-text-dim);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.tcn-course-card__people b {
+  color: var(--tcn-text);
+  font-weight: 600;
+}
+
+.tcn-course-card__badge {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-pill);
+  background: var(--tcn-bg-sunken);
+  color: var(--tcn-text-dim);
+  font-size: 10px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.tcn-course-card__level-badges {
+  display: flex;
+  flex: 1 0 100%;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.tcn-course-card__toggle {
+  position: absolute;
+  top: 74px;
+  right: 18px;
+  z-index: 2;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--tcn-border);
+  border-radius: 50%;
+  background: var(--tcn-bg-sunken);
+  color: var(--tcn-text-dim);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.tcn-course-card__toggle:hover,
+.tcn-course-card__toggle:focus-visible,
+.tcn-course-card.is-expanded .tcn-course-card__toggle {
+  border-color: var(--tcn-primary-strong);
+  background: var(--tcn-primary);
+  color: var(--tcn-primary-text);
+}
+
+.tcn-course-card__toggle svg {
+  transition: transform 0.2s ease;
+}
+
+.tcn-course-card.is-expanded .tcn-course-card__toggle svg {
+  transform: rotate(180deg);
+}
+
+.tcn-course-card__details {
+  display: grid;
+  gap: 8px;
+}
+
+.tcn-course-card__language {
+  padding: 10px 11px;
+  border-radius: var(--tcn-radius-sm);
+  background: var(--tcn-bg-sunken);
+}
+
+.tcn-course-card__language-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 9px;
+  font-size: 12px;
+}
+
+.tcn-course-card__language-head span {
+  color: var(--tcn-text-dim);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tcn-course-card__levels {
+  display: grid;
+  gap: 5px;
+}
+
+.tcn-course-card__level {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--tcn-text-dim);
+  font-size: 11px;
+}
+
+.tcn-course-card__level em {
+  color: var(--tcn-warning-text);
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.tcn-course-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-top: 16px;
+  padding-top: 13px;
+  border-top: 1px solid var(--tcn-border);
+}
+
+.tcn-course-card__edit {
+  display: inline-block;
+  padding: 7px 11px;
+  border: 1px solid var(--tcn-primary);
+  border-radius: 7px;
+  background: var(--tcn-primary);
+  color: var(--tcn-primary-text);
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.tcn-course-card__edit:hover {
+  background: var(--tcn-primary-strong);
+  color: var(--tcn-primary-text);
+}
+
+.tcn-course-card__delete {
+  bottom: 18px;
+}
+
+@media (max-width: 640px) {
+  .tcn-course-card__heading {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .tcn-course-card__heading .tcn-course-card__status {
+    margin-top: 0;
+  }
+}
+
+/* ---------- Confirmation modal ---------- */
+
+.tcn-modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(32, 31, 28, 0.4);
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
+}
+
+.tcn-modal-backdrop.is-open {
+  display: flex;
+}
+
+.tcn-modal {
+  background: var(--tcn-bg);
+  border: 1px solid var(--tcn-border);
+  border-radius: var(--tcn-radius-md);
+  box-shadow: var(--tcn-shadow-3);
+  padding: 26px 28px;
+  width: 100%;
+  max-width: 380px;
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  color: var(--tcn-text);
+}
+
+.tcn-modal h2 {
+  font-family: 'Fraunces', 'Iowan Old Style', serif;
+  font-weight: 400;
+  font-size: 21px;
+  margin: 0 0 10px;
+  color: var(--tcn-text);
+}
+
+.tcn-modal p {
+  font-size: 13.5px;
+  color: var(--tcn-text-dim);
+  margin: 0 0 22px;
+}
+
+.tcn-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.tcn-modal--center h2,
+.tcn-modal--center p {
+  text-align: center;
+}
+
+.tcn-modal--center .tcn-modal__actions {
+  justify-content: center;
+}
+
+/* Keep the Live Show quick-create modal identical to the shared
+ * Instructors / Hosts & Guests modal. */
+.tcn-add-host-modal { position: relative; width: min(560px, calc(100vw - 40px)); max-height: calc(100vh - 48px); overflow-y: auto; scrollbar-width: none; padding: 22px 24px 20px; }
+.tcn-add-host-modal::-webkit-scrollbar { display: none; }
+.tcn-add-host-modal h2 { margin-top: 0; }
+.tcn-add-host-divider { margin: 16px 0; border: 0; border-top: 1px solid var(--tcn-border); }
+.tcn-add-host-modal input[type='text'] { border-radius: var(--tcn-radius-sm); }
+.tcn-host-bio-input { display: block; box-sizing: border-box; width: 100%; min-height: 132px; resize: vertical; border: 1px solid var(--tcn-border); border-radius: var(--tcn-radius-sm); background: var(--tcn-bg-sunken); color: var(--tcn-text); padding: 12px 14px; font: 400 14px/1.55 'Plus Jakarta Sans', -apple-system, sans-serif; box-shadow: none; }
+.tcn-host-bio-input:focus { outline: none; border-color: var(--tcn-primary-strong); background: var(--tcn-bg); box-shadow: 0 0 0 3px rgba(95, 199, 168, .16); }
+.tcn-host-bio-input::placeholder { color: var(--tcn-text-dim); }
+.tcn-add-host-modal__close, .tcn-modal__close { position: absolute; top: 12px; right: 14px; border: 0; background: transparent; color: var(--tcn-text-dim); font-size: 24px; cursor: pointer; }
+.tcn-add-host-modal form { padding: 0; }
+.tcn-add-host-modal input[type='text'] { width: 100%; min-height: 44px; }
+.tcn-add-host-submit:hover { background: var(--tcn-primary) !important; color: var(--tcn-primary-text) !important; }
+
+/* Unsaved course confirmation */
+.tcn-unsaved-modal {
+  max-width: 470px;
+  padding: 24px 26px 20px;
+}
+
+.tcn-unsaved-modal__icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 15px;
+  place-items: center;
+}
+
+.tcn-unsaved-modal__icon svg {
+  display: block;
+  width: 38px;
+  height: 38px;
+}
+
+.tcn-unsaved-modal__triangle {
+  fill: #fff9e9;
+  stroke: var(--tcn-warning);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.tcn-unsaved-modal__mark {
+  fill: none;
+  stroke: var(--tcn-warning-text);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tcn-unsaved-modal h2 {
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.tcn-unsaved-modal p {
+  margin-bottom: 22px;
+}
+
+.tcn-unsaved-modal .tcn-modal__actions {
+  padding-top: 16px;
+  border-top: 1px solid var(--tcn-border);
+}
+
+.tcn-unsaved-modal .tcn-btn-ghost,
+.tcn-unsaved-modal .tcn-save-btn {
+  min-height: 40px;
+}
+
+/* Independent Beginner / Intermediate / Advanced course versions */
+.tcn-course-language-tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  margin: 0;
+  padding: 24px 32px 0;
+  border-bottom: 1px solid var(--tcn-border);
+}
+
+.tcn-course-language-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-width: 126px;
+  padding: 9px 18px 10px;
+  border: 1px solid var(--tcn-border);
+  border-bottom: 0;
+  border-radius: 12px 12px 0 0;
+  background: var(--tcn-bg-sunken);
+  color: var(--tcn-text-dim);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.tcn-course-language-tab:hover,
+.tcn-course-language-tab:focus-visible {
+  color: var(--tcn-text);
+  background: #ebe9e2;
+}
+
+.tcn-course-language-tab.is-active {
+  z-index: 1;
+  margin-bottom: -1px;
+  background: var(--tcn-bg);
+  color: var(--tcn-text);
+}
+
+.tcn-course-language-tab__remove {
+  display: inline-grid;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #d8d5cd;
+  color: #7d786e;
+  font-size: 14px;
+  line-height: 17px;
+  place-items: center;
+  transform: none;
+}
+
+.tcn-course-language-tab__remove-glyph {
+  display: block;
+  transform: translateY(-2px);
+}
+
+.tcn-course-language-tab__remove.is-disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.tcn-course-language-tab--add {
+  min-width: 46px;
+  height: 36px;
+  padding: 0 15px;
+  color: var(--tcn-primary-strong);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.tcn-course-language-modal .tcn-modal__actions {
+  padding-top: 16px;
+  border-top: 1px solid var(--tcn-border);
+}
+
+.tcn-level-tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  margin: 0;
+  padding: 24px 32px 0;
+  border-bottom: 1px solid var(--tcn-border);
+}
+
+.tcn-level-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-width: 145px;
+  padding: 9px 18px 10px;
+  border: 1px solid var(--tcn-border);
+  border-bottom: 0;
+  border-radius: 12px 12px 0 0;
+  background: var(--tcn-bg-sunken);
+  color: var(--tcn-text-dim);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.tcn-level-tab:hover,
+.tcn-level-tab:focus-visible {
+  color: var(--tcn-text);
+  background: #ebe9e2;
+}
+
+.tcn-level-tab.is-active {
+  z-index: 1;
+  margin-bottom: -1px;
+  background: var(--tcn-bg);
+  color: var(--tcn-text);
+}
+
+.tcn-level-tab--add {
+	min-width: 38px;
+	padding-inline: 11px;
+	font-size: 20px;
+	line-height: 1;
+}
+
+.tcn-level-tab__dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: var(--tcn-primary-strong);
+  box-shadow: 0 0 0 2px rgba(95, 199, 168, .18);
+}
+
+.tcn-level-includes {
+  min-height: 49px;
+  padding: 16px 32px 0;
+}
+
+.tcn-level-include {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--tcn-text);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tcn-level-include[hidden] {
+  display: none !important;
+}
+
+.tcn-level-include input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.tcn-level-include__toggle {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  flex: 0 0 38px;
+  border-radius: var(--tcn-radius-pill);
+  background: var(--tcn-disabled-bg);
+  box-shadow: inset 0 0 0 1px var(--tcn-border);
+  transition: background .15s ease;
+}
+
+.tcn-level-include__toggle::after {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--tcn-bg);
+  box-shadow: var(--tcn-shadow-1);
+  content: '';
+  transition: transform .15s ease;
+}
+
+.tcn-level-include input:checked + .tcn-level-include__toggle {
+  background: var(--tcn-primary-strong);
+}
+
+.tcn-level-include input:checked + .tcn-level-include__toggle::after {
+  transform: translateX(16px);
+}
+
+.tcn-level-include input:focus-visible + .tcn-level-include__toggle {
+  outline: 2px solid var(--tcn-primary-strong);
+  outline-offset: 2px;
+}
+
+.tcn-level-panel[hidden] {
+  display: none;
+}
+
+.tcn-btn-danger {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 12.5px;
+  font-weight: 400;
+  background: var(--tcn-error);
+  color: var(--tcn-error-text);
+  border: none;
+  border-radius: var(--tcn-radius-pill);
+  padding: 8px 16px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: background 0.15s ease;
+}
+
+.tcn-btn-danger:hover {
+  background: #e88f81;
+  color: var(--tcn-error-text);
+}
+
+/* ---------- Image cropper ---------- */
+
+.tcn-cropper-modal {
+  max-width: 520px;
+  background: #8a8781;
+  border-color: #8a8781;
+}
+
+.tcn-cropper-modal h2 {
+  color: #201f1c;
+}
+
+.tcn-cropper-modal p {
+  color: #38362f;
+}
+
+.tcn-cropper-stage {
+  position: relative;
+  margin: 16px auto;
+  overflow: hidden;
+  background: #000;
+  border-radius: 8px;
+}
+
+.tcn-cropper-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.tcn-cropper-frame {
+  position: absolute;
+  border: 2px solid var(--tcn-primary);
+  box-shadow: 0 0 0 9999px rgba(11, 13, 12, 0.55);
+  cursor: move;
+  touch-action: none;
+}
+
+.tcn-cropper-zoom {
+  width: 100%;
+  margin: 6px 0 0;
+  accent-color: var(--tcn-primary-strong);
+}
+
+.tcn-cropper-error {
+  font-size: 13px;
+  color: #4a1610;
+  background: rgba(239, 167, 156, 0.95);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 12px 0 0;
+}
+
+/* Table rows own their delete action. The shared card-delete hook is kept on
+   these buttons for the existing modal behavior, but its absolute positioning
+   must not escape the compact/detail table row. */
+.tcn-course-table__actions {
+  justify-content: flex-end;
+}
+
+.tcn-course-table .tcn-course-table__delete {
+  position: static;
+  inset: auto;
+  flex: 0 0 30px;
+}
+
+.tcn-organized-media-modal{position:fixed;inset:0;z-index:100000;background:rgba(12,13,13,.72);display:grid;place-items:center;padding:24px}.tcn-organized-media-modal__panel{width:min(980px,100%);max-height:90vh;overflow:auto;border-radius:16px;background:#fffdf9;padding:24px;box-shadow:0 24px 80px rgba(0,0,0,.35)}.tcn-organized-media-modal__close{float:right;border:0;border-radius:50%;background:#33373d;color:#fff;width:34px;height:34px;font-size:22px;cursor:pointer}.tcn-organized-media-modal__body{display:grid;grid-template-columns:210px 1fr;gap:24px}.tcn-organized-media-modal__body h2{margin:0 0 20px}.tcn-organized-media-modal__folders{display:flex;flex-direction:column;gap:5px}.tcn-organized-media-modal__folder{border:0;border-radius:8px;background:transparent;text-align:left;padding:10px;color:#1b2b3c;cursor:pointer}.tcn-organized-media-modal__folder.is-active,.tcn-organized-media-modal__folder:hover{background:#dff2ef;color:#087f7d;font-weight:600}.tcn-organized-media-modal__grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px}.tcn-organized-media-modal__item{border:1px solid #e1ded6;border-radius:9px;background:#fff;text-align:left;padding:0;overflow:hidden;cursor:pointer}.tcn-organized-media-modal__item:hover{border-color:#087f7d}.tcn-organized-media-modal__item img{display:block;width:100%;height:90px;object-fit:cover;background:#e8e7e1}.tcn-organized-media-modal__item strong,.tcn-organized-media-modal__item small{display:block;padding:6px 8px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tcn-organized-media-modal__item small{padding-top:2px;padding-bottom:8px;color:#087f7d;font-size:10px}@media(max-width:700px){.tcn-organized-media-modal__body{grid-template-columns:1fr}.tcn-organized-media-modal__folders{display:grid;grid-template-columns:repeat(2,1fr)}}
+
+/* Keep the Course/Show Save border neutral on hover, including Pending Save. */
+#tcnexus-save-course:hover {
+  border-color: var(--tcn-border);
+}
+
+.tcn-live-add-host {
+  display: inline-flex;
+  margin-top: 4px;
+  text-decoration: none;
+}
+.tcn-live-add-row { display: flex; align-items: center; gap: 10px; margin: 8px 0 12px; }
+.tcn-live-person-search { flex: 1 1 auto; min-height: 38px; border: 1px solid var(--tcn-border); border-radius: var(--tcn-radius-sm); background: var(--tcn-bg-sunken); padding: 8px 12px; }
+.tcn-live-picker__control { display: flex; border: 1px solid var(--tcn-border); border-radius: var(--tcn-radius-sm); background: var(--tcn-bg-sunken); overflow: hidden; }
+.tcn-live-search-picker { width: min(100%, 560px); }
+.tcn-live-picker-row { display: flex; align-items: center; gap: 10px; width: min(100%, 560px); }
+.tcn-live-picker-row .tcn-live-picker__control { flex: 1 1 auto; }
+.tcn-live-guests { width: min(100%, 560px); }
+.tcn-live-picker__control { min-height: 42px; background: #fffdf9; }
+.tcn-live-picker__control input { flex: 1; min-height: 42px; border: 0; background: transparent; padding: 8px 12px; }
+.tcn-live-picker__control input, .tcn-live-picker__option span { color: #201f1c; }
+.tcn-live-picker__control input:focus { outline: none; }
+.tcn-live-picker__control button { width: 42px; border: 0; background: transparent; cursor: pointer; }
+.tcn-live-picker__toggle::after { content: ''; display: inline-block; width: 7px; height: 7px; border-right: 1px solid currentColor; border-bottom: 1px solid currentColor; transform: rotate(45deg) translateY(-2px); }
+.tcn-live-picker__add { display: inline-flex; align-items: center; min-height: 42px; padding: 0 16px; border: 1px solid var(--tcn-border); border-radius: var(--tcn-radius-pill); background: #fffdf9; color: var(--tcn-text); font-size: 12px; text-decoration: none; white-space: nowrap; }
+.tcn-live-picker__add:hover { background: var(--tcn-primary); color: var(--tcn-primary-text); }
+.tcn-live-picker__add { cursor: pointer; }
+.tcn-live-search-picker .tcn-lesson-guest { display: flex; align-items: center; gap: 8px; }
+.tcn-live-search-picker .tcn-lesson-guest__avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+.tcn-live-picker__menu { position: relative; z-index: 5; max-height: 220px; overflow-y: auto; scrollbar-width: none; margin-top: 4px; border: 1px solid var(--tcn-border); border-radius: var(--tcn-radius-sm); background: var(--tcn-bg); box-shadow: var(--tcn-shadow-2); }
+.tcn-live-picker__menu::-webkit-scrollbar { display: none; }
+.tcn-live-picker__option { display: flex; justify-content: space-between; width: 100%; border: 0; border-bottom: 1px solid var(--tcn-border); background: transparent; padding: 10px 12px; text-align: left; cursor: pointer; }
+.tcn-live-picker__option:hover { background: var(--tcn-bg-sunken); }
+.tcn-live-picker__option small { color: var(--tcn-text-dim); }
+.tcn-live-picker__option mark { background: transparent; color: #201f1c; font-weight: 800; }
+.tcn-live-add-row .tcn-live-add-host { margin: 0; white-space: nowrap; }
