@@ -304,6 +304,9 @@
               <article class="style-card style-card--live" data-live-card role="link" tabindex="0" [attr.aria-label]="'Open live show ' + liveShow.title" (mouseenter)="onCardEnter($event, 'live')" (mouseleave)="onCardLeave()" (click)="openLiveShow(liveShow.id)" (keydown.enter)="openLiveShow(liveShow.id)" (keydown.space)="openLiveShow(liveShow.id); $event.preventDefault()">
                 <div class="style-card__art">
                   <img [src]="liveShow.thumbnailUrl" [alt]="liveShow.title" loading="lazy" />
+                  @if (isLiveShowLive(liveShow.id)) {
+                    <span class="style-card__live-now" role="status">LIVE NOW</span>
+                  }
                 </div>
                 <div class="style-card__details">
                   <div class="style-card__actions">

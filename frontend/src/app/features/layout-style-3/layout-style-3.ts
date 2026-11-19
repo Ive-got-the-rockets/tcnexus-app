@@ -558,9 +558,10 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
       liveShows: this.coursesService.getLiveShows().pipe(catchError(() => of([] as Course[]))),
     }).subscribe({
       next: ({ courses, shows, liveShows }) => {
-        this.liveShowCourses.set(liveShows);
+        const orderedLiveShows = [...liveShows].sort((a, b) => this.compareLiveShowSchedule(a, b));
+        this.liveShowCourses.set(orderedLiveShows);
         setTimeout(() => this.positionScheduleAtCurrentHour(), 0);
-        this.liveShows.set([...liveShows].sort((a, b) => this.compareLiveShowSchedule(a, b)).map(show => ({
+        this.liveShows.set(orderedLiveShows.map(show => ({
           id: String(show.id),
           title: show.title,
           status: 'LIVE SOON',
@@ -584,8 +585,8 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
             : this.showsOnly()
               ? [...showCandidates]
               : this.liveOnly()
-                ? [...liveShows]
-                : [...allCourseCandidates, ...showCandidates, ...liveShows];
+                ? [...orderedLiveShows]
+                : [...allCourseCandidates, ...showCandidates, ...orderedLiveShows];
         const featuredItems = this.filterFeaturedItems(available);
         const queryFeaturedId = this.readQueryNumber('style2Featured');
         // A return transition or an explicit query parameter may pin the
@@ -600,7 +601,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
             : this.showsOnly()
               ? showCandidates
               : this.liveOnly()
-                ? liveShows
+                ? orderedLiveShows
               : previousKind === 'show'
                 ? allCourseCandidates
                 : previousKind === 'course'
@@ -611,10 +612,8 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
         const nextUpcomingLiveShow = featuredItems.find(item =>
           this.isLiveShow(item) && (this.liveShowStartTimestamp(item) ?? 0) > Date.now()
         );
-        const localBrianPreview = !environment.production
-          ? featuredItems.find(item => item.title.trim().toLowerCase().includes('live with brian'))
-          : null;
-        const featured = localBrianPreview
+        const currentLiveShow = featuredItems.find(item => this.isLiveNow(item));
+        const featured = currentLiveShow
           ?? nextUpcomingLiveShow
           ?? savedFeatured
           ?? alternatingCandidates[Math.floor(Math.random() * alternatingCandidates.length)]
@@ -897,11 +896,25 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
     return this.liveCountdown(show);
   }
 
+  protected isLiveShowLive(showId: string): boolean {
+    const show = this.liveShowCourses().find(item => String(item.id) === showId);
+    return Boolean(show && this.isLiveNow(show));
+  }
+
   private liveShowStartTimestamp(course: Course): number | null {
     return liveShowStart(course)?.getTime() ?? null;
   }
 
+  private isLiveNow(course: Course, now = Date.now()): boolean {
+    const start = this.liveShowStartTimestamp(course);
+    const durationMinutes = Number(course.live_duration);
+    return start !== null && durationMinutes > 0 && now >= start && now <= start + durationMinutes * 60_000;
+  }
+
   private compareLiveShowSchedule(a: Course, b: Course): number {
+    const aLive = this.isLiveNow(a);
+    const bLive = this.isLiveNow(b);
+    if (aLive !== bLive) return aLive ? -1 : 1;
     const aStart = this.liveShowStartTimestamp(a);
     const bStart = this.liveShowStartTimestamp(b);
     if (aStart === null || bStart === null) {
@@ -1432,6 +1445,8 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
     const filtered = items
       .filter(item => this.isLiveShow(item) || !this.preferMobileMedia() || Boolean(this.mobileFeaturedImageUrl(item)))
       .filter((item, index, all) => all.findIndex(candidate => candidate.id === item.id) === index);
+    const activeLiveShow = filtered.find(item => this.isLiveNow(item));
+    if (activeLiveShow) return [activeLiveShow, ...filtered.filter(item => item.id !== activeLiveShow.id)];
     const nearestLiveShow = filtered
       .filter(item => this.isLiveShow(item))
       .map(item => ({ item, start: this.liveShowStartTimestamp(item) }))

@@ -21,7 +21,7 @@ assert.match(featuredStyles, /style-live-now-action__hint[\s\S]*20px/);
 assert.match(liveDetailStyles, /live-now-action[\s\S]*100px/);
 assert.match(liveDetailStyles, /live-now-action__title[\s\S]*35px/);
 assert.match(liveDetailStyles, /live-now-action__hint[\s\S]*20px/);
-assert.match(coursesService, /environment\.production[\s\S]*Live with Brian/);
-assert.match(coursesService, /includes\('live with brian'\)/);
+assert.match(coursesService, /\$\{this\.baseUrl\}\/live-shows/);
+assert.doesNotMatch(coursesService, /Live with Brian/);
 
 console.log('live now action contract passes');

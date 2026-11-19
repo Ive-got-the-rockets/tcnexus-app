@@ -1135,6 +1135,16 @@
 .style-row--live .style-card--live { border-color: rgba(199, 255, 92, .24); }
 .style-row--live .style-card--live:hover { border-color: var(--signal); }
 .style-card__meta-badge--live { color: var(--signal); }
+.style-card__live-now {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  z-index: 2;
+  color: #ff3b30;
+  font: 600 16px/1 'Barlow', sans-serif;
+  letter-spacing: .04em;
+  text-shadow: 0 1px 5px rgba(0, 0, 0, .88);
+}
 .style-row--live {
   z-index: 12;
   pointer-events: none;

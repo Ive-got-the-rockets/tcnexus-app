@@ -19,6 +19,7 @@ export class LiveStreamLayoutPage implements AfterViewInit, OnDestroy {
   protected readonly visitor = inject(VisitorService);
   private readonly sanitizer = inject(DomSanitizer);
   protected readonly title = this.route.snapshot.queryParamMap.get('liveTitle') || 'Live Show';
+  private readonly liveShowId = this.route.snapshot.queryParamMap.get('liveShowId');
   protected readonly vimeoLiveEventId = (this.route.snapshot.queryParamMap.get('vimeoLiveEventId') || '').replace(/\D/g, '');
   @ViewChild('playerFrame') private playerFrame?: ElementRef<HTMLIFrameElement>;
   protected playing = false;
@@ -78,5 +79,11 @@ export class LiveStreamLayoutPage implements AfterViewInit, OnDestroy {
     this.showTcApp = true;
   }
   protected login(): void { this.authModal.open('login'); }
-  protected exit(): void { this.router.navigate(['/live', 'market-open-live']); }
+  protected exit(): void {
+    if (this.liveShowId) {
+      this.router.navigate(['/live', this.liveShowId]);
+      return;
+    }
+    this.router.navigate(['/live']);
+  }
 }
