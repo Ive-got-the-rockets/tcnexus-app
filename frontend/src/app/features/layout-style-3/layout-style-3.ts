@@ -13,6 +13,7 @@ import { trailerEmbedUrl } from './trailer-embed-url';
 import { nextFeaturedIndex } from './featured-pagination';
 import { environment } from '../../../environments/environment';
 import { LiveShow } from '../../core/live-shows';
+import { liveShowOnDay, liveShowScheduleLabel, liveShowStart, localScheduleTime } from '../../core/live-show-schedule';
 
 const EMPTY_EDGES: ScrollEdges = { atStart: true, atEnd: true };
 type CarouselKind = 'shows' | 'live' | 'trading' | 'platform';
@@ -73,6 +74,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   private coursePreviewCloseTimer?: ReturnType<typeof setTimeout>;
   private overviewCloseTimer?: ReturnType<typeof setTimeout>;
   private trailerCloseTimer?: ReturnType<typeof setTimeout>;
+  private liveCountdownTimer?: ReturnType<typeof setInterval>;
   private readonly scrollSettledTimers: Partial<Record<CarouselKind, ReturnType<typeof setTimeout>>> = {};
   private featuredWheelLockUntil = 0;
   private featuredTouchStartX: number | null = null;
@@ -125,9 +127,9 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   protected isScheduleToday(day: Date): boolean { return this.scheduleDateKey(day) === this.scheduleDateKey(new Date()); }
   protected scheduleDateKey(day: Date): string { return `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`; }
   protected scheduleShowsForDay(day: Date): ScheduleEvent[] {
-    const realShows = this.liveShowCourses().filter(show => show.live_start_date === this.scheduleDateKey(day)).map(show => ({ id: show.id, title: show.title, start: this.scheduleEventTime(show), duration: Number(show.live_duration || 60), tone: show.title.toLowerCase().includes('live with lex') || show.live_status?.toLowerCase() === 'live' ? 'red' as const : 'cyan' as const }));
+    const realShows = this.liveShowCourses().filter(show => liveShowOnDay(show, day)).map(show => ({ id: show.id, title: show.title, start: this.scheduleEventTime(show), duration: Number(show.live_duration || 60), tone: show.title.toLowerCase().includes('live with lex') || show.live_status?.toLowerCase() === 'live' ? 'red' as const : 'cyan' as const }));
     const isToday = day.getTime() === new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()).getTime();
-    if (realShows.length && !(isToday && !realShows.some(show => show.title.toLowerCase().includes('live with lex')))) return realShows;
+    if (realShows.length) return realShows;
     const base = this.scheduleStartMinutes();
     const demo = [
       { title: 'Morning Brief', offset: 30, duration: 90, tone: 'cyan' as const },
@@ -140,16 +142,52 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
     ];
     const item = demo[day.getDay() % demo.length];
     const fallback = { ...item, start: this.formatScheduleTime(base + item.offset), id: `demo-${this.scheduleDateKey(day)}` };
-    if (isToday && !realShows.some(show => show.title.toLowerCase().includes('live with lex'))) return [{ title: 'Live with Lex', start: this.formatScheduleTime(base + 150), duration: 120, tone: 'red' as const, id: `demo-live-with-lex-${this.scheduleDateKey(day)}` }, fallback];
+    if (isToday) return [{ title: 'Live with Lex', start: this.formatScheduleTime(base + 150), duration: 120, tone: 'red' as const, id: `demo-live-with-lex-${this.scheduleDateKey(day)}` }, fallback];
     return [fallback];
   }
   protected scheduleEventStyle(show: ScheduleEvent): string { const start = this.scheduleMinutes(show.start); return `left: ${Math.max(start - this.scheduleStartMinutes(), 0) / 30 * 92}px; width: ${Math.max(show.duration / 30 * 92 - 8, 84)}px;`; }
   protected scheduleEventClass(show: ScheduleEvent): string { return `live-schedule__event--${show.tone}`; }
-  protected scheduleNowStyle(): string { const minutes = new Date().getHours() * 60 + new Date().getMinutes(); return `left: ${Math.max(minutes - this.scheduleStartMinutes(), 0) / 30 * 92 + 76}px;`; }
+  protected scheduleNowStyle(): string { const minutes = new Date().getHours() * 60 + new Date().getMinutes(); return `left: ${Math.max(minutes - this.scheduleStartMinutes(), 0) / 30 * 92 + 92}px;`; }
   protected scheduleNowVisible(): boolean { return true; }
-  protected scheduleEventTime(show: Course): string { const minutes = this.scheduleMinutes(show.live_start_time); return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`; }
-  protected scheduleEventRange(show: ScheduleEvent): string { const end = this.scheduleMinutes(show.start) + show.duration; return `${show.start} – ${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`; }
-  protected beginScheduleDrag(event: PointerEvent): void { const viewport = event.currentTarget as HTMLElement; this.scheduleDragging = true; this.scheduleDragStartX = event.clientX; this.scheduleScrollStart = viewport.scrollLeft; viewport.setPointerCapture(event.pointerId); }
+  protected scheduleEventTime(show: Course): string {
+    const start = liveShowStart(show);
+    return start ? localScheduleTime(start) : show.live_start_time || 'LIVE';
+  }
+  protected scheduleEventRange(show: ScheduleEvent): string { const end = this.scheduleMinutes(show.start) + show.duration; return `${show.start} – ${String(Math.floor(end / 60) % 24).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`; }
+  protected openScheduleEvent(show: ScheduleEvent, pointerEvent?: Event): void {
+    this.cancelScheduleEventClose();
+    if (pointerEvent instanceof MouseEvent) {
+      const popupWidth = 300;
+      const popupHeight = 400;
+      this.schedulePopupPosition.set({
+        x: Math.min(pointerEvent.clientX + 20, Math.max(16, window.innerWidth - popupWidth - 16)),
+        y: Math.min(Math.max(pointerEvent.clientY - popupHeight / 2, 16), Math.max(16, window.innerHeight - popupHeight - 16)),
+      });
+    }
+    const course = this.liveShowCourses().find(item => String(item.id) === String(show.id)) ?? {
+      id: Number(show.id) || 0,
+      title: show.title,
+      excerpt: 'Join us live on TC Nexus.',
+      thumbnail: null,
+      image: null,
+      course_types: ['Live Shows'],
+      lesson_count: 0,
+      overview_link: null,
+      live_start_time: show.start,
+      live_duration: String(show.duration),
+      hosts: [],
+      guests: [],
+    } as Course;
+    this.scheduleEventClosing.set(false);
+    this.selectedScheduleEvent.set(course);
+  }
+  protected closeScheduleEvent(): void { if (!this.selectedScheduleEvent() || this.scheduleEventClosing()) return; this.cancelScheduleEventClose(); this.scheduleEventCloseTimer = setTimeout(() => { this.scheduleEventClosing.set(true); setTimeout(() => { this.selectedScheduleEvent.set(null); this.scheduleEventClosing.set(false); }, 220); }, 120); }
+  protected cancelScheduleEventClose(): void { if (this.scheduleEventCloseTimer) { clearTimeout(this.scheduleEventCloseTimer); this.scheduleEventCloseTimer = undefined; } this.scheduleEventClosing.set(false); }
+  protected playScheduleEvent(show: ScheduleEvent, event: Event): void { event.stopPropagation(); void this.router.navigate(['/live-stream-layout'], { queryParams: { liveTitle: show.title } }); }
+  protected scheduleEventHostPhoto(host: Person | null): string { return host?.photo || profilePlaceholderUrl(host?.id || 0); }
+  protected profilePlaceholderUrl(id: number): string { return profilePlaceholderUrl(id); }
+  protected scheduleEventDuration(show: Course): string { const minutes = Number(show.live_duration || 0); return minutes >= 60 ? `${Math.floor(minutes / 60)}${minutes % 60 ? ` hr ${minutes % 60} min` : ' hr'}` : `${minutes || 0} min`; }
+  protected beginScheduleDrag(event: PointerEvent): void { if ((event.target as HTMLElement).closest('.live-schedule__event')) return; const viewport = event.currentTarget as HTMLElement; this.scheduleDragging = true; this.scheduleDragStartX = event.clientX; this.scheduleScrollStart = viewport.scrollLeft; viewport.setPointerCapture(event.pointerId); }
   protected dragSchedule(event: PointerEvent): void { if (!this.scheduleDragging) return; const viewport = event.currentTarget as HTMLElement; viewport.scrollLeft = this.scheduleScrollStart - (event.clientX - this.scheduleDragStartX); }
   protected endScheduleDrag(): void { this.scheduleDragging = false; }
   private scheduleStartMinutes(): number { return 0; }
@@ -164,6 +202,11 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   protected readonly platformCourseItems = computed(() => this.courses().filter(course =>
     this.isPlatformCourse(course)));
   protected readonly featured = signal<Course | null>(null);
+  protected readonly countdownNow = signal(Date.now());
+  protected readonly selectedScheduleEvent = signal<Course | null>(null);
+  protected readonly scheduleEventClosing = signal(false);
+  protected readonly schedulePopupPosition = signal({ x: 24, y: 24 });
+  private scheduleEventCloseTimer: ReturnType<typeof setTimeout> | undefined;
   protected readonly featuredItems = computed(() => {
     const available = this.tradingOnly()
       ? this.tradingCourseItems()
@@ -517,11 +560,11 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
       next: ({ courses, shows, liveShows }) => {
         this.liveShowCourses.set(liveShows);
         setTimeout(() => this.positionScheduleAtCurrentHour(), 0);
-        this.liveShows.set(liveShows.map(show => ({
+        this.liveShows.set([...liveShows].sort((a, b) => this.compareLiveShowSchedule(a, b)).map(show => ({
           id: String(show.id),
           title: show.title,
           status: 'LIVE SOON',
-          scheduleLabel: 'Live show',
+          scheduleLabel: liveShowScheduleLabel(show),
           description: show.excerpt || '',
           host: show.hosts?.[0]?.name || 'TC Nexus',
           hostPhotoUrl: show.hosts?.[0]?.photo || null,
@@ -565,7 +608,15 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
                   : previousKind === 'live'
                     ? [...allCourseCandidates, ...showCandidates]
                   : available);
-        const featured = savedFeatured
+        const nextUpcomingLiveShow = featuredItems.find(item =>
+          this.isLiveShow(item) && (this.liveShowStartTimestamp(item) ?? 0) > Date.now()
+        );
+        const localBrianPreview = !environment.production
+          ? featuredItems.find(item => item.title.trim().toLowerCase().includes('live with brian'))
+          : null;
+        const featured = localBrianPreview
+          ?? nextUpcomingLiveShow
+          ?? savedFeatured
           ?? alternatingCandidates[Math.floor(Math.random() * alternatingCandidates.length)]
           ?? available[0]
           ?? null;
@@ -596,6 +647,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
         }
       },
     });
+    this.liveCountdownTimer = window.setInterval(() => this.countdownNow.set(Date.now()), 1_000);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -662,6 +714,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   private positionScheduleAtCurrentHour(): void { const viewport = this.scheduleViewport()?.nativeElement; if (!viewport) return; const previousHour = Math.max(new Date().getHours() - 1, 0); viewport.scrollLeft = previousHour * 2 * 92; }
 
   ngOnDestroy(): void {
+    if (this.liveCountdownTimer !== undefined) clearInterval(this.liveCountdownTimer);
     const track = this.track()?.nativeElement;
     const platformTrack = this.platformTrack()?.nativeElement;
     const showsTrack = this.showsTrack()?.nativeElement;
@@ -811,6 +864,55 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
 
   protected isLiveShow(course: Course): boolean {
     return this.liveShowCourses().some(show => show.id === course.id);
+  }
+
+  protected liveCountdown(course: Course): { days: string; hours: string; minutes: string; seconds: string; showSeconds: boolean; isLive: boolean } | null {
+    const target = this.liveShowStartTimestamp(course);
+    if (target === null) return null;
+    const now = this.countdownNow();
+    const totalSeconds = Math.max(0, Math.floor((target - now) / 1_000));
+    return {
+      days: String(Math.floor(totalSeconds / 86_400)).padStart(2, '0'),
+      hours: String(Math.floor((totalSeconds % 86_400) / 3_600)).padStart(2, '0'),
+      minutes: String(Math.floor((totalSeconds % 3_600) / 60)).padStart(2, '0'),
+      seconds: String(totalSeconds % 60).padStart(2, '0'),
+      showSeconds: target - now <= 10 * 60_000,
+      isLive: target <= now,
+    };
+  }
+
+  protected countdownDigits(value: string): string[] {
+    return Array.from(value);
+  }
+
+  protected liveShowCardCountdown(showId: string): { days: string; hours: string; minutes: string; seconds: string; showSeconds: boolean; isLive: boolean } | null {
+    const show = this.liveShowCourses().find(item => String(item.id) === showId);
+    if (!show) return null;
+    const target = this.liveShowStartTimestamp(show);
+    if (target === null) return null;
+    const durationMinutes = Number(show.live_duration);
+    const now = this.countdownNow();
+    const stillLive = durationMinutes > 0 && now <= target + durationMinutes * 60_000;
+    if (target <= now && !stillLive) return null;
+    return this.liveCountdown(show);
+  }
+
+  private liveShowStartTimestamp(course: Course): number | null {
+    return liveShowStart(course)?.getTime() ?? null;
+  }
+
+  private compareLiveShowSchedule(a: Course, b: Course): number {
+    const aStart = this.liveShowStartTimestamp(a);
+    const bStart = this.liveShowStartTimestamp(b);
+    if (aStart === null || bStart === null) {
+      if (aStart === null && bStart === null) return 0;
+      return aStart === null ? 1 : -1;
+    }
+    const now = Date.now();
+    const aUpcoming = aStart >= now;
+    const bUpcoming = bStart >= now;
+    if (aUpcoming !== bUpcoming) return aUpcoming ? -1 : 1;
+    return aUpcoming ? aStart - bStart : bStart - aStart;
   }
 
   protected isShow(course: Course): boolean {
@@ -1327,9 +1429,17 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private filterFeaturedItems(items: Course[]): Course[] {
-    return items
-      .filter(item => !this.preferMobileMedia() || Boolean(this.mobileFeaturedImageUrl(item)))
+    const filtered = items
+      .filter(item => this.isLiveShow(item) || !this.preferMobileMedia() || Boolean(this.mobileFeaturedImageUrl(item)))
       .filter((item, index, all) => all.findIndex(candidate => candidate.id === item.id) === index);
+    const nearestLiveShow = filtered
+      .filter(item => this.isLiveShow(item))
+      .map(item => ({ item, start: this.liveShowStartTimestamp(item) }))
+      .filter((entry): entry is { item: Course; start: number } => entry.start !== null && entry.start > Date.now())
+      .sort((a, b) => a.start - b.start)[0]?.item;
+    return nearestLiveShow
+      ? [nearestLiveShow, ...filtered.filter(item => item.id !== nearestLiveShow.id)]
+      : filtered;
   }
 
   protected featuredTitleImageUrl(course: Course): string | null {
