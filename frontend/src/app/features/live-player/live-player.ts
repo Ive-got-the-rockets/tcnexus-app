@@ -82,7 +82,8 @@ export class LivePlayerPage {
   protected openWorkspace(): void {
     const title = this.show()?.title;
     const vimeoLiveEventId = this.show()?.vimeoLiveEventId;
-    if (title) this.router.navigate(['/live-stream-layout'], { queryParams: { liveTitle: title, vimeoLiveEventId } });
+    const liveShowId = this.show()?.id ?? this.liveShowId;
+    if (title && liveShowId) this.router.navigate(['/live-stream-layout'], { queryParams: { liveTitle: title, vimeoLiveEventId, liveShowId } });
   }
 
   private catalogLiveShow(catalogShow: Course): LiveShow {
