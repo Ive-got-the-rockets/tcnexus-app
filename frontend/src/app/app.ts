@@ -7,6 +7,7 @@ import { AccessService } from './core/access.service';
 import { VisitorService } from './core/visitor.service';
 import { CoursesService } from './core/courses.service';
 import { Course } from './core/models';
+import { liveShowOnDay, liveShowStart, localScheduleTime } from './core/live-show-schedule';
 import { profilePlaceholderUrl } from './core/profile-placeholders';
 import { RegisterModal } from './features/auth/register-modal';
 
@@ -36,6 +37,7 @@ export class App implements OnInit, OnDestroy {
   protected readonly calendarAnchor = signal(new Date());
   protected readonly liveShows = signal<Course[]>([]);
   protected readonly selectedCalendarEvent = signal<Course | null>(null);
+  protected readonly calendarEventClosing = signal(false);
   protected readonly selectedCalendarIcon = signal('play');
   protected readonly calendarIcons: readonly CalendarIconOption[] = [
     { key: 'play', label: 'Calendar play', svg: '<rect x="4" y="5.5" width="16" height="14" rx="2"/><path d="M8 3.5v4M16 3.5v4M4 9.5h16M10 13l4 2.5-4 2.5z"/>' },
@@ -96,8 +98,12 @@ export class App implements OnInit, OnDestroy {
 
   protected toggleCalendarMenu(): void { this.calendarMenuOpen.update(open => !open); if (this.calendarMenuOpen() && this.calendarView() === 'week') this.scrollWeekTo0630(); }
   protected closeCalendarMenu(): void { this.calendarMenuOpen.set(false); this.selectedCalendarEvent.set(null); }
-  protected openCalendarEvent(show: Course): void { this.selectedCalendarEvent.set(show); }
-  protected closeCalendarEvent(): void { this.selectedCalendarEvent.set(null); }
+  protected openCalendarEvent(show: Course): void { this.calendarEventClosing.set(false); this.selectedCalendarEvent.set(show); }
+  protected closeCalendarEvent(): void {
+    if (!this.selectedCalendarEvent() || this.calendarEventClosing()) return;
+    this.calendarEventClosing.set(true);
+    setTimeout(() => { this.selectedCalendarEvent.set(null); this.calendarEventClosing.set(false); }, 220);
+  }
   protected calendarEventHost(show: Course): string { return show.hosts?.[0]?.name || 'TC Nexus'; }
   protected calendarEventHostPhoto(show: Course): string { return show.hosts?.[0]?.photo || profilePlaceholderUrl(show.hosts?.[0]?.id || 0); }
   protected calendarEventDuration(show: Course): string { const minutes = Number(show.live_duration || 0); if (!minutes) return 'Approximate duration unavailable'; return minutes >= 60 ? `${Math.floor(minutes / 60)}${minutes % 60 ? ` hr ${minutes % 60} min` : ' hr'}` : `${minutes} min`; }
@@ -111,24 +117,20 @@ export class App implements OnInit, OnDestroy {
   protected calendarMonthLabel(): string { return this.calendarAnchor().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase(); }
   protected calendarDays(): Date[] { const anchor = this.calendarAnchor(); const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1); const start = new Date(first); start.setDate(first.getDate() - first.getDay()); return Array.from({ length: 42 }, (_, index) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + index)); }
   protected weekDays(): Date[] { const anchor = this.calendarAnchor(); const start = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate()); start.setDate(start.getDate() - start.getDay()); return Array.from({ length: 7 }, (_, index) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + index)); }
-  protected eventsForDay(day: Date): Course[] { return this.liveShows().filter(show => show.live_start_date === this.dateKey(day)); }
-  protected eventTime(show: Course): string { return show.live_start_time || 'LIVE'; }
-  protected eventTime24(show: Course): string { const value = String(show.live_start_time || '').trim(); if (!value) return 'LIVE'; const time = this.weekEventTime(show); return `${String(time.hour).padStart(2, '0')}:${String(time.minute).padStart(2, '0')}`; }
+  protected eventsForDay(day: Date): Course[] { return this.liveShows().filter(show => liveShowOnDay(show, day)); }
+  protected eventTime(show: Course): string { return this.eventTime24(show); }
+  protected eventTime24(show: Course): string {
+    const start = liveShowStart(show);
+    return start ? localScheduleTime(start) : 'LIVE';
+  }
   protected timeSlots(): Array<{ hour: number; minute: number }> { return Array.from({ length: 48 }, (_, index) => ({ hour: Math.floor(index / 2), minute: index % 2 ? 30 : 0 })); }
   protected timeSlotLabel(slot: { hour: number; minute: number }): string { return `${String(slot.hour).padStart(2, '0')}:${String(slot.minute).padStart(2, '0')}`; }
   protected isQuietTime(slot: { hour: number }): boolean { return slot.hour < 7 || slot.hour >= 19; }
   protected isWeekEventStart(show: Course, hour: number, minute: number): boolean { const time = this.weekEventTime(show); return Math.floor((time.hour * 60 + time.minute) / 30) === hour * 2 + minute / 30; }
   protected weekEventStyle(show: Course): string { const time = this.weekEventTime(show); const duration = Math.max(Number(show.live_duration || 60), 30); const offset = (time.minute % 30) / 30 * 1.45; return `top: ${offset}rem; height: ${Math.max(duration / 60 * 2.9 - .35, 2.2)}rem;`; }
   private weekEventTime(show: Course): { hour: number; minute: number } {
-    const value = String(show.live_start_time || '').trim();
-    const match = value.match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/i);
-    if (!match) return { hour: 0, minute: 0 };
-    let hour = Number(match[1]);
-    const minute = Number(match[2] || 0);
-    const meridiem = match[3]?.toUpperCase();
-    if (meridiem === 'PM' && hour < 12) hour += 12;
-    if (meridiem === 'AM' && hour === 12) hour = 0;
-    return { hour, minute };
+    const start = liveShowStart(show);
+    return { hour: start?.getHours() ?? 0, minute: start?.getMinutes() ?? 0 };
   }
   protected weekDayLabel(day: Date): string { return day.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase(); }
   protected weekDateLabel(day: Date): string { return day.toLocaleDateString('en-US', { day: '2-digit' }); }
@@ -182,8 +184,9 @@ export class App implements OnInit, OnDestroy {
     const explicitDesktopRoute = path === '/layout-style-3' || path === '/layout-style-4';
     const mobileRoute = path === '/mobile-layout-1' || path.startsWith('/mobile-layout-1/');
     const chromeFreeRoute = path.startsWith('/tc-lens') || path.startsWith('/courses/');
+    const livePlaybackRoute = path.startsWith('/live/') || path === '/live-stream-layout';
 
-    if (window.matchMedia(`(max-width: ${mobileWidth - 1}px)`).matches && !explicitDesktopRoute && !mobileRoute && !chromeFreeRoute) {
+    if (window.matchMedia(`(max-width: ${mobileWidth - 1}px)`).matches && !explicitDesktopRoute && !mobileRoute && !chromeFreeRoute && !livePlaybackRoute) {
       void this.router.navigateByUrl('/mobile-layout-1', { replaceUrl: true });
     }
   }

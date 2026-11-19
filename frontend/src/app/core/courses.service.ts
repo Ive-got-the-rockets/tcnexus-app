@@ -40,9 +40,36 @@ export class CoursesService {
       vimeo_live_event_id: show.vimeoLiveEventId || null,
     } as Course));
     return this.withTransientRetry(this.http.get<Course[]>(`${this.baseUrl}/live-shows`)).pipe(
-      map(shows => shows.length ? shows : fallback),
-      catchError(() => of(fallback))
+      map(shows => this.withLocalBrianLiveMock(shows.length ? shows : fallback)),
+      catchError(() => of(this.withLocalBrianLiveMock(fallback)))
     );
+  }
+
+  private withLocalBrianLiveMock(shows: Course[]): Course[] {
+    if (environment.production) return shows;
+    const brianIndex = shows.findIndex(show => show.title.trim().toLowerCase().includes('live with brian'));
+    if (brianIndex !== -1) {
+      return shows.map((show, index) => index === brianIndex ? {
+        ...show,
+        live_start_at: new Date(Date.now() - 60_000).toISOString(),
+        live_duration: '120',
+        live_status: 'live',
+      } : show);
+    }
+    return [{
+      id: 999001,
+      title: 'Live with Brian',
+      excerpt: 'Local frontend preview for the live-now state.',
+      thumbnail: '/shows/the-primer-BG-ratio-8by3.jpg',
+      image: '/shows/the-primer-BG-ratio-8by3.jpg',
+      course_types: ['Live Shows'],
+      lesson_count: 0,
+      overview_link: null,
+      trailer_link: null,
+      live_start_at: new Date(Date.now() - 60_000).toISOString(),
+      live_duration: '120',
+      live_status: 'live',
+    }, ...shows];
   }
 
   getCourse(id: number): Observable<CourseDetail> {

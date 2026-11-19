@@ -28,12 +28,6 @@
           </svg>
         </button>
       </div>
-      <button type="button" class="site-header__icon" aria-label="Cart">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="5" y="8.3" width="14" height="12" rx="2.2"></rect>
-          <path d="M9 8.3a3 3 0 0 1 6 0"></path>
-        </svg>
-      </button>
       <div class="site-header__profile">
         <button type="button" class="site-header__icon" aria-label="Profile" aria-haspopup="menu">
           <img class="site-header__profile-image" [src]="visitor.profileImage() || profilePlaceholderUrl(0)" alt="Profile" />
@@ -67,14 +61,14 @@
         <div class="calendar-modal__month" role="grid">
           @for (label of ['SUN','MON','TUE','WED','THU','FRI','SAT']; track label) { <div class="calendar-modal__weekday">{{ label }}</div> }
           @for (day of calendarDays(); track day.toISOString()) {
-            <div class="calendar-modal__day" [class.is-muted]="day.getMonth() !== calendarAnchor().getMonth()" [class.is-today]="isToday(day)"><span>@if (isToday(day)) { <small>TODAY</small> }{{ day.getDate() }}</span>@for (show of eventsForDay(day); track show.id) { <button type="button" class="calendar-modal__event" (mouseenter)="openCalendarEvent(show)" (click)="openCalendarEvent(show); $event.stopPropagation()"><span class="calendar-modal__event-title">{{ show.title }}</span><span class="calendar-modal__event-time">{{ eventTime24(show) }}</span></button> }</div>
+            <div class="calendar-modal__day" [class.is-muted]="day.getMonth() !== calendarAnchor().getMonth()" [class.is-today]="isToday(day)"><span>@if (isToday(day)) { <small>TODAY</small> }{{ day.getDate() }}</span>@for (show of eventsForDay(day); track show.id) { <button type="button" class="calendar-modal__event" (mouseenter)="openCalendarEvent(show)" (mouseleave)="closeCalendarEvent()" (click)="openCalendarEvent(show); $event.stopPropagation()"><span class="calendar-modal__event-title">{{ show.title }}</span><span class="calendar-modal__event-time">{{ eventTime24(show) }}</span></button> }</div>
           }
         </div>
       } @else {
-        <div class="calendar-modal__week"><button type="button" class="calendar-modal__week-nav calendar-modal__week-nav--prev" (click)="shiftWeek(-7)" aria-label="Previous week"><span aria-hidden="true">‹</span></button><div class="calendar-modal__week-head"><span></span>@for (day of weekDays(); track day.toISOString()) { <span [class.is-today]="isToday(day)"><b>{{ weekDayLabel(day) }}</b><i>{{ weekDateLabel(day) }}</i>@if (isToday(day)) { <small>TODAY</small> }</span> }</div><button type="button" class="calendar-modal__week-nav calendar-modal__week-nav--next" (click)="shiftWeek(7)" aria-label="Next week"><span aria-hidden="true">›</span></button><div class="calendar-modal__week-allday"><span>ALL DAY</span><div></div></div><div class="calendar-modal__week-scroll">@for (slot of timeSlots(); track slot.hour + ':' + slot.minute) { <div class="calendar-modal__week-row" [class.is-quiet]="isQuietTime(slot)"><span>{{ timeSlotLabel(slot) }}</span>@for (day of weekDays(); track day.toISOString()) { <div>@for (show of eventsForDay(day); track show.id) { @if (isWeekEventStart(show, slot.hour, slot.minute)) { <button type="button" class="calendar-modal__event" [style]="weekEventStyle(show)" (mouseenter)="openCalendarEvent(show)" (click)="openCalendarEvent(show); $event.stopPropagation()"><span class="calendar-modal__event-title">{{ show.title }}</span><span class="calendar-modal__event-time">{{ eventTime24(show) }}</span></button> } }</div> }</div> }</div></div>
+        <div class="calendar-modal__week"><button type="button" class="calendar-modal__week-nav calendar-modal__week-nav--prev" (click)="shiftWeek(-7)" aria-label="Previous week"><span aria-hidden="true">‹</span></button><div class="calendar-modal__week-head"><span></span>@for (day of weekDays(); track day.toISOString()) { <span [class.is-today]="isToday(day)"><b>{{ weekDayLabel(day) }}</b><i>{{ weekDateLabel(day) }}</i>@if (isToday(day)) { <small>TODAY</small> }</span> }</div><button type="button" class="calendar-modal__week-nav calendar-modal__week-nav--next" (click)="shiftWeek(7)" aria-label="Next week"><span aria-hidden="true">›</span></button><div class="calendar-modal__week-allday"><span>ALL DAY</span><div></div></div><div class="calendar-modal__week-scroll">@for (slot of timeSlots(); track slot.hour + ':' + slot.minute) { <div class="calendar-modal__week-row" [class.is-quiet]="isQuietTime(slot)"><span>{{ timeSlotLabel(slot) }}</span>@for (day of weekDays(); track day.toISOString()) { <div>@for (show of eventsForDay(day); track show.id) { @if (isWeekEventStart(show, slot.hour, slot.minute)) { <button type="button" class="calendar-modal__event" [style]="weekEventStyle(show)" (mouseenter)="openCalendarEvent(show)" (mouseleave)="closeCalendarEvent()" (click)="openCalendarEvent(show); $event.stopPropagation()"><span class="calendar-modal__event-title">{{ show.title }}</span><span class="calendar-modal__event-time">{{ eventTime24(show) }}</span></button> } }</div> }</div> }</div></div>
       }
       @if (selectedCalendarEvent(); as event) {
-        <aside class="calendar-event-popup" role="dialog" aria-label="Live show details">
+        <aside class="calendar-event-popup" [class.calendar-event-popup--closing]="calendarEventClosing()" role="dialog" aria-label="Live show details" (mouseleave)="closeCalendarEvent()">
           <button type="button" class="calendar-event-popup__close" (click)="closeCalendarEvent()" aria-label="Close event details"><span aria-hidden="true">×</span></button>
           <p class="calendar-event-popup__eyebrow">LIVE SHOW</p>
           <h2>{{ event.title }}</h2>

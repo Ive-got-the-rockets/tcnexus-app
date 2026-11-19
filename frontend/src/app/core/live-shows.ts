@@ -1,3 +1,5 @@
+import { Person } from './models';
+
 export interface LiveShow {
   id: string;
   title: string;
@@ -6,7 +8,7 @@ export interface LiveShow {
   description: string;
   host: string;
   hostPhotoUrl?: string | null;
-  guests: string[];
+  guests: Person[];
   thumbnailUrl: string;
   embedUrl: string;
   vimeoLiveEventId?: string;
@@ -20,7 +22,7 @@ export const LIVE_SHOWS: readonly LiveShow[] = [
     scheduleLabel: 'Weekdays · 09:15 ET',
     description: 'Market Open Live is a focused pre-market briefing built for traders who want a clear view of the session before the opening bell. Join the TC Nexus Desk as the team reviews the overnight action, major indexes, futures, economic releases, sector strength, and the themes most likely to shape today’s market. The conversation combines practical preparation with real-time context, helping you understand not only what is moving, but why it matters.',
     host: 'TC Nexus Desk',
-    guests: ['TradeCheetah Analysts'],
+    guests: [{ id: 1, name: 'TradeCheetah Analysts', photo: null }],
     thumbnailUrl: '/shows/the-primer-BG-ratio-8by3.jpg',
     // The first live stream workspace is the existing local TC Lens build.
     // We keep it as a URL so the live player can later swap in the real stream embed.
@@ -33,7 +35,7 @@ export const LIVE_SHOWS: readonly LiveShow[] = [
     scheduleLabel: 'Today · 16:15 ET',
     description: 'Close the session with live context, setups, and Q&A.',
     host: 'TC Nexus Desk',
-    guests: ['Market Guests'],
+    guests: [{ id: 2, name: 'Market Guests', photo: null }],
     thumbnailUrl: '/shows/the-primer-BG-ratio-8by3.jpg',
     embedUrl: '/live-stream-layout',
   },
