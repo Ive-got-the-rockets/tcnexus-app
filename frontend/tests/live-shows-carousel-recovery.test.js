@@ -28,3 +28,13 @@ test('active Live Shows lead the carousel and featured content', () => {
   assert.match(template, /style-card__live-now/);
   assert.match(styles, /style-card__live-now[\s\S]*color: #ff3b30[\s\S]*16px/);
 });
+
+test('live schedule centers the moving calendar on the current time and retires completed events', () => {
+  assert.match(source, /SCHEDULE_COLUMN_WIDTH\s*=\s*250/);
+  assert.match(styles, /--schedule-column-width:\s*250px/);
+  assert.match(source, /scheduleEventIsLive\(show: Course\)/);
+  assert.match(source, /tone:\s*this\.scheduleEventIsLive\(show\)[\s\S]{0,40}'red'[\s\S]{0,40}'cyan'/);
+  assert.doesNotMatch(source, /title: 'Live with Lex', offset: 150, duration: 120, tone: 'red'/);
+  assert.match(source, /viewport\.scrollLeft\s*=\s*Math\.max\(0,\s*this\.scheduleNowOffset\(\)\s*-\s*viewport\.clientWidth\s*\/\s*2\)/);
+  assert.match(template, /@if \(show\.tone === 'red'\)/);
+});

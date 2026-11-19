@@ -22,6 +22,8 @@ const PAGE_EXIT_DURATION = 280;
 const STYLE2_SCROLL_STORAGE_KEY = 'tcnexus-style2-trading-scroll';
 const STYLE2_FEATURED_KIND_STORAGE_KEY = 'tcnexus-style2-featured-kind';
 const STYLE3_FEATURED_IMAGE_URL = '/shows/the-primer-BG-ratio-8by3.jpg';
+const SCHEDULE_LABEL_WIDTH = 92;
+const SCHEDULE_COLUMN_WIDTH = 250;
 
 interface ReturnOverlayState {
   thumbnailUrl: string;
@@ -127,13 +129,14 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   protected isScheduleToday(day: Date): boolean { return this.scheduleDateKey(day) === this.scheduleDateKey(new Date()); }
   protected scheduleDateKey(day: Date): string { return `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`; }
   protected scheduleShowsForDay(day: Date): ScheduleEvent[] {
-    const realShows = this.liveShowCourses().filter(show => liveShowOnDay(show, day)).map(show => ({ id: show.id, title: show.title, start: this.scheduleEventTime(show), duration: Number(show.live_duration || 60), tone: show.title.toLowerCase().includes('live with lex') || show.live_status?.toLowerCase() === 'live' ? 'red' as const : 'cyan' as const }));
+    this.countdownNow();
+    const realShows = this.liveShowCourses().filter(show => liveShowOnDay(show, day)).map(show => ({ id: show.id, title: show.title, start: this.scheduleEventTime(show), duration: Number(show.live_duration || 60), tone: this.scheduleEventIsLive(show) ? 'red' as const : 'cyan' as const }));
     const isToday = day.getTime() === new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()).getTime();
     if (realShows.length) return realShows;
     const base = this.scheduleStartMinutes();
     const demo = [
       { title: 'Morning Brief', offset: 30, duration: 90, tone: 'cyan' as const },
-      { title: 'Live with Lex', offset: 150, duration: 120, tone: 'red' as const },
+      { title: 'Live with Lex', offset: 150, duration: 120, tone: 'cyan' as const },
       { title: 'Tech Today', offset: 60, duration: 150, tone: 'cyan' as const },
       { title: 'Industry Insights', offset: 240, duration: 120, tone: 'cyan' as const },
       { title: 'Global Update', offset: 90, duration: 150, tone: 'cyan' as const },
@@ -142,13 +145,14 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
     ];
     const item = demo[day.getDay() % demo.length];
     const fallback = { ...item, start: this.formatScheduleTime(base + item.offset), id: `demo-${this.scheduleDateKey(day)}` };
-    if (isToday) return [{ title: 'Live with Lex', start: this.formatScheduleTime(base + 150), duration: 120, tone: 'red' as const, id: `demo-live-with-lex-${this.scheduleDateKey(day)}` }, fallback];
+    if (isToday) return [{ title: 'Live with Lex', start: this.formatScheduleTime(base + 150), duration: 120, tone: 'cyan' as const, id: `demo-live-with-lex-${this.scheduleDateKey(day)}` }, fallback];
     return [fallback];
   }
-  protected scheduleEventStyle(show: ScheduleEvent): string { const start = this.scheduleMinutes(show.start); return `left: ${Math.max(start - this.scheduleStartMinutes(), 0) / 30 * 92}px; width: ${Math.max(show.duration / 30 * 92 - 8, 84)}px;`; }
+  protected scheduleEventStyle(show: ScheduleEvent): string { const start = this.scheduleMinutes(show.start); return `left: ${Math.max(start - this.scheduleStartMinutes(), 0) / 30 * SCHEDULE_COLUMN_WIDTH}px; width: ${Math.max(show.duration / 30 * SCHEDULE_COLUMN_WIDTH - 8, 84)}px;`; }
   protected scheduleEventClass(show: ScheduleEvent): string { return `live-schedule__event--${show.tone}`; }
-  protected scheduleNowStyle(): string { const minutes = new Date().getHours() * 60 + new Date().getMinutes(); return `left: ${Math.max(minutes - this.scheduleStartMinutes(), 0) / 30 * 92 + 92}px;`; }
+  protected scheduleNowOffset(): number { const minutes = new Date().getHours() * 60 + new Date().getMinutes(); return SCHEDULE_LABEL_WIDTH + Math.max(minutes - this.scheduleStartMinutes(), 0) / 30 * SCHEDULE_COLUMN_WIDTH; }
   protected scheduleNowVisible(): boolean { return true; }
+  protected scheduleEventIsLive(show: Course): boolean { return this.isLiveNow(show, this.countdownNow()); }
   protected scheduleEventTime(show: Course): string {
     const start = liveShowStart(show);
     return start ? localScheduleTime(start) : show.live_start_time || 'LIVE';
@@ -710,7 +714,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
     setTimeout(() => this.positionScheduleAtCurrentHour(), 0);
   }
 
-  private positionScheduleAtCurrentHour(): void { const viewport = this.scheduleViewport()?.nativeElement; if (!viewport) return; const previousHour = Math.max(new Date().getHours() - 1, 0); viewport.scrollLeft = previousHour * 2 * 92; }
+  private positionScheduleAtCurrentHour(): void { const viewport = this.scheduleViewport()?.nativeElement; if (!viewport) return; viewport.scrollLeft = Math.max(0, this.scheduleNowOffset() - viewport.clientWidth / 2); }
 
   ngOnDestroy(): void {
     if (this.liveCountdownTimer !== undefined) clearInterval(this.liveCountdownTimer);
