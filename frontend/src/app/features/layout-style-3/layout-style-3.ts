@@ -581,10 +581,12 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
       liveShows: this.coursesService.getLiveShows().pipe(catchError(() => of([] as Course[]))),
     }).subscribe({
       next: ({ courses, shows, liveShows }) => {
-        const orderedLiveShows = [...liveShows].sort((a, b) => this.compareLiveShowSchedule(a, b));
+        const scheduledLiveShows = liveShows.filter(show => this.hasLiveShowSchedule(show));
+        const orderedLiveShows = [...scheduledLiveShows].sort((a, b) => this.compareLiveShowSchedule(a, b));
+        const activeOrUpcomingLiveShows = orderedLiveShows.filter(show => !this.hasLiveShowEnded(show));
         this.liveShowCourses.set(orderedLiveShows);
         setTimeout(() => this.positionScheduleAtCurrentHour(), 0);
-        this.liveShows.set(orderedLiveShows.map(show => ({
+        this.liveShows.set(activeOrUpcomingLiveShows.map(show => ({
           id: String(show.id),
           title: show.title,
           status: 'LIVE SOON',
@@ -607,8 +609,8 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
             : this.showsOnly()
               ? [...showCandidates]
               : this.liveOnly()
-                ? [...orderedLiveShows]
-                : [...allCourseCandidates, ...showCandidates, ...orderedLiveShows];
+                ? [...activeOrUpcomingLiveShows]
+                : [...allCourseCandidates, ...showCandidates, ...activeOrUpcomingLiveShows];
         const featuredItems = this.filterFeaturedItems(available);
         const queryFeaturedId = this.readQueryNumber('style2Featured');
         // A return transition or an explicit query parameter may pin the
@@ -623,7 +625,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
             : this.showsOnly()
               ? showCandidates
               : this.liveOnly()
-                ? orderedLiveShows
+                ? activeOrUpcomingLiveShows
               : previousKind === 'show'
                 ? allCourseCandidates
                 : previousKind === 'course'
@@ -937,6 +939,10 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
     const start = this.liveShowStartTimestamp(course);
     const durationMinutes = Number(course.live_duration);
     return start !== null && durationMinutes > 0 && now > start + durationMinutes * 60_000;
+  }
+
+  private hasLiveShowSchedule(course: Course): boolean {
+    return this.liveShowStartTimestamp(course) !== null && Number(course.live_duration) > 0;
   }
 
   private compareLiveShowSchedule(a: Course, b: Course): number {
