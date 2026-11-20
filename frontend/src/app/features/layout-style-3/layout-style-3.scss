@@ -1150,10 +1150,9 @@
   z-index: 2;
 }
 
-/* The Past Live Shows row is inserted before Platform Courses on the landing
-   page. Keep the existing Platform overlap only when that intervening row is
-   absent, otherwise its cards render on top of the past-show cards. */
-.style-row--past-live + .style-row--platform {
+/* Past Live Shows follows Platform Courses. Keep this row in normal flow so
+   the course carousel cannot overlap its cards or title. */
+.style-row--platform + .style-row--past-live {
   margin-top: 0;
 }
 

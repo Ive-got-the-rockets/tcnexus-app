@@ -55,6 +55,7 @@ test('expired Live Shows cannot be selected by reactive featured routes', () => 
   assert.doesNotMatch(source, /liveOnly\(\)[\s\S]{0,120}\? this\.liveShowCourses\(\)/);
 });
 
-test('the Platform Courses row cannot overlap the Past Live Shows row', () => {
-  assert.match(styles, /\.style-row--past-live\s*\+\s*\.style-row--platform\s*\{\s*margin-top:\s*0;/);
+test('the Past Live Shows row follows Platform Courses without overlap', () => {
+  assert.ok(template.indexOf('id="platform-courses-title"') < template.indexOf('id="past-live-shows-title"'));
+  assert.match(styles, /\.style-row--platform\s*\+\s*\.style-row--past-live\s*\{\s*margin-top:\s*0;/);
 });
