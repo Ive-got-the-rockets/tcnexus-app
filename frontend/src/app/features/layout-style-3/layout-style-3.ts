@@ -114,6 +114,10 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   protected readonly liveOnly = computed(() => this.landingMode() === 'live');
   protected readonly liveShows = signal<LiveShow[]>([]);
   protected readonly liveShowCourses = signal<Course[]>([]);
+  protected readonly activeOrUpcomingLiveShowCourses = computed(() => {
+    const now = this.countdownNow();
+    return this.liveShowCourses().filter(show => !this.hasLiveShowEnded(show, now));
+  });
   protected readonly currentLiveShows = computed(() => {
     const now = this.countdownNow();
     return this.liveShows().filter(show => {
@@ -144,22 +148,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   protected scheduleShowsForDay(day: Date): ScheduleEvent[] {
     this.countdownNow();
     const realShows = this.liveShowCourses().filter(show => liveShowOnDay(show, day)).map(show => ({ id: show.id, title: show.title, start: this.scheduleEventTime(show), duration: Number(show.live_duration || 60), tone: this.scheduleEventIsLive(show) ? 'red' as const : 'cyan' as const }));
-    const isToday = day.getTime() === new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()).getTime();
-    if (realShows.length) return realShows;
-    const base = this.scheduleStartMinutes();
-    const demo = [
-      { title: 'Morning Brief', offset: 30, duration: 90, tone: 'cyan' as const },
-      { title: 'Live with Lex', offset: 150, duration: 120, tone: 'cyan' as const },
-      { title: 'Tech Today', offset: 60, duration: 150, tone: 'cyan' as const },
-      { title: 'Industry Insights', offset: 240, duration: 120, tone: 'cyan' as const },
-      { title: 'Global Update', offset: 90, duration: 150, tone: 'cyan' as const },
-      { title: 'Innovation Hour', offset: 180, duration: 150, tone: 'cyan' as const },
-      { title: 'Weekend Digest', offset: 30, duration: 120, tone: 'cyan' as const },
-    ];
-    const item = demo[day.getDay() % demo.length];
-    const fallback = { ...item, start: this.formatScheduleTime(base + item.offset), id: `demo-${this.scheduleDateKey(day)}` };
-    if (isToday) return [{ title: 'Live with Lex', start: this.formatScheduleTime(base + 150), duration: 120, tone: 'cyan' as const, id: `demo-live-with-lex-${this.scheduleDateKey(day)}` }, fallback];
-    return [fallback];
+    return realShows;
   }
   protected scheduleEventStyle(show: ScheduleEvent): string { const start = this.scheduleMinutes(show.start); return `left: ${Math.max(start - this.scheduleStartMinutes(), 0) / 30 * SCHEDULE_COLUMN_WIDTH}px; width: ${Math.max(show.duration / 30 * SCHEDULE_COLUMN_WIDTH - 8, 84)}px;`; }
   protected scheduleEventClass(show: ScheduleEvent): string { return `live-schedule__event--${show.tone}`; }
@@ -238,8 +227,8 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
         : this.showsOnly()
           ? this.shows()
           : this.liveOnly()
-            ? this.liveShowCourses()
-            : [...this.tradingCourseItems(), ...this.platformCourseItems(), ...this.shows(), ...this.liveShowCourses()];
+            ? this.activeOrUpcomingLiveShowCourses()
+            : [...this.tradingCourseItems(), ...this.platformCourseItems(), ...this.shows(), ...this.activeOrUpcomingLiveShowCourses()];
     return this.filterFeaturedItems(available);
   });
   protected readonly featuredIndex = signal(0);
@@ -690,8 +679,8 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
         : this.showsOnly()
           ? this.shows()
           : this.liveOnly()
-            ? this.liveShowCourses()
-            : [...this.tradingCourseItems(), ...this.platformCourseItems(), ...this.shows(), ...this.liveShowCourses()];
+            ? this.activeOrUpcomingLiveShowCourses()
+            : [...this.tradingCourseItems(), ...this.platformCourseItems(), ...this.shows(), ...this.activeOrUpcomingLiveShowCourses()];
     const featured = this.filterFeaturedItems(available)[0] ?? null;
     this.featured.set(featured);
     this.featuredIndex.set(0);

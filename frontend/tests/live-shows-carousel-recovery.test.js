@@ -43,3 +43,18 @@ test('live schedule centers the moving calendar on the current time and retires 
   assert.match(source, /viewport\.scrollLeft\s*=\s*Math\.max\(0,\s*this\.scheduleNowOffset\(\)\s*-\s*viewport\.clientWidth\s*\/\s*2\)/);
   assert.match(template, /@if \(show\.tone === 'red'\)/);
 });
+
+test('weekly schedule only renders shows supplied by the Live Shows API', () => {
+  assert.match(source, /const realShows = this\.liveShowCourses\(\)[\s\S]*?return realShows;/);
+  assert.doesNotMatch(source, /Morning Brief|Tech Today|Industry Insights|Global Update|Innovation Hour|Weekend Digest|demo-/);
+});
+
+test('expired Live Shows cannot be selected by reactive featured routes', () => {
+  assert.match(source, /activeOrUpcomingLiveShowCourses\s*=\s*computed/);
+  assert.match(source, /liveOnly\(\)[\s\S]{0,120}\? this\.activeOrUpcomingLiveShowCourses\(\)/);
+  assert.doesNotMatch(source, /liveOnly\(\)[\s\S]{0,120}\? this\.liveShowCourses\(\)/);
+});
+
+test('the Platform Courses row cannot overlap the Past Live Shows row', () => {
+  assert.match(styles, /\.style-row--past-live\s*\+\s*\.style-row--platform\s*\{\s*margin-top:\s*0;/);
+});
