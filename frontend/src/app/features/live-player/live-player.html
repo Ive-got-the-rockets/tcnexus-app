@@ -12,16 +12,22 @@
         <div class="live-detail-badges"><span class="live-detail-badge live-detail-badge--highlighted">LIVE</span><span class="live-detail-meta-dot" aria-hidden="true"></span><span class="live-detail-badge">{{ liveShow.scheduleLabel }}</span></div>
         <p class="live-detail-description">{{ liveShow.description }}</p>
         <div class="live-detail-people">
+          @if (liveShow.hosts.length) {
           <div class="live-detail-people-group">
-            <p>Host</p>
-            <div class="live-detail-person"><img [src]="liveShow.hostPhotoUrl || liveShow.thumbnailUrl" [alt]="liveShow.host" /><span>{{ liveShow.host }}</span></div>
+            <p>{{ liveShow.hosts.length === 1 ? 'Host' : 'Hosts' }}</p>
+            <div class="live-detail-person-row">
+              @for (host of liveShow.hosts; track host.id) { <div class="live-detail-person"><img [src]="host.photo || liveShow.thumbnailUrl" [alt]="host.name" /><span>{{ host.name }}</span></div> }
+            </div>
           </div>
+          }
+          @if (liveShow.guests.length) {
           <div class="live-detail-people-group">
-            <p>Guests</p>
+            <p>{{ liveShow.guests.length === 1 ? 'Guest' : 'Guests' }}</p>
             <div class="live-detail-person-row">
               @for (guest of liveShow.guests; track guest.id) { <div class="live-detail-person"><img [src]="guest.photo || liveShow.thumbnailUrl" [alt]="guest.name" /><span>{{ guest.name }}</span></div> }
             </div>
           </div>
+          }
         </div>
       </section>
       <section class="live-detail-clock" aria-label="Live show playback and schedule">

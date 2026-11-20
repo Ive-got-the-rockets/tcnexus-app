@@ -11,8 +11,8 @@ assert.match(restApi, /'vimeo_live_event_id'\s*=>\s*get_post_meta\( \$course->ID
   'the Live Show catalog must expose its saved Vimeo event id');
 assert.match(livePlayer, /vimeoLiveEventId: catalogShow\.vimeo_live_event_id \|\| undefined/,
   'opening a saved Live Show must retain its Vimeo event id');
-assert.match(livePlayer, /queryParams: \{ liveTitle: title, vimeoLiveEventId \}/,
-  'the Live Show page must pass its Vimeo event id into the workspace');
+assert.match(livePlayer, /queryParams: \{ liveTitle: title, vimeoLiveEventId, liveShowId \}/,
+  'the Live Show page must pass its Vimeo event id and originating show into the workspace');
 assert.match(workspace, /queryParamMap\.get\('vimeoLiveEventId'\)/,
   'the workspace must read the event id from the Live Show page');
 assert.match(workspace, /https:\/\/vimeo\.com\/event\/\$\{this\.vimeoLiveEventId\}\/embed/,

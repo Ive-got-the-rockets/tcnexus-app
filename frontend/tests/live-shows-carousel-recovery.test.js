@@ -12,7 +12,10 @@ test('homepage loads and renders the Live Shows carousel', () => {
   assert.match(source, /getLiveShows\(\)/);
   assert.match(source, /liveShows\s*=\s*signal<LiveShow\[\]>/);
   assert.match(template, /Live This Week/);
-  assert.match(template, /liveShows\(\)\.length > 0/);
+  assert.match(template, /currentLiveShows\(\)\.length > 0/);
+  assert.match(source, /pastLiveShowCourses\s*=\s*computed/);
+  assert.match(source, /hasLiveShowEnded\(/);
+  assert.match(template, /Past Live Shows/);
 });
 
 test('homepage retains the Live menu mode and countdown presentation', () => {

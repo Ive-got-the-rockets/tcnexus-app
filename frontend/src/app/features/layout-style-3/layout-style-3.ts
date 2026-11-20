@@ -114,6 +114,19 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   protected readonly liveOnly = computed(() => this.landingMode() === 'live');
   protected readonly liveShows = signal<LiveShow[]>([]);
   protected readonly liveShowCourses = signal<Course[]>([]);
+  protected readonly currentLiveShows = computed(() => {
+    const now = this.countdownNow();
+    return this.liveShows().filter(show => {
+      const course = this.liveShowCourses().find(item => String(item.id) === show.id);
+      return !course || !this.hasLiveShowEnded(course, now);
+    });
+  });
+  protected readonly pastLiveShowCourses = computed(() => {
+    const now = this.countdownNow();
+    return this.liveShowCourses()
+      .filter(show => this.hasLiveShowEnded(show, now))
+      .sort((a, b) => (this.liveShowStartTimestamp(b) ?? 0) - (this.liveShowStartTimestamp(a) ?? 0));
+  });
 
   protected scheduleDays(): Date[] {
     const today = new Date();
@@ -198,8 +211,14 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
   private formatScheduleTime(minutes: number): string { const normalized = Math.min(Math.max(minutes, 0), 1439); return `${String(Math.floor(normalized / 60)).padStart(2, '0')}:${String(normalized % 60).padStart(2, '0')}`; }
   private scheduleMinutes(value: string | null | undefined): number { const match = String(value || '').match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/i); if (!match) return this.scheduleStartMinutes(); let hour = Number(match[1]); const minute = Number(match[2] || 0); const meridiem = match[3]?.toUpperCase(); if (meridiem === 'PM' && hour < 12) hour += 12; if (meridiem === 'AM' && hour === 12) hour = 0; return hour * 60 + minute; }
 
-  protected openLiveShow(id: string): void {
-    void this.router.navigate(['/live', id]);
+  protected openLiveShow(id: string | number): void {
+    const showId = String(id);
+    const show = this.liveShowCourses().find(course => String(course.id) === showId);
+    if (show) {
+      this.openLiveShowDestination(show);
+      return;
+    }
+    void this.router.navigate(['/live', showId]);
   }
   protected readonly tradingCourseItems = computed(() => this.courses().filter(course =>
     !this.isPlatformCourse(course) && !course.course_types.includes('Shows')));
@@ -571,9 +590,8 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
           status: 'LIVE SOON',
           scheduleLabel: liveShowScheduleLabel(show),
           description: show.excerpt || '',
-          host: show.hosts?.[0]?.name || 'TC Nexus',
-          hostPhotoUrl: show.hosts?.[0]?.photo || null,
-          guests: [],
+          hosts: show.hosts?.length ? show.hosts : [{ id: 0, name: 'TC Nexus', photo: null }],
+          guests: show.guests || [],
           thumbnailUrl: show.thumbnail || show.image || '/shows/the-primer-BG-ratio-8by3.jpg',
           embedUrl: '/live-stream-layout',
         })));
@@ -915,6 +933,12 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
     return start !== null && durationMinutes > 0 && now >= start && now <= start + durationMinutes * 60_000;
   }
 
+  private hasLiveShowEnded(course: Course, now = Date.now()): boolean {
+    const start = this.liveShowStartTimestamp(course);
+    const durationMinutes = Number(course.live_duration);
+    return start !== null && durationMinutes > 0 && now > start + durationMinutes * 60_000;
+  }
+
   private compareLiveShowSchedule(a: Course, b: Course): number {
     const aLive = this.isLiveNow(a);
     const bLive = this.isLiveNow(b);
@@ -1020,7 +1044,7 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
 
   protected startWatching(course: Course): void {
     if (this.isLiveShow(course)) {
-      void this.router.navigate(['/live', String(course.id)]);
+      this.openLiveShowDestination(course);
       return;
     }
     this.router.navigate(['/courses', course.id]);
@@ -1054,13 +1078,27 @@ export class LayoutStyle3Page implements AfterViewInit, OnChanges, OnDestroy {
 
   protected openCourse(course: Course, event?: Event): void {
     if (this.isLiveShow(course)) {
-      void this.router.navigate(['/live', String(course.id)]);
+      this.openLiveShowDestination(course);
       return;
     }
     const source = event?.currentTarget instanceof HTMLElement
       ? event.currentTarget.closest('.style-card') as HTMLElement | null
       : null;
     this.navigateToCourse(course, source?.getBoundingClientRect());
+  }
+
+  private openLiveShowDestination(course: Course): void {
+    if (this.isLiveNow(course)) {
+      void this.router.navigate(['/live-stream-layout'], {
+        queryParams: {
+          liveTitle: course.title,
+          liveShowId: String(course.id),
+          vimeoLiveEventId: course.vimeo_live_event_id || undefined,
+        },
+      });
+      return;
+    }
+    void this.router.navigate(['/live', String(course.id)]);
   }
 
   protected openCoursePreview(course: Course, event: Event): void {

@@ -26,7 +26,39 @@
 
 .live-schedule > .style-row__title {
   position: static;
-  margin: 0 0 1rem;
+  position: relative;
+  top: auto;
+  left: auto;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 15px;
+  margin: 0;
+  padding-inline: clamp(1.5rem, 4vw, 4.5rem);
+  padding-bottom: 20px;
+  text-align: center;
+  transform: translateY(-20px);
+
+  &::before {
+    grid-column: 1;
+    height: 1px;
+    width: 100%;
+    background: linear-gradient(90deg, transparent, rgb(242 240 232 / 72%));
+    content: '';
+  }
+
+  > span { grid-column: 2; }
+
+  &::after {
+    display: block;
+    grid-column: 3;
+    width: 100%;
+    height: 1px;
+    margin: 0;
+    background: linear-gradient(90deg, rgb(242 240 232 / 72%), transparent);
+    content: '';
+  }
 }
 
 .live-schedule-event-popup { position: fixed; z-index: 1000; width: 300px; max-height: calc(100vh - 2rem); box-sizing: border-box; transform: none; padding: 1.35rem 1.35rem 20px; overflow-y: auto; color: #d7dfdd; background: #11191e; border: 1px solid rgba(242,240,232,.4); border-radius: 14px; box-shadow: 0 24px 70px rgba(0,0,0,.62); pointer-events: auto; animation: live-schedule-popup-in .22s ease-in-out both; }
@@ -85,7 +117,7 @@
 .live-schedule__day--today i { color: var(--paper-dim); }
 .live-schedule__track { position: relative; grid-column: 2 / -1; min-height: 86px; background: linear-gradient(90deg, rgba(82,169,160,.06), transparent 65%); }
 .live-schedule__event { position: absolute; top: 6px; height: 74px; overflow: hidden; padding: 12px 20px; border: 1px solid rgba(82,169,160,.7); border-left: 5px solid #52a9a0; border-radius: 7px; background: #151719; color: var(--paper); cursor: pointer; text-align: left; box-shadow: inset 0 0 18px rgba(255,255,255,.025); }
-.live-schedule__event:not(.live-schedule__event--red) { background-color: #151719; background-image: none !important; }
+.live-schedule__event:not(.live-schedule__event--red) { background-color: #151719; background-image: radial-gradient(circle at 100% 100%, rgba(82,169,160,.9) 0%, rgba(82,169,160,0) 78%) !important; background-blend-mode: soft-light; }
 .live-schedule__event::before { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 5px; background: #52a9a0; }
 .live-schedule__event--red { border-color: rgba(139,30,63,.7); border-left-color: #8b1e3f; background-color: #151719; background-image: radial-gradient(circle at 100% 100%, rgba(139,30,63,1) 0%, rgba(139,30,63,0) 78%) !important; background-blend-mode: soft-light; }
 .live-schedule__event--red:hover { background-image: radial-gradient(circle at 100% 100%, rgba(139,30,63,1) 0%, rgba(139,30,63,0) 78%) !important; background-blend-mode: soft-light; color: var(--paper); }
@@ -97,9 +129,9 @@
 .live-schedule__event > span { margin-top: 8px; color: var(--paper-dim); font: 20px/1 'Barlow', sans-serif; }
 .live-schedule__live-badge { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border-radius: 999px; background: #d93a3a; color: #fff; font: 600 13px/1 'Barlow', sans-serif; font-style: normal; letter-spacing: .04em; }
 .live-schedule__live-badge span { width: 6px; height: 6px; margin: 0; border-radius: 50%; background: #fff; }
-.live-schedule__event:not(.live-schedule__event--red):hover { border-color: #fff; background-image: none !important; color: var(--paper); }
-.live-schedule__now { position: absolute; z-index: 5; top: 0; bottom: 0; left: 50%; width: 1px; pointer-events: none; background: rgba(255,59,48,.8); box-shadow: 0 0 8px rgba(255,59,48,.35); }
-.live-schedule__now span { position: absolute; top: 0; left: -4px; width: 9px; height: 9px; border-radius: 50%; background: #ff3b30; }
+.live-schedule__event:not(.live-schedule__event--red):hover { border-color: #fff; background-image: radial-gradient(circle at 100% 100%, rgba(82,169,160,.9) 0%, rgba(82,169,160,0) 78%) !important; background-blend-mode: soft-light; color: var(--paper); }
+.live-schedule__now { position: absolute; z-index: 5; top: 0; bottom: 0; left: 50%; width: 1px; pointer-events: none; background: #ff3b30; box-shadow: 0 0 20px rgba(255,59,48,.78), 0 0 6px rgba(255,59,48,.95); }
+.live-schedule__now span { position: absolute; top: 0; left: -4px; width: 9px; height: 9px; border-radius: 50%; background: #ff3b30; box-shadow: 0 0 14px rgba(255,59,48,.95), 0 0 4px #ff3b30; }
 
 @media (max-width: 700px) {
   .live-schedule { margin-inline: 1rem; }
@@ -1110,6 +1142,12 @@
    keep this row in normal flow to preserve the home-page hero spacing. */
 .style-page--trading-only .style-row--trading {
   margin-top: 0;
+}
+
+.style-row--past-live {
+  margin-top: -350px;
+  padding-bottom: 60px;
+  z-index: 2;
 }
 
 .style-page--platform-only .style-row--platform,
@@ -3040,6 +3078,18 @@
   color: var(--paper);
   pointer-events: none;
   text-align: center;
+
+  &::before {
+    position: absolute;
+    z-index: -1;
+    width: 260px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle, #000 0%, rgb(0 0 0 / 88%) 34%, rgb(0 0 0 / 48%) 62%, transparent 100%);
+    content: '';
+    pointer-events: none;
+    transform: translateY(230px);
+  }
 }
 
 .style-page .style-live-now-action__play {
@@ -3069,11 +3119,29 @@
 .style-live-now-action__title {
   margin: 0;
   color: #F02F3E;
+  background-image: linear-gradient(105deg, transparent 35%, #fff 49%, #fff 51%, transparent 65%), linear-gradient(#F02F3E, #F02F3E);
+  background-size: 240% 100%, 100% 100%;
+  background-position: 120% 0, 0 0;
+  background-repeat: no-repeat;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: live-now-shimmer 5s linear infinite;
   font-family: 'Inter', sans-serif;
   font-size: 35px;
   font-weight: 700;
   letter-spacing: .1em;
   line-height: 1;
+}
+
+@keyframes live-now-shimmer {
+  0% { background-position: 120% 0, 0 0; }
+  20% { background-position: -120% 0, 0 0; }
+  100% { background-position: -120% 0, 0 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .style-live-now-action__title { animation: none; }
 }
 
 .style-live-now-action__hint { color: var(--paper); font-size: 20px; line-height: 1.2; }
