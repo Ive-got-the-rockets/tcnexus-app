@@ -59,3 +59,13 @@ test('the Past Live Shows row follows Platform Courses without overlap', () => {
   assert.ok(template.indexOf('id="platform-courses-title"') < template.indexOf('id="past-live-shows-title"'));
   assert.match(styles, /\.style-row--platform\s*\+\s*\.style-row--past-live\s*\{\s*margin-top:\s*0;/);
 });
+
+test('featured Live Shows identify their hosts and guests instead of characters', () => {
+  assert.match(template, /@if \(isLiveShow\(course\)\)[\s\S]*course\.hosts[\s\S]*course\.guests/);
+});
+
+test('expanded Live Show cards keep a compact countdown inside their play button', () => {
+  assert.match(template, /style-card__play--live-countdown[\s\S]*LIVE IN[\s\S]*countdown\.days/);
+  assert.match(template, /@if \(!\(liveShowCardCountdown\(liveShow\.id\) && !isLiveShowLive\(liveShow\.id\)\)\) \{\s*<svg class="play-triangle"/);
+  assert.match(styles, /\.style-card__play--live-countdown/);
+});
