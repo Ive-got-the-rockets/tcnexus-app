@@ -64,8 +64,8 @@ test('featured Live Shows identify their hosts and guests instead of characters'
   assert.match(template, /@if \(isLiveShow\(course\)\)[\s\S]*course\.hosts[\s\S]*course\.guests/);
 });
 
-test('expanded Live Show cards keep a compact countdown inside their play button', () => {
-  assert.match(template, /style-card__play--live-countdown[\s\S]*LIVE IN[\s\S]*countdown\.days/);
-  assert.match(template, /@if \(!\(liveShowCardCountdown\(liveShow\.id\) && !isLiveShowLive\(liveShow\.id\)\)\) \{\s*<svg class="play-triangle"/);
-  assert.match(styles, /\.style-card__play--live-countdown/);
+test('upcoming Live Show cards are scheduled without a play icon', () => {
+  assert.match(template, /countdown\.isLive \? 'Watch Live' : 'Scheduled'/);
+  assert.match(template, /@if \(countdown\.isLive\) \{ <svg class="play-triangle"/);
+  assert.doesNotMatch(styles, /style-card__play--live-countdown/);
 });
